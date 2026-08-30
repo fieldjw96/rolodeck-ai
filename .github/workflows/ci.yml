@@ -1,0 +1,27 @@
+# The CI wall every Ticket has to clear: typecheck, lint, format, test and build all have
+# to be green before the Claude Review Gate is even worth running. See CLAUDE.md's
+# "Definition of done" and docs/adr/0001 for why this repo merges on green with nobody
+# looking.
+
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm run test
+      - run: npm run build
