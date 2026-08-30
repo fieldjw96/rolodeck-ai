@@ -25,3 +25,33 @@ jobs:
       - run: npm run format:check
       - run: npm run test
       - run: npm run build
+
+  # The integration tests run Postgres in-process, which proves the policies behave but not
+  # that the migration applies to a stock server. This job is that second question: a
+  # scratch Postgres, the Supabase shim, then the migration, from empty.
+  migrate:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Stand in for the Supabase-managed roles and auth schema
+        run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 -f db/testing/supabase-shim.sql
+      - run: npm run db:migrate
