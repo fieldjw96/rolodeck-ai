@@ -23,12 +23,22 @@ export type Stage = z.infer<typeof stageSchema>;
  * CLAUDE.md, scraped data is hostile, so a source that changes shape must fail loudly here,
  * naming the field, rather than let an `undefined` propagate into a Profile.
  */
+const nonBlankString = z
+  .string()
+  .min(1)
+  .refine((value) => value.trim().length > 0, {
+    message: "must not be blank",
+  });
+
 export const profileInputSchema = z.strictObject({
-  name: z.string().min(1),
-  description: z.string().min(1),
-  sector: z.string().min(1),
+  name: nonBlankString,
+  description: nonBlankString,
+  sector: nonBlankString,
   stage: stageSchema,
-  website: z.url().optional(),
+  // Restricted to http(s) rather than any URL scheme z.url() would otherwise accept, so a
+  // scraped `javascript:` or `data:` value is rejected here instead of surviving as a
+  // Profile's website.
+  website: z.url({ protocol: /^https?$/ }).optional(),
 });
 
 export type ProfileInput = z.infer<typeof profileInputSchema>;
@@ -49,6 +59,22 @@ export type ProfileInputResult =
   | { readonly success: false; readonly rejection: IngestRejection };
 
 /**
+ * Names the field an issue belongs to. Most issues carry a path, but a `strictObject`
+ * reports an extra key or a non-object payload at the root (`path: []`), where `path.join`
+ * would silently produce an empty string and defeat the "name the offending field" rule
+ * this schema exists to enforce.
+ */
+function issueField(issue: z.core.$ZodIssue): string {
+  if (issue.path.length > 0) {
+    return issue.path.join(".");
+  }
+  if (issue.code === "unrecognized_keys") {
+    return issue.keys.join(", ");
+  }
+  return "(root)";
+}
+
+/**
  * Parses a raw, untrusted record against `profileInputSchema`, reporting the first offending
  * field rather than the full ZodError so every ingest path handles one small, typed shape.
  */
@@ -64,7 +90,7 @@ export function parseProfileInput(raw: unknown): ProfileInputResult {
   return {
     success: false,
     rejection: {
-      field: issue.path.join("."),
+      field: issueField(issue),
       reason: issue.message,
       raw,
     },

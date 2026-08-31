@@ -45,6 +45,16 @@ const MALFORMED_PAYLOADS: ReadonlyArray<{
     payload: { ...VALID_INPUT, stage: "unicorn" },
     field: "stage",
   },
+  {
+    description: "a blank string",
+    payload: { ...VALID_INPUT, name: "   " },
+    field: "name",
+  },
+  {
+    description: "a disallowed URL scheme",
+    payload: { ...VALID_INPUT, website: "javascript:alert(1)" },
+    field: "website",
+  },
 ];
 
 describe("profileInputSchema", () => {
@@ -95,5 +105,25 @@ describe("parseProfileInput", () => {
     expect(typeof result.rejection.reason).toBe("string");
     expect(result.rejection.reason.length).toBeGreaterThan(0);
     expect(result.rejection.raw).toBe(raw);
+  });
+
+  it("names the extra key when a source adds a field the schema does not expect", () => {
+    const raw = { ...VALID_INPUT, sourceUrl: "https://source.example" };
+
+    const result = parseProfileInput(raw);
+
+    expect(result.success).toBe(false);
+    if (result.success) return;
+
+    expect(result.rejection.field).toBe("sourceUrl");
+  });
+
+  it("still names a field when the payload is not an object at all", () => {
+    const result = parseProfileInput("not a profile");
+
+    expect(result.success).toBe(false);
+    if (result.success) return;
+
+    expect(result.rejection.field.length).toBeGreaterThan(0);
   });
 });
