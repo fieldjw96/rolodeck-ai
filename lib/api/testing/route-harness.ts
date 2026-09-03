@@ -11,6 +11,7 @@ import {
   type CookiePair,
   type ThrowawayUser,
 } from "../../auth/testing/auth-backend";
+import { apiRateLimiter } from "../rate-limit";
 
 /**
  * Everything a route handler touches that is not the handler: an in-process Postgres with the
@@ -30,6 +31,7 @@ export type RouteHarness = {
   signIn: () => Promise<void>;
   signOut: () => void;
   seed: (count: number, ownerId?: string) => Promise<string[]>;
+  /** Empties the database and gives the user back a full rate-limit budget. */
   clear: () => Promise<void>;
   close: () => Promise<void>;
 };
@@ -61,6 +63,9 @@ export async function startRouteHarness(): Promise<RouteHarness> {
     seed: (count, ownerId = user.id) =>
       seedProfiles(scratch.db, { count, ownerId }),
     clear: async () => {
+      // The limiter is module state shared by every handler in the file under test, so a test
+      // that made 40 requests would otherwise leave only 20 for the next one.
+      apiRateLimiter.reset();
       await scratch.reset();
       await scratch.db.delete(swipes);
       await scratch.db.delete(profiles);

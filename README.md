@@ -42,6 +42,21 @@ a `next_cursor`, which is `null` on the last page. The cursor is opaque: hand ba
 previous page issued. Anything else, including a limit outside its range, gets a `422` naming
 the field it objected to.
 
+All three share one budget of 60 requests a minute per account. Spend it and they answer `429`
+with a `Retry-After` in seconds until the oldest request in the window ages out.
+
+## Security
+
+Every response through the Proxy carries a `Content-Security-Policy` — nonce-based, so no
+inline script runs unless Next put it there — plus `X-Content-Type-Options: nosniff`,
+`X-Frame-Options: DENY` and `Referrer-Policy: strict-origin-when-cross-origin`. They are set in
+`lib/http/security-headers.ts` and applied by the gate. See `docs/adr/0006`, which also explains
+why the rate limit is where it is and what it does not cover.
+
+CI runs `npm audit --audit-level=high` on every pull request, and `npm run check:bundle-secrets`
+after the build, which greps the client output for the names and values of anything that must
+stay on the server. Run that one yourself after `npm run build`.
+
 ## Database
 
 The schema lives in `db/schema.ts`. After changing it, run `npm run db:generate` to write a

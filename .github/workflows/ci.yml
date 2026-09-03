@@ -20,11 +20,18 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      # A known-vulnerable dependency is a defect like any other, so it fails the same wall.
+      # `high` and above only: a moderate advisory in a build-time tool is not worth blocking
+      # an unattended merge on, and a wall that cries wolf gets turned off.
+      - run: npm audit --audit-level=high
       - run: npm run typecheck
       - run: npm run lint
       - run: npm run format:check
       - run: npm run test
       - run: npm run build
+      # Asks the artefact, not the source, whether a secret can reach a browser. Has to come
+      # after the build: it greps what the build produced.
+      - run: npm run check:bundle-secrets
 
   # The integration tests run Postgres in-process, which proves the policies behave but not
   # that the migration applies to a stock server. This job is that second question: a

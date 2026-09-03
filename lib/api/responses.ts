@@ -27,6 +27,18 @@ export function unauthorized(): Response {
   return Response.json(NOT_SIGNED_IN, { status: 401 });
 }
 
+/**
+ * The caller has spent its budget for the moment. `Retry-After` in whole seconds, so a client
+ * is told when to come back rather than left to guess and hammer. The body names no limit and
+ * no count: what is left of an account's budget is not something a caller needs to be handed.
+ */
+export function tooManyRequests(retryAfterSeconds: number): Response {
+  return Response.json({ error: "too many requests" } satisfies ApiError, {
+    status: 429,
+    headers: { "Retry-After": String(retryAfterSeconds) },
+  });
+}
+
 /** No such Profile, or none this user can see — deliberately the same answer for both. */
 export function notFound(): Response {
   return Response.json({ error: "not found" } satisfies ApiError, {

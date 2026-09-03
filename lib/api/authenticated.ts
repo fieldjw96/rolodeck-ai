@@ -4,7 +4,8 @@ import type { User } from "@supabase/supabase-js";
 import type { NextRequest } from "next/server";
 
 import { getSessionUser } from "../auth/session";
-import { unauthorized } from "./responses";
+import { apiRateLimiter } from "./rate-limit";
+import { tooManyRequests, unauthorized } from "./responses";
 
 export type AuthenticatedHandler<Context> = (
   request: NextRequest,
@@ -24,6 +25,12 @@ export type AuthenticatedHandler<Context> = (
  *
  * The user comes from `getSessionUser()`, which revalidates the token against Supabase Auth,
  * and is what the query then presents to Postgres as `auth.uid()`. See `db/rls.ts`.
+ *
+ * It is also where the rate limit is spent, which is why the limit is per authenticated user
+ * and not per IP: this is the one place every endpoint under `/api` passes through, and by the
+ * time it runs there is a user to key on. Wrapping here rather than in the Proxy is the same
+ * argument ADR 0004 makes — a matcher is a regex somebody can change, and the wrapper is the
+ * code being protected. See docs/adr/0006.
  */
 export function authenticated<Context>(
   handler: AuthenticatedHandler<Context>,
@@ -33,6 +40,14 @@ export function authenticated<Context>(
 
     if (user === null) {
       return unauthorized();
+    }
+
+    // After the session check, so an unauthenticated caller cannot spend a real account's
+    // budget, and so the limit is keyed on an identity Supabase Auth has just confirmed.
+    const budget = apiRateLimiter.check(user.id);
+
+    if (!budget.allowed) {
+      return tooManyRequests(budget.retryAfterSeconds);
     }
 
     return handler(request, user, context);

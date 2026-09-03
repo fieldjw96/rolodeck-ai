@@ -2,6 +2,13 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { NOT_SIGNED_IN } from "../api/responses";
+import {
+  createNonce,
+  CSP_HEADER,
+  NONCE_HEADER,
+  contentSecurityPolicy,
+  withSecurityHeaders,
+} from "../http/security-headers";
 import { readBrowserSafeEnv } from "../supabase/env";
 import { HOME_PATH, isApiPath, isPublicPath, LOGIN_PATH } from "./paths";
 
@@ -59,6 +66,22 @@ function redirectCarryingCookies(
 }
 
 /**
+ * Passes the request through, carrying the nonce this response's Content-Security-Policy is
+ * written against. Next looks for the CSP header on the *request* and stamps the nonce onto the
+ * scripts it emits, which is the only way an inline-script-free policy and Next's own inline
+ * scripts can both be true. The headers are rebuilt from `request.headers` on each call rather
+ * than captured once: `request.cookies.set()` writes through to them, and a stale copy would
+ * hand the render downstream the spent tokens.
+ */
+function passThrough(request: NextRequest, nonce: string): NextResponse {
+  const headers = new Headers(request.headers);
+  headers.set(NONCE_HEADER, nonce);
+  headers.set(CSP_HEADER, contentSecurityPolicy(nonce));
+
+  return NextResponse.next({ request: { headers } });
+}
+
+/**
  * The single-account gate. Every request Next routes through the Proxy either carries a valid
  * Supabase session or is turned away — sent to `/login`, or answered 401 if it was a request
  * to a route handler — so the app is never publicly readable even though V1 has exactly one
@@ -69,13 +92,26 @@ function redirectCarryingCookies(
  * auth cookies back to the response. The authoritative check is `requireUser()` in
  * `lib/auth/session.ts`, which every gated segment calls for itself, and `authenticated()` in
  * `lib/api/authenticated.ts` for the route handlers, which no layout sits above.
+ *
+ * It is also where the security headers go on, for the same reason: whichever way this function
+ * answers — pass through, redirect or 401 — the answer leaves from here. See docs/adr/0006.
  */
 export async function applyAuthGate(
   request: NextRequest,
 ): Promise<NextResponse> {
+  const nonce = createNonce();
+
+  return withSecurityHeaders(await decide(request, nonce), nonce);
+}
+
+/** The gate's actual decision: through, to `/login`, or 401. The headers go on afterwards. */
+async function decide(
+  request: NextRequest,
+  nonce: string,
+): Promise<NextResponse> {
   const env = readBrowserSafeEnv();
 
-  let response = NextResponse.next({ request });
+  let response = passThrough(request, nonce);
 
   const supabase = createServerClient(
     env.NEXT_PUBLIC_SUPABASE_URL,
@@ -90,7 +126,7 @@ export async function applyAuthGate(
             request.cookies.set(name, value);
           }
 
-          response = NextResponse.next({ request });
+          response = passThrough(request, nonce);
 
           for (const { name, value, options } of cookiesToSet) {
             response.cookies.set(name, value, options);
