@@ -25,7 +25,7 @@ type ReadyState = {
 type DeckState =
   | { status: "loading" }
   | { status: "empty" }
-  | { status: "error" }
+  | { status: "error"; message: string }
   | ReadyState;
 
 type Decision = "keep" | "pass";
@@ -36,6 +36,11 @@ export const EMPTY_DECK_MESSAGE = "No Profiles left in the Deck.";
 /** Shown when the initial `GET /api/profiles` fails, so a dead network leaves Jack looking
  * at an explicit message rather than a Deck stuck on "loading" forever. */
 export const LOAD_ERROR_MESSAGE = "Couldn't load the Deck.";
+
+/** Shown when a Keep or Pass is recorded but fetching what comes next fails: the decision
+ * already happened server-side, so staying on the same Profile with no explanation would
+ * read as though nothing was recorded, not as though the network dropped. */
+export const ADVANCE_ERROR_MESSAGE = "Couldn't load the next Profile.";
 
 async function fetchPage(cursor: string | null): Promise<ProfilesPage> {
   const url =
@@ -111,7 +116,7 @@ export function Deck() {
       .then((page) => setState(stateAfter(page)))
       .catch((error: unknown) => {
         console.error(error);
-        setState({ status: "error" });
+        setState({ status: "error", message: LOAD_ERROR_MESSAGE });
       });
   }, []);
 
@@ -138,15 +143,27 @@ export function Deck() {
 
     decidingRef.current = true;
 
-    void recordSwipe(profile.id, decision)
-      .then(() => stateAfterAdvancing(current))
-      .then(setState)
-      .catch((error: unknown) => {
+    // A failed `recordSwipe` leaves the Deck exactly where it was: nothing happened
+    // server-side, so the same Profile with its buttons still live is the honest state. A
+    // failed `stateAfterAdvancing`, by contrast, follows a swipe that *did* land — staying on
+    // the same Profile there would look like the decision was never recorded, so that path
+    // gets its own explicit error instead.
+    void recordSwipe(profile.id, decision).then(
+      () =>
+        stateAfterAdvancing(current)
+          .then(setState)
+          .catch((error: unknown) => {
+            console.error(error);
+            setState({ status: "error", message: ADVANCE_ERROR_MESSAGE });
+          })
+          .finally(() => {
+            decidingRef.current = false;
+          }),
+      (error: unknown) => {
         console.error(error);
-      })
-      .finally(() => {
         decidingRef.current = false;
-      });
+      },
+    );
   }, []);
 
   useEffect(() => {
@@ -167,7 +184,7 @@ export function Deck() {
   }
 
   if (state.status === "error") {
-    return <p role="alert">{LOAD_ERROR_MESSAGE}</p>;
+    return <p role="alert">{state.message}</p>;
   }
 
   if (state.status === "empty") {

@@ -7,7 +7,12 @@ import {
 } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { Deck, EMPTY_DECK_MESSAGE, LOAD_ERROR_MESSAGE } from "./deck";
+import {
+  ADVANCE_ERROR_MESSAGE,
+  Deck,
+  EMPTY_DECK_MESSAGE,
+  LOAD_ERROR_MESSAGE,
+} from "./deck";
 
 type Profile = {
   id: string;
@@ -260,6 +265,43 @@ describe("the Deck", () => {
     expect(
       await screen.findByRole("heading", { name: "Globex" }),
     ).toBeInTheDocument();
+  });
+
+  it("shows an explicit error when a Keep or Pass records but fetching the next page fails", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const fetchMock = vi.fn(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = typeof input === "string" ? input : input.toString();
+        const method = init?.method ?? "GET";
+
+        if (method === "GET" && url === "/api/profiles") {
+          return jsonResponse({ profiles: [acme], next_cursor: "cursor-1" });
+        }
+
+        if (method === "POST" && url === `/api/profiles/${acme.id}/keep`) {
+          return jsonResponse({
+            profile_id: acme.id,
+            decision: "keep",
+            decided_at: new Date().toISOString(),
+          });
+        }
+
+        return { ok: false, status: 500 } as Response;
+      },
+    );
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<Deck />);
+
+    await screen.findByRole("heading", { name: "Acme" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Keep" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      ADVANCE_ERROR_MESSAGE,
+    );
   });
 
   it("does not advance the Deck when a swipe request fails", async () => {
