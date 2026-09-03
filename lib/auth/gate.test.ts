@@ -149,6 +149,53 @@ describe.each(authBackends())("the auth gate, against $name", ({ start }) => {
 
     expect(response.headers.get("cache-control")).toContain("no-store");
   });
+
+  describe("the security headers", () => {
+    // Whichever way the gate answers, it is the last code to touch the response, so all three
+    // shapes have to carry them — a policy that only covers the happy path covers nothing.
+    it.each([
+      ["a pass-through", () => request("/", signedIn)],
+      ["a redirect to /login", () => request("/")],
+      ["a 401 from an API path", () => request("/api/profiles")],
+    ])("are on %s", async (_shape, make) => {
+      const response = await applyAuthGate(make());
+
+      expect(response.headers.get("x-content-type-options")).toBe("nosniff");
+      expect(response.headers.get("x-frame-options")).toBe("DENY");
+      expect(response.headers.get("referrer-policy")).toBe(
+        "strict-origin-when-cross-origin",
+      );
+      expect(response.headers.get("content-security-policy")).toContain(
+        "default-src 'self'",
+      );
+    });
+
+    it("hands Next the same nonce on the request that the policy names", async () => {
+      // This is the whole mechanism: Next reads the nonce out of the request's CSP header and
+      // stamps it onto the inline scripts it emits. If the two ever disagree, the deployed app
+      // renders with every one of its own scripts blocked.
+      const response = await applyAuthGate(request("/", signedIn));
+      const policy = response.headers.get("content-security-policy") ?? "";
+      const nonce = /'nonce-([^']+)'/.exec(policy)?.[1];
+
+      expect(nonce).toEqual(expect.any(String));
+      expect(response.headers.get("x-middleware-request-x-nonce")).toBe(nonce);
+      expect(
+        response.headers.get("x-middleware-request-content-security-policy"),
+      ).toBe(policy);
+    });
+
+    it("mints a new nonce for every request", async () => {
+      const noncesOf = async () =>
+        /'nonce-([^']+)'/.exec(
+          (await applyAuthGate(request("/", signedIn))).headers.get(
+            "content-security-policy",
+          ) ?? "",
+        )?.[1];
+
+      expect(await noncesOf()).not.toBe(await noncesOf());
+    });
+  });
 });
 
 describe("the auth gate's configuration", () => {

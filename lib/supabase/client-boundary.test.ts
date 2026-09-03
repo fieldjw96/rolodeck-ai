@@ -32,14 +32,16 @@ const MUST_BE_MARKED = [
 
 /**
  * Where the secret key is allowed to be named: the app's own boundary for reading it, the
- * operator script that spends it, and the test harness that stands in for the Admin API.
- * Anything else naming it is the thing this check exists to catch.
+ * operator script that spends it, the test harness that stands in for the Admin API, and the
+ * build-output check, which has to spell the name out to grep for it. Anything else naming it
+ * is the thing this check exists to catch.
  */
 const SECRET_KEY_CALLERS = [
   "lib/supabase/env.ts",
   "lib/auth/testing/auth-backend.ts",
   "lib/auth/testing/gotrue-stub.ts",
   "scripts/provision-account.ts",
+  "scripts/check-bundle-secrets.ts",
 ];
 
 const isTest = (file: SourceFile) => /\.test\.tsx?$/.test(file.path);
