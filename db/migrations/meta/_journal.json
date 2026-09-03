@@ -8,6 +8,13 @@
       "when": 1788075843739,
       "tag": "0000_profiles",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1788406125611,
+      "tag": "0001_swipes",
+      "breakpoints": true
     }
   ]
 }
