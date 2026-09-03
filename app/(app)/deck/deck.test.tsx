@@ -1,4 +1,10 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { Deck, EMPTY_DECK_MESSAGE } from "./deck";
@@ -239,5 +245,65 @@ describe("the Deck", () => {
     expect(
       await screen.findByRole("heading", { name: "Globex" }),
     ).toBeInTheDocument();
+  });
+
+  it("does not advance the Deck when a swipe request fails", async () => {
+    const fetchMock = vi.fn(
+      async (_input: RequestInfo | URL, init?: RequestInit) => {
+        if ((init?.method ?? "GET") === "GET") {
+          return jsonResponse({ profiles: [acme, globex], next_cursor: null });
+        }
+
+        return { ok: false, status: 500 } as Response;
+      },
+    );
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<Deck />);
+
+    await screen.findByRole("heading", { name: "Acme" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Keep" }));
+
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        `/api/profiles/${acme.id}/keep`,
+        expect.objectContaining({ method: "POST" }),
+      ),
+    );
+
+    expect(screen.getByRole("heading", { name: "Acme" })).toBeInTheDocument();
+  });
+
+  it("ignores a second decision made before the first swipe has settled", async () => {
+    const fetchMock = stubFetch({
+      "GET /api/profiles": {
+        profiles: [acme, globex],
+        next_cursor: null,
+      },
+      [`POST /api/profiles/${acme.id}/keep`]: {
+        profile_id: acme.id,
+        decision: "keep",
+        decided_at: new Date().toISOString(),
+      },
+    });
+
+    render(<Deck />);
+
+    await screen.findByRole("heading", { name: "Acme" });
+
+    const keepButton = screen.getByRole("button", { name: "Keep" });
+    fireEvent.click(keepButton);
+    fireEvent.click(keepButton);
+
+    expect(
+      await screen.findByRole("heading", { name: "Globex" }),
+    ).toBeInTheDocument();
+
+    const keepCalls = fetchMock.mock.calls.filter(
+      ([url]) => url === `/api/profiles/${acme.id}/keep`,
+    );
+    expect(keepCalls).toHaveLength(1);
   });
 });

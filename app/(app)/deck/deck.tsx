@@ -36,11 +36,23 @@ async function fetchPage(cursor: string | null): Promise<ProfilesPage> {
       : `/api/profiles?cursor=${encodeURIComponent(cursor)}`;
 
   const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(`GET ${url} failed with ${response.status}`);
+  }
+
   return (await response.json()) as ProfilesPage;
 }
 
+/** Throws on a non-2xx response, so a swipe that failed server-side is never mistaken for
+ * one that was recorded and the Deck advances past it anyway. */
 async function recordSwipe(id: string, decision: Decision): Promise<void> {
-  await fetch(`/api/profiles/${id}/${decision}`, { method: "POST" });
+  const url = `/api/profiles/${id}/${decision}`;
+  const response = await fetch(url, { method: "POST" });
+
+  if (!response.ok) {
+    throw new Error(`POST ${url} failed with ${response.status}`);
+  }
 }
 
 function stateAfter(page: ProfilesPage): DeckState {
@@ -90,13 +102,18 @@ export function Deck() {
     fetchPage(null).then((page) => setState(stateAfter(page)));
   }, []);
 
+  // Set synchronously, before the `await` inside `recordSwipe`, so a second Keep or Pass
+  // fired before the first one's state update lands (arrow-key auto-repeat, a fast double
+  // click) is ignored rather than recording a second swipe against the same Profile.
+  const decidingRef = useRef(false);
+
   // Read from the ref rather than closing over `state`, so this stays one stable function
   // across renders and the keydown listener below does not need to be torn down and rebuilt
   // on every Keep or Pass.
   const decide = useCallback((decision: Decision) => {
     const current = stateRef.current;
 
-    if (current.status !== "ready") {
+    if (current.status !== "ready" || decidingRef.current) {
       return;
     }
 
@@ -106,9 +123,17 @@ export function Deck() {
       return;
     }
 
+    decidingRef.current = true;
+
     void recordSwipe(profile.id, decision)
       .then(() => stateAfterAdvancing(current))
-      .then(setState);
+      .then(setState)
+      .catch((error: unknown) => {
+        console.error(error);
+      })
+      .finally(() => {
+        decidingRef.current = false;
+      });
   }, []);
 
   useEffect(() => {
