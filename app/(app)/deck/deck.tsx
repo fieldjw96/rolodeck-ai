@@ -135,11 +135,9 @@ export function Deck() {
       return;
     }
 
-    const profile = current.profiles[current.index];
-
-    if (profile === undefined) {
-      return;
-    }
+    // `current.index` only ever comes from `stateAfter` or `stateAfterAdvancing`, both of
+    // which keep it within `current.profiles`, so a "ready" state always has a Profile here.
+    const profile = current.profiles[current.index]!;
 
     decidingRef.current = true;
 
@@ -191,11 +189,8 @@ export function Deck() {
     return <p>{EMPTY_DECK_MESSAGE}</p>;
   }
 
-  const profile = state.profiles[state.index];
-
-  if (profile === undefined) {
-    return <p>{EMPTY_DECK_MESSAGE}</p>;
-  }
+  // Same invariant as in `decide`: a "ready" state always has a valid index.
+  const profile = state.profiles[state.index]!;
 
   return (
     <main>

@@ -213,6 +213,24 @@ describe("the Deck", () => {
     );
   });
 
+  it("ignores keys other than the left and right arrows", async () => {
+    const fetchMock = stubFetch({
+      "GET /api/profiles": {
+        profiles: [acme, globex],
+        next_cursor: null,
+      },
+    });
+
+    render(<Deck />);
+
+    await screen.findByRole("heading", { name: "Acme" });
+
+    fireEvent.keyDown(window, { key: "Escape" });
+
+    expect(screen.getByRole("heading", { name: "Acme" })).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
   it("shows an explicit empty state when the Deck starts out empty", async () => {
     stubFetch({
       "GET /api/profiles": { profiles: [], next_cursor: null },
