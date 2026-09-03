@@ -22,12 +22,20 @@ type ReadyState = {
   nextCursor: string | null;
 };
 
-type DeckState = { status: "loading" } | { status: "empty" } | ReadyState;
+type DeckState =
+  | { status: "loading" }
+  | { status: "empty" }
+  | { status: "error" }
+  | ReadyState;
 
 type Decision = "keep" | "pass";
 
 /** A real string rather than a blank screen, per the Ticket. */
 export const EMPTY_DECK_MESSAGE = "No Profiles left in the Deck.";
+
+/** Shown when the initial `GET /api/profiles` fails, so a dead network leaves Jack looking
+ * at an explicit message rather than a Deck stuck on "loading" forever. */
+export const LOAD_ERROR_MESSAGE = "Couldn't load the Deck.";
 
 async function fetchPage(cursor: string | null): Promise<ProfilesPage> {
   const url =
@@ -99,7 +107,12 @@ export function Deck() {
   }, [state]);
 
   useEffect(() => {
-    fetchPage(null).then((page) => setState(stateAfter(page)));
+    fetchPage(null)
+      .then((page) => setState(stateAfter(page)))
+      .catch((error: unknown) => {
+        console.error(error);
+        setState({ status: "error" });
+      });
   }, []);
 
   // Set synchronously, before the `await` inside `recordSwipe`, so a second Keep or Pass
@@ -151,6 +164,10 @@ export function Deck() {
 
   if (state.status === "loading") {
     return null;
+  }
+
+  if (state.status === "error") {
+    return <p role="alert">{LOAD_ERROR_MESSAGE}</p>;
   }
 
   if (state.status === "empty") {

@@ -7,7 +7,7 @@ import {
 } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { Deck, EMPTY_DECK_MESSAGE } from "./deck";
+import { Deck, EMPTY_DECK_MESSAGE, LOAD_ERROR_MESSAGE } from "./deck";
 
 type Profile = {
   id: string;
@@ -79,6 +79,21 @@ describe("the Deck", () => {
     expect(screen.getByText("Widgets, but faster.")).toBeInTheDocument();
     expect(screen.getByText("Hardware")).toBeInTheDocument();
     expect(screen.getByText("Seed")).toBeInTheDocument();
+  });
+
+  it("shows an explicit error when the initial fetch fails, rather than staying on loading forever", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({ ok: false, status: 500 }) as Response),
+    );
+
+    render(<Deck />);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      LOAD_ERROR_MESSAGE,
+    );
   });
 
   it("Keeps the current Profile and advances to the next one in the page", async () => {
