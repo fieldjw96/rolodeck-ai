@@ -35,6 +35,12 @@ vi.mock("../../db/connection", () => ({
  * endpoint added next month is covered by the assertion below on the day it lands rather than
  * on the day somebody remembers it. Vite resolves the glob at build time; the modules
  * themselves are loaded lazily, under the mocks above.
+ *
+ * `import.meta.glob` type-checks here without a `vite/client` reference: Next ships the
+ * ambient `ImportMeta.glob` overloads in `next/types/global.d.ts` for Turbopack, and
+ * `next-env.d.ts` pulls them into the program. Adding `types: ["vite/client"]` to
+ * `tsconfig.json` would both drop the default `@types/*` inclusion and lean on `vite`, which
+ * is a transitive dependency of Vitest rather than one this repo declares.
  */
 const ROUTE_MODULES = import.meta.glob("./**/route.ts") as Record<
   string,
