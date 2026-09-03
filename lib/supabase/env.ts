@@ -19,6 +19,16 @@ const secretSchema = z.object({
   SUPABASE_SECRET_KEY: z.string().min(1),
 });
 
+/**
+ * The Postgres connection string the app's own queries go through. It carries a password, so
+ * like the secret key it is deliberately not `NEXT_PUBLIC_`. Unlike the secret key it grants
+ * no RLS bypass on its own: every query made with it runs inside `asUser()`, which drops to
+ * the `authenticated` role for the length of a transaction. See `db/connection.ts`.
+ */
+const databaseSchema = z.object({
+  DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }),
+});
+
 export type SupabaseBrowserSafeEnv = z.infer<typeof browserSafeSchema>;
 
 /**
@@ -62,4 +72,10 @@ export function readSecretKey(): string {
   return parseEnv(secretSchema, {
     SUPABASE_SECRET_KEY: process.env.SUPABASE_SECRET_KEY,
   }).SUPABASE_SECRET_KEY;
+}
+
+export function readDatabaseUrl(): string {
+  return parseEnv(databaseSchema, {
+    DATABASE_URL: process.env.DATABASE_URL,
+  }).DATABASE_URL;
 }

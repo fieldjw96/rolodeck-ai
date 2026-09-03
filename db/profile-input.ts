@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { issueField } from "../lib/zod/issues";
+
 /**
  * The fixed set of funding stages a Profile can be in. Named and closed rather than a free
  * string, so a source's own spelling ("Series A", "series_a") cannot fragment the Deck's
@@ -57,22 +59,6 @@ export type IngestRejection = {
 export type ProfileInputResult =
   | { readonly success: true; readonly data: ProfileInput }
   | { readonly success: false; readonly rejection: IngestRejection };
-
-/**
- * Names the field an issue belongs to. Most issues carry a path, but a `strictObject`
- * reports an extra key or a non-object payload at the root (`path: []`), where `path.join`
- * would silently produce an empty string and defeat the "name the offending field" rule
- * this schema exists to enforce.
- */
-function issueField(issue: z.core.$ZodIssue): string {
-  if (issue.path.length > 0) {
-    return issue.path.join(".");
-  }
-  if (issue.code === "unrecognized_keys") {
-    return issue.keys.join(", ");
-  }
-  return "(root)";
-}
 
 /**
  * Parses a raw, untrusted record against `profileInputSchema`, reporting the first offending

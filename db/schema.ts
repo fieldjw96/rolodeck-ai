@@ -1,9 +1,11 @@
 import { sql } from "drizzle-orm";
 import {
   check,
+  index,
   jsonb,
   pgPolicy,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   uuid,
@@ -67,6 +69,15 @@ export const profiles = pgTable(
   (table) => [
     check("profiles_provenance_covers_every_field", provenanceCoversEveryField),
     /**
+     * The Deck is paginated by keyset on exactly this order, so the index carries the whole
+     * `where` and `order by` of `readDeckPage` — see `db/deck.ts`.
+     */
+    index("profiles_owner_id_created_at_id_idx").on(
+      table.ownerId,
+      table.createdAt.desc(),
+      table.id.desc(),
+    ),
+    /**
      * The only way to read a Profile is to be signed in as its owner. Defining any policy
      * makes Drizzle enable RLS on the table, so the anonymous role — which Supabase grants
      * table privileges to by default — matches no policy and sees no rows.
@@ -81,3 +92,71 @@ export const profiles = pgTable(
 
 export type Profile = typeof profiles.$inferSelect;
 export type NewProfile = typeof profiles.$inferInsert;
+
+/**
+ * The two swipe actions, spelled as CONTEXT.md spells them. Keep marks a Profile worth a
+ * conversation; Pass dismisses it from the current Deck without deleting the Profile, which
+ * is why a decision is a row of its own rather than a column on `profiles`.
+ */
+export const SWIPE_DECISIONS = ["keep", "pass"] as const;
+
+export type SwipeDecision = (typeof SWIPE_DECISIONS)[number];
+
+const decisionLiterals = SWIPE_DECISIONS.map((value) => `'${value}'`).join(
+  ", ",
+);
+
+export const swipes = pgTable(
+  "swipes",
+  {
+    profileId: uuid("profile_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => authUsers.id, { onDelete: "cascade" }),
+    decision: text("decision").$type<SwipeDecision>().notNull(),
+    decidedAt: timestamp("decided_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    /**
+     * One decision per user per Profile: swiping again is a correction, not a second row, so
+     * the Deck cannot end up excluding a Profile for two contradictory reasons.
+     */
+    primaryKey({ columns: [table.userId, table.profileId] }),
+    // Text plus a check rather than an enum, matching how `provenance` is constrained: the
+    // set is closed in Postgres as well as in TypeScript, including for the ingest path.
+    check(
+      "swipes_decision_is_a_swipe",
+      sql.raw(`decision in (${decisionLiterals})`),
+    ),
+    pgPolicy("swipes_select_own", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`${authUid} = ${table.userId}`,
+    }),
+    /**
+     * A decision can only ever be recorded, or corrected, against the signed-in user, and
+     * only about a Profile that user can see. A foreign key does not consult RLS, so without
+     * the `exists` — which reads `profiles` through its own policy — an id belonging to
+     * somebody else would be accepted here. There is deliberately no delete policy: nothing
+     * in the app un-swipes a Profile.
+     */
+    pgPolicy("swipes_insert_own", {
+      for: "insert",
+      to: authenticatedRole,
+      withCheck: sql`${authUid} = ${table.userId} and exists (select 1 from ${profiles} where ${profiles.id} = ${table.profileId})`,
+    }),
+    pgPolicy("swipes_update_own", {
+      for: "update",
+      to: authenticatedRole,
+      using: sql`${authUid} = ${table.userId}`,
+      withCheck: sql`${authUid} = ${table.userId} and exists (select 1 from ${profiles} where ${profiles.id} = ${table.profileId})`,
+    }),
+  ],
+);
+
+export type Swipe = typeof swipes.$inferSelect;
+export type NewSwipe = typeof swipes.$inferInsert;

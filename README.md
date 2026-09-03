@@ -26,12 +26,30 @@ To run those tests against a real Supabase project instead of the stub, set `SUP
 `SUPABASE_TEST_PUBLISHABLE_KEY` and `SUPABASE_SECRET_KEY`. Use a scratch project: the tests
 create and delete users through the Admin API.
 
+## The Profiles API
+
+Profiles reach the browser only through these route handlers, never by querying Postgres from
+a client. All three require a session and answer `401` without one.
+
+| Endpoint                      | What it does                                                     |
+| ----------------------------- | ---------------------------------------------------------------- |
+| `GET /api/profiles`           | One page of the Deck, newest first                               |
+| `POST /api/profiles/:id/keep` | Records a Keep, which drops the Profile from later pages         |
+| `POST /api/profiles/:id/pass` | Records a Pass, which does the same without deleting the Profile |
+
+`GET` takes `?limit=` (1 to 50, default 20) and `?cursor=`, and answers with the Profiles plus
+a `next_cursor`, which is `null` on the last page. The cursor is opaque: hand back the one the
+previous page issued. Anything else, including a limit outside its range, gets a `422` naming
+the field it objected to.
+
 ## Database
 
 The schema lives in `db/schema.ts`. After changing it, run `npm run db:generate` to write a
 migration into `db/migrations/`, and commit the generated files.
 
-`npm run db:migrate` applies pending migrations to the database at `DATABASE_URL`. Against
+`npm run db:migrate` applies pending migrations to the database at `DATABASE_URL`, which is
+also the connection the app's own queries run on — as the `authenticated` role, with the
+signed-in user's id in `request.jwt.claims`, so every RLS policy applies. See `docs/adr/0005`. Against
 anything that is not a real Supabase project, apply `db/testing/supabase-shim.sql` first: it
 supplies the `anon` and `authenticated` roles, the `auth` schema and `auth.uid()` that the
 migrations and RLS policies expect. The test suite does this for you, against an in-process

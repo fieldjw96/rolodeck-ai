@@ -118,6 +118,32 @@ describe.each(authBackends())("the auth gate, against $name", ({ start }) => {
     expect(response.headers.get("location")).toBe(`${ORIGIN}/login`);
   });
 
+  it("answers an unauthenticated API request with 401 rather than a redirect", async () => {
+    // A fetch follows a redirect, so a gated endpoint that sent one would answer with the
+    // login page and a 200 — the one shape a caller cannot tell from success.
+    const response = await applyAuthGate(request("/api/profiles?limit=5"));
+
+    expect(response.status).toBe(401);
+    expect(response.headers.get("location")).toBeNull();
+    await expect(response.json()).resolves.toEqual({ error: "not signed in" });
+    expect(response.headers.get("cache-control")).toContain("no-store");
+  });
+
+  it("answers an unauthenticated POST to a swipe endpoint with 401 too", async () => {
+    const response = await applyAuthGate(
+      request("/api/profiles/abc/keep", [], "POST"),
+    );
+
+    expect(response.status).toBe(401);
+  });
+
+  it("lets a signed-in API request through to its route handler", async () => {
+    const response = await applyAuthGate(request("/api/profiles", signedIn));
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("location")).toBeNull();
+  });
+
   it("does not let a redirect it issues be cached", async () => {
     const response = await applyAuthGate(request("/"));
 

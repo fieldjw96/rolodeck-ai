@@ -10,18 +10,25 @@ import {
 } from "../testing/sources";
 
 /**
- * The modules that read a session or hold the secret key. Nothing that ships to a browser may
- * import any of them: the first two would carry one request's session into another's bundle,
- * and the third bypasses RLS outright.
+ * The modules that read a session, hold the secret key, or open a connection to Postgres.
+ * Nothing that ships to a browser may import any of them: they would carry one request's
+ * session into another's bundle, bypass RLS outright, or put a database password in a script
+ * tag. CLAUDE.md's rule that nothing in the browser talks to Postgres directly is this list.
  */
 const SERVER_ONLY_MODULES = [
   "lib/supabase/server",
   "lib/supabase/admin",
   "lib/auth/session",
+  "lib/api/authenticated",
+  "db/connection",
 ];
 
 /** The modules that must carry the `server-only` marker, which makes this a build error too. */
-const MUST_BE_MARKED = ["lib/supabase/server.ts", "lib/auth/session.ts"];
+const MUST_BE_MARKED = [
+  "lib/supabase/server.ts",
+  "lib/auth/session.ts",
+  "lib/api/authenticated.ts",
+];
 
 /**
  * Where the secret key is allowed to be named: the app's own boundary for reading it, the
