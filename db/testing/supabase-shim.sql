@@ -21,8 +21,9 @@ $$;
 
 create schema if not exists auth;
 
--- Only the column `profiles.owner_id` references. Auth itself is a separate Ticket; this
--- Ticket assumes an auth.users row exists and nothing more.
+-- Only the column `profiles.owner_id` references. The app's auth gate is tested separately,
+-- against an in-process Supabase Auth stub (see docs/adr/0004); these tests only need an
+-- auth.users row to exist so the foreign key and the RLS policy have something to match on.
 create table if not exists auth.users (
   id uuid primary key
 );
