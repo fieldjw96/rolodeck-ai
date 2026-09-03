@@ -1,0 +1,5 @@
+# Captured from the live source with `curl` and committed byte-for-byte, so a parser test
+# is a test against the real thing. `core.autocrlf` is on by default on Windows and would
+# rewrite every newline on checkout, which is exactly the guarantee these files exist to
+# make. `-text` pins them.
+db/fixtures/*.html -text
