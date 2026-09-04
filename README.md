@@ -57,6 +57,31 @@ CI runs `npm audit --audit-level=high` on every pull request, and `npm run check
 after the build, which greps the client output for the names and values of anything that must
 stay on the server. Run that one yourself after `npm run build`.
 
+## Ingest
+
+`lib/ingest/yc-company-page.ts` turns the HTML of one Y Combinator company page into a
+validated `ProfileInput`, or into a rejection naming the single field that stopped it. It
+parses and nothing else: it does not fetch, and it does not write. Fetching, and discovering
+which companies exist, is a separate concern — YC's directory listing is client-rendered and
+cannot be scraped with a plain GET.
+
+Every field it produces carries provenance per field: the source URL, the capture date, and
+whether the value was `scraped` or `enriched`. `stage` is the one `enriched` field, because a
+company page states headcount but never a funding round. See `docs/adr/0007`.
+
+Tests run offline against the pages in `db/fixtures/`, captured with `curl` and committed
+byte-for-byte — `.gitattributes` marks them `-text` so no checkout rewrites their newlines.
+To add one:
+
+```
+curl https://www.ycombinator.com/companies/<slug> -o db/fixtures/yc-<slug>.html
+```
+
+and write a `db/fixtures/yc-<slug>.meta.json` beside it recording `sourceUrl` and
+`capturedAt`, which is where provenance comes from: the HTML does not carry either. Do not
+hand-write a fixture. A parser tested against invented markup proves nothing about the real
+page, which is the whole reason these are committed rather than generated.
+
 ## Database
 
 The schema lives in `db/schema.ts`. After changing it, run `npm run db:generate` to write a
