@@ -107,18 +107,24 @@ export function Deck() {
   const [state, setState] = useState<DeckState>({ status: "loading" });
   const stateRef = useRef(state);
 
-  useEffect(() => {
-    stateRef.current = state;
-  }, [state]);
+  // Every state change goes through here, and the ref is written first. An effect would have
+  // been a render behind: React flushes a passive effect in a task *after* the commit that
+  // painted the new Profile, so a Keep clicked in that window read a stale `stateRef` — still
+  // "loading" — and `decide` dropped the click on the floor with nothing to show for it. The
+  // click was silently lost in the browser and made `deck.test.tsx` flaky under load.
+  const commit = useCallback((next: DeckState) => {
+    stateRef.current = next;
+    setState(next);
+  }, []);
 
   useEffect(() => {
     fetchPage(null)
-      .then((page) => setState(stateAfter(page)))
+      .then((page) => commit(stateAfter(page)))
       .catch((error: unknown) => {
         console.error(error);
-        setState({ status: "error", message: LOAD_ERROR_MESSAGE });
+        commit({ status: "error", message: LOAD_ERROR_MESSAGE });
       });
-  }, []);
+  }, [commit]);
 
   // Set synchronously, before the `await` inside `recordSwipe`, so a second Keep or Pass
   // fired before the first one's state update lands (arrow-key auto-repeat, a fast double
@@ -128,41 +134,44 @@ export function Deck() {
   // Read from the ref rather than closing over `state`, so this stays one stable function
   // across renders and the keydown listener below does not need to be torn down and rebuilt
   // on every Keep or Pass.
-  const decide = useCallback((decision: Decision) => {
-    const current = stateRef.current;
+  const decide = useCallback(
+    (decision: Decision) => {
+      const current = stateRef.current;
 
-    if (current.status !== "ready" || decidingRef.current) {
-      return;
-    }
+      if (current.status !== "ready" || decidingRef.current) {
+        return;
+      }
 
-    // `current.index` only ever comes from `stateAfter` or `stateAfterAdvancing`, both of
-    // which keep it within `current.profiles`, so a "ready" state always has a Profile here.
-    const profile = current.profiles[current.index]!;
+      // `current.index` only ever comes from `stateAfter` or `stateAfterAdvancing`, both of
+      // which keep it within `current.profiles`, so a "ready" state always has a Profile here.
+      const profile = current.profiles[current.index]!;
 
-    decidingRef.current = true;
+      decidingRef.current = true;
 
-    // A failed `recordSwipe` leaves the Deck exactly where it was: nothing happened
-    // server-side, so the same Profile with its buttons still live is the honest state. A
-    // failed `stateAfterAdvancing`, by contrast, follows a swipe that *did* land — staying on
-    // the same Profile there would look like the decision was never recorded, so that path
-    // gets its own explicit error instead.
-    void recordSwipe(profile.id, decision).then(
-      () =>
-        stateAfterAdvancing(current)
-          .then(setState)
-          .catch((error: unknown) => {
-            console.error(error);
-            setState({ status: "error", message: ADVANCE_ERROR_MESSAGE });
-          })
-          .finally(() => {
-            decidingRef.current = false;
-          }),
-      (error: unknown) => {
-        console.error(error);
-        decidingRef.current = false;
-      },
-    );
-  }, []);
+      // A failed `recordSwipe` leaves the Deck exactly where it was: nothing happened
+      // server-side, so the same Profile with its buttons still live is the honest state. A
+      // failed `stateAfterAdvancing`, by contrast, follows a swipe that *did* land — staying
+      // on the same Profile there would look like the decision was never recorded, so that
+      // path gets its own explicit error instead.
+      void recordSwipe(profile.id, decision).then(
+        () =>
+          stateAfterAdvancing(current)
+            .then(commit)
+            .catch((error: unknown) => {
+              console.error(error);
+              commit({ status: "error", message: ADVANCE_ERROR_MESSAGE });
+            })
+            .finally(() => {
+              decidingRef.current = false;
+            }),
+        (error: unknown) => {
+          console.error(error);
+          decidingRef.current = false;
+        },
+      );
+    },
+    [commit],
+  );
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {

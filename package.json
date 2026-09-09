@@ -15,7 +15,8 @@
     "check:bundle-secrets": "tsx scripts/check-bundle-secrets.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "account:provision": "tsx scripts/provision-account.ts"
+    "account:provision": "tsx scripts/provision-account.ts",
+    "ingest:sec-form-d": "tsx scripts/ingest-sec-form-d.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.5",
