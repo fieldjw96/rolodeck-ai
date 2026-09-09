@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { ErrorBoundary } from "../../../lib/ui/error-boundary";
 import { Watchlist } from "./watchlist";
 
 export const metadata: Metadata = {
@@ -7,5 +8,9 @@ export const metadata: Metadata = {
 };
 
 export default function WatchlistPage() {
-  return <Watchlist />;
+  return (
+    <ErrorBoundary>
+      <Watchlist />
+    </ErrorBoundary>
+  );
 }
