@@ -30,6 +30,18 @@ const databaseSchema = z.object({
 });
 
 /**
+ * The direct Postgres connection ingest writes through — the RLS-bypassing counterpart to
+ * `DATABASE_URL` for the write path, per CLAUDE.md ("the service role key is for ingest
+ * only... never reaches a browser"). Kept as its own variable, and its own schema, rather than
+ * reusing `DATABASE_URL`: the two connect as different roles, and a Run is deliberately handed
+ * one without the other so that running a Source's fetch script here cannot double as a way to
+ * read or write the app's own connection.
+ */
+const ingestDatabaseSchema = z.object({
+  SUPABASE_DB_URL: z.url({ protocol: /^postgres(ql)?$/ }),
+});
+
+/**
  * The one account every Profile belongs to. V1 is single-player per CLAUDE.md, but the id is
  * read from the environment rather than compiled in, because it differs between the real
  * project and any scratch one, and because the ingest path runs under the secret key.
@@ -96,6 +108,12 @@ export function readDatabaseUrl(): string {
   return parseEnv(databaseSchema, {
     DATABASE_URL: process.env.DATABASE_URL,
   }).DATABASE_URL;
+}
+
+export function readIngestDatabaseUrl(): string {
+  return parseEnv(ingestDatabaseSchema, {
+    SUPABASE_DB_URL: process.env.SUPABASE_DB_URL,
+  }).SUPABASE_DB_URL;
 }
 
 export function readOwnerId(): string {

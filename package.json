@@ -16,6 +16,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "account:provision": "tsx scripts/provision-account.ts",
+    "source:show-hn": "tsx scripts/fetch-show-hn.ts",
     "ingest:sec-form-d": "tsx scripts/ingest-sec-form-d.ts"
   },
   "dependencies": {

@@ -82,6 +82,25 @@ and write a `db/fixtures/yc-<slug>.meta.json` beside it recording `sourceUrl` an
 hand-write a fixture. A parser tested against invented markup proves nothing about the real
 page, which is the whole reason these are committed rather than generated.
 
+`lib/ingest/show-hn.ts` reads the same way from Algolia's Hacker News Search API instead of a
+scraped page — free, keyed, and JSON, so nothing here is scraped or parsed out of markup. A
+Show HN post never states funding, so every record gets `stage: "pre-seed"` and `enriched`
+provenance on it: an assumption about what Show HN mostly is, not a fact about any one
+company, and one a later Source with a real funding round can overwrite. `sector` is read from
+the post's own words with a keyword list, and a post whose words match nothing on it is
+rejected rather than guessed at. A post linking to a GitHub repository, a video or a blog post
+is not a company and is rejected the same way. Its fixtures are single-hit Algolia responses
+under `db/fixtures/show-hn-*.json`, captured the same way:
+
+```
+curl "https://hn.algolia.com/api/v1/search?tags=story_<id>" -o db/fixtures/show-hn-<slug>.json
+```
+
+with a `db/fixtures/show-hn-<slug>.meta.json` beside it recording `query` and `capturedAt`.
+`npm run source:show-hn` runs it live, against the real API and a real database, and is not
+part of `npm test` or CI for that reason: it needs `SUPABASE_DB_URL` and `ROLODECK_OWNER_ID`,
+and it exits non-zero if it inserts nothing.
+
 ### Writing what a Source parsed
 
 Whatever a Source parses, it persists the same way: `persistProfiles` in `db/ingest.ts` is the
@@ -94,6 +113,11 @@ Every row it writes is owned by `ROLODECK_OWNER_ID`, and writes are idempotent o
 rather than dealing the Deck a second card for the same company. `source` is a lowercase slug
 naming the Source; `name_key` is the company name case-folded and whitespace-collapsed by
 Postgres itself. See `docs/adr/0008` for why the key is that and not something else.
+
+The connection it writes through is its own: `getIngestDb()` in `db/connection.ts`, built from
+`SUPABASE_DB_URL` rather than the app's own `DATABASE_URL`. That is the RLS bypass CLAUDE.md
+and `docs/adr/0008` describe — the app's connection is a member of `authenticated` on purpose,
+and every Source's fetch script needs the one that is not.
 
 ## Database
 
