@@ -33,6 +33,22 @@ jobs:
       # after the build: it greps what the build produced.
       - run: npm run check:bundle-secrets
 
+  # Ticket #16: an explicit, enforced budget for `/deck` rather than an implicit "it feels
+  # fine". The spec builds and starts its own server against the in-process Supabase Auth
+  # stub — see `e2e/deck-performance.spec.ts` — so, like `migrate`, it needs no secret this
+  # repo's CI does not already have.
+  perf:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+
   # The integration tests run Postgres in-process, which proves the policies behave but not
   # that the migration applies to a stock server. This job is that second question: a
   # scratch Postgres, the Supabase shim, then the migration, from empty.
