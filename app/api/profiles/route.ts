@@ -1,6 +1,7 @@
 import { getDb } from "../../../db/connection";
 import {
-  deckQuerySchema,
+  filterQuerySchema,
+  pagingQuerySchema,
   readDeckPage,
   readKeptProfiles,
   type DeckProfile,
@@ -33,18 +34,18 @@ function toJson(profile: DeckProfile) {
  */
 export const GET = authenticated(async (request, user) => {
   const searchParams = request.nextUrl.searchParams;
-  const query = deckQuerySchema.safeParse({
+  const filter = filterQuerySchema.safeParse({
     filter: searchParams.get("filter") ?? undefined,
-    limit: searchParams.get("limit") ?? undefined,
-    cursor: searchParams.get("cursor") ?? undefined,
   });
 
-  if (!query.success) {
-    return unprocessable(query.error);
+  if (!filter.success) {
+    return unprocessable(filter.error);
   }
 
-  // The Watchlist: every Kept Profile, unpaged. See `readKeptProfiles`.
-  if (query.data.filter === "kept") {
+  // The Watchlist: every Kept Profile, unpaged. See `readKeptProfiles`. `limit`/`cursor` are
+  // never parsed here, so a Watchlist caller sending either is not 422'd for paging it does
+  // not use.
+  if (filter.data.filter === "kept") {
     const kept = await asUser(getDb(), user.id, (tx) =>
       readKeptProfiles(tx, user.id),
     );
@@ -52,11 +53,20 @@ export const GET = authenticated(async (request, user) => {
     return Response.json({ profiles: kept.map(toJson), next_cursor: null });
   }
 
+  const paging = pagingQuerySchema.safeParse({
+    limit: searchParams.get("limit") ?? undefined,
+    cursor: searchParams.get("cursor") ?? undefined,
+  });
+
+  if (!paging.success) {
+    return unprocessable(paging.error);
+  }
+
   const page = await asUser(getDb(), user.id, (tx) =>
     readDeckPage(tx, {
       userId: user.id,
-      limit: query.data.limit,
-      cursor: query.data.cursor,
+      limit: paging.data.limit,
+      cursor: paging.data.cursor,
     }),
   );
 

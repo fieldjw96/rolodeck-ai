@@ -26,6 +26,10 @@ export const EMPTY_WATCHLIST_MESSAGE = "You haven't Kept any Profiles yet.";
  * at an explicit message rather than a Watchlist stuck on "loading" forever. */
 export const LOAD_ERROR_MESSAGE = "Couldn't load the Watchlist.";
 
+/** Shown while `GET /api/profiles?filter=kept` is in flight, so assistive tech has something
+ * to announce rather than a screen that renders nothing at all. */
+export const LOADING_WATCHLIST_MESSAGE = "Loading Watchlist…";
+
 async function fetchKept(): Promise<ProfilesPage> {
   const response = await fetch("/api/profiles?filter=kept");
 
@@ -62,7 +66,7 @@ export function Watchlist() {
   }, []);
 
   if (state.status === "loading") {
-    return null;
+    return <p aria-busy="true">{LOADING_WATCHLIST_MESSAGE}</p>;
   }
 
   if (state.status === "error") {

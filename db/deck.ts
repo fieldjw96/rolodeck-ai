@@ -51,14 +51,22 @@ export function decodeCursor(raw: string): DeckCursor | null {
 }
 
 /**
- * The query string of `GET /api/profiles`, which is external input like any other. `limit`
- * and `cursor` page the Deck; `filter` switches the endpoint to the Watchlist instead, which
- * has no paging of its own — see `readKeptProfiles`. `limit` is clamped by rejection rather
- * than by silently capping, so a caller asking for 500 Profiles is told no instead of quietly
- * getting 50.
+ * The `filter` param of `GET /api/profiles`, checked on its own and before paging is
+ * considered at all: a caller asking for `filter=kept` gets the Watchlist regardless of
+ * what `limit` or `cursor` it also sent, since the Watchlist ignores both — see
+ * `readKeptProfiles`.
  */
-export const deckQuerySchema = z.object({
+export const filterQuerySchema = z.object({
   filter: z.enum(["kept"], { error: "must be 'kept'" }).optional(),
+});
+
+/**
+ * `limit` and `cursor`, the Deck's own paging params — parsed only once a request is known
+ * not to be `filter=kept`, so a Watchlist caller is never 422'd over paging it does not use.
+ * `limit` is clamped by rejection rather than by silently capping, so a caller asking for 500
+ * Profiles is told no instead of quietly getting 50.
+ */
+export const pagingQuerySchema = z.object({
   limit: z.coerce
     .number({ error: "must be a number" })
     .int("must be a whole number of Profiles")
