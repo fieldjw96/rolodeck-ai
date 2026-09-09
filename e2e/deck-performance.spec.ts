@@ -51,6 +51,10 @@ let server: ChildProcess | undefined;
 let baseURL: string;
 
 test.beforeAll(async () => {
+  // Headroom over `buildApp`'s own 8-minute limit, so a slow cold build fails as "next build
+  // did not finish", quoting the build, rather than as a bare hook timeout naming nothing.
+  test.setTimeout(12 * 60 * 1000);
+
   backend = await stubBackend();
 
   const env: NodeJS.ProcessEnv = {
@@ -59,7 +63,7 @@ test.beforeAll(async () => {
     NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: backend.publishableKey,
   };
 
-  buildApp(env);
+  await buildApp(env);
 
   const port = await getFreePort();
   baseURL = `http://127.0.0.1:${String(port)}`;
@@ -73,6 +77,12 @@ test.beforeAll(async () => {
 // down what it did manage to start. Reaching straight for `server.kill()` would throw a
 // TypeError on an undefined server and bury the error that actually stopped the suite.
 test.afterAll(async () => {
+  // Teardown is bounded too. Every step below already escalates rather than waiting forever,
+  // but this is the backstop that decides the shape of the failure if one ever does wait: a
+  // named afterAll timeout, against a run that otherwise ends with its tests passed and no
+  // result reported.
+  test.setTimeout(60_000);
+
   if (server !== undefined) {
     await stopApp(server);
   }
