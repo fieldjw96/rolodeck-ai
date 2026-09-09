@@ -27,3 +27,9 @@ _Avoid_: like/dislike, save/skip, accept/reject
 Where a Profile field's value came from: `scraped`, `enriched`, or `jack`. Carried per
 field, not per Profile, matching rolodeck's own rule so the two repos stay comparable.
 _Avoid_: source, origin
+
+**Source**:
+One place Profiles are ingested from — SEC filings, Show HN, an accelerator's own pages —
+named as a lowercase slug. A Source is where a record came from; its Provenance is what kind
+of value each of its fields is.
+_Avoid_: feed, provider, site

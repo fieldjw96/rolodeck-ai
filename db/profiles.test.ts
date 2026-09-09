@@ -56,6 +56,7 @@ describe("profiles provenance", () => {
       .insert(profiles)
       .values({
         ownerId: JACK,
+        source: "test",
         name: "Sprocket",
         description: "Developer tooling for warehouse robotics.",
         sector: "Robotics",
@@ -83,6 +84,7 @@ describe("profiles provenance", () => {
       .insert(profiles)
       .values({
         ownerId: JACK,
+        source: "test",
         name: "Quiet Co",
         description: "Stealth, no site yet.",
         sector: "Unknown",
@@ -103,6 +105,7 @@ describe("profiles provenance", () => {
     const violated = await constraintViolatedBy(
       scratch.db.insert(profiles).values({
         ownerId: JACK,
+        source: "test",
         name: "Sprocket",
         description: "Developer tooling for warehouse robotics.",
         sector: "Robotics",
@@ -119,6 +122,7 @@ describe("profiles provenance", () => {
     const violated = await constraintViolatedBy(
       scratch.db.insert(profiles).values({
         ownerId: JACK,
+        source: "test",
         name: "Sprocket",
         description: "Developer tooling for warehouse robotics.",
         sector: "Robotics",
@@ -138,6 +142,7 @@ describe("profiles provenance", () => {
     const violated = await constraintViolatedBy(
       scratch.db.insert(profiles).values({
         ownerId: JACK,
+        source: "test",
         name: "Quiet Co",
         description: "Stealth, no site yet.",
         sector: "Unknown",
@@ -154,6 +159,7 @@ describe("profiles provenance", () => {
     const violated = await constraintViolatedBy(
       scratch.db.insert(profiles).values({
         ownerId: JACK,
+        source: "test",
         name: "Sprocket",
         description: "Developer tooling for warehouse robotics.",
         sector: "Robotics",
@@ -170,6 +176,7 @@ describe("profiles provenance", () => {
     const violated = await constraintViolatedBy(
       scratch.db.insert(profiles).values({
         ownerId: "33333333-3333-3333-3333-333333333333",
+        source: "test",
         name: "Orphan",
         description: "No owner.",
         sector: "Robotics",
@@ -188,6 +195,7 @@ describe("profiles row level security", () => {
     await scratch.db.insert(profiles).values([
       {
         ownerId: JACK,
+        source: "test",
         name: "Sprocket",
         description: "Developer tooling for warehouse robotics.",
         sector: "Robotics",
@@ -197,6 +205,7 @@ describe("profiles row level security", () => {
       },
       {
         ownerId: SOMEONE_ELSE,
+        source: "test",
         name: "Not Jack's",
         description: "Belongs to another account.",
         sector: "Fintech",

@@ -15,6 +15,13 @@
       "when": 1788406125611,
       "tag": "0001_swipes",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788943340789,
+      "tag": "0002_profile_natural_key",
+      "breakpoints": true
     }
   ]
 }
