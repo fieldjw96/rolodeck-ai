@@ -7,6 +7,7 @@ import {
   decodeCursor,
   encodeCursor,
   readDeckPage,
+  readKeptProfiles,
   recordSwipe,
   type DeckCursor,
   type DeckPage,
@@ -265,6 +266,76 @@ describe("recording a swipe", () => {
     );
 
     expect(names(page)).toEqual(["Startup 0"]);
+  });
+});
+
+describe("reading the Watchlist", () => {
+  it("returns nothing when nothing has been Kept", async () => {
+    await seed(2);
+
+    const kept = await asUser(scratch.db, JACK, (tx) =>
+      readKeptProfiles(tx, JACK),
+    );
+
+    expect(kept).toEqual([]);
+  });
+
+  it("returns every Kept Profile, newest decision first", async () => {
+    const [decidedFirst, decidedSecond] = await seed(2);
+
+    // Inserted directly with explicit, well-separated timestamps rather than through
+    // `recordSwipe`, so the order asserted below is a fact about `decidedAt` and not a race
+    // against the wall clock.
+    await scratch.db.insert(swipes).values([
+      {
+        userId: JACK,
+        profileId: decidedFirst!,
+        decision: "keep",
+        decidedAt: new Date(FIRST_CREATED_AT),
+      },
+      {
+        userId: JACK,
+        profileId: decidedSecond!,
+        decision: "keep",
+        decidedAt: new Date(FIRST_CREATED_AT + 60_000),
+      },
+    ]);
+
+    const kept = await asUser(scratch.db, JACK, (tx) =>
+      readKeptProfiles(tx, JACK),
+    );
+
+    expect(kept.map((profile) => profile.name)).toEqual([
+      "Startup 1",
+      "Startup 0",
+    ]);
+  });
+
+  it("excludes a Passed Profile", async () => {
+    const [only] = await seed(1);
+
+    await asUser(scratch.db, JACK, (tx) =>
+      recordSwipe(tx, { userId: JACK, profileId: only!, decision: "pass" }),
+    );
+
+    const kept = await asUser(scratch.db, JACK, (tx) =>
+      readKeptProfiles(tx, JACK),
+    );
+
+    expect(kept).toEqual([]);
+  });
+
+  it("shows nobody else's Kept Profiles", async () => {
+    const [theirs] = await seed(1, SOMEONE_ELSE);
+    await scratch.db
+      .insert(swipes)
+      .values({ userId: SOMEONE_ELSE, profileId: theirs!, decision: "keep" });
+
+    const kept = await asUser(scratch.db, JACK, (tx) =>
+      readKeptProfiles(tx, JACK),
+    );
+
+    expect(kept).toEqual([]);
   });
 });
 
