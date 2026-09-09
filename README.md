@@ -82,6 +82,19 @@ and write a `db/fixtures/yc-<slug>.meta.json` beside it recording `sourceUrl` an
 hand-write a fixture. A parser tested against invented markup proves nothing about the real
 page, which is the whole reason these are committed rather than generated.
 
+### Writing what a Source parsed
+
+Whatever a Source parses, it persists the same way: `persistProfiles` in `db/ingest.ts` is the
+only write path into `profiles`, so a new Source Ticket is about fetching and parsing and
+nothing else. It takes records — it never fetches — and returns how many it inserted, how many
+it updated, and how many it rejected with the offending field named for each.
+
+Every row it writes is owned by `ROLODECK_OWNER_ID`, and writes are idempotent on
+`(owner_id, source, name_key)`: running a Source again updates the Profiles it wrote last time
+rather than dealing the Deck a second card for the same company. `source` is a lowercase slug
+naming the Source; `name_key` is the company name case-folded and whitespace-collapsed by
+Postgres itself. See `docs/adr/0008` for why the key is that and not something else.
+
 ## Database
 
 The schema lives in `db/schema.ts`. After changing it, run `npm run db:generate` to write a

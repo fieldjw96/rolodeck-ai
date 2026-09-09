@@ -274,11 +274,17 @@ describe("recording a swipe", () => {
  * app itself connect as.
  */
 describe("row level security under the Deck", () => {
+  /** The one Profile Jack owns here. Named so a test can point at it without seeding a
+   * second, which is now a duplicate rather than a fixture: `seedProfiles` writes the same
+   * names under the same source, and that is exactly the natural key of docs/adr/0008. */
+  let jacksOnlyProfile: string;
+
   beforeEach(async () => {
     const [only] = await seed(1);
+    jacksOnlyProfile = only!;
     await scratch.db
       .insert(swipes)
-      .values({ userId: JACK, profileId: only!, decision: "keep" });
+      .values({ userId: JACK, profileId: jacksOnlyProfile, decision: "keep" });
   });
 
   it("shows the anonymous role no Profiles and no swipes", async () => {
@@ -308,14 +314,13 @@ describe("row level security under the Deck", () => {
   });
 
   it("refuses a swipe about a Profile the user cannot see", async () => {
-    const [jacks] = await seed(1);
     await scratch.as("authenticated", SOMEONE_ELSE);
 
     await expect(
       refusalFrom(
         scratch.db.insert(swipes).values({
           userId: SOMEONE_ELSE,
-          profileId: jacks!,
+          profileId: jacksOnlyProfile,
           decision: "keep",
         }),
       ),

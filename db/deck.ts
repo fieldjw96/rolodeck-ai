@@ -80,7 +80,11 @@ export const deckQuerySchema = z.object({
     .optional(),
 });
 
-/** The Profile as the Deck deals it: everything but `owner_id`, which is always the reader. */
+/**
+ * The Profile as the Deck deals it. `owner_id` is left out because it is always the reader;
+ * `source` and `name_key` because they are ingest's bookkeeping — which pipeline wrote the row
+ * and what it deduplicates on — and say nothing about the company on the card.
+ */
 const deckColumns = {
   id: profiles.id,
   name: profiles.name,
@@ -92,7 +96,7 @@ const deckColumns = {
   createdAt: profiles.createdAt,
 };
 
-export type DeckProfile = Omit<Profile, "ownerId">;
+export type DeckProfile = Omit<Profile, "ownerId" | "source" | "nameKey">;
 
 export type DeckPage = {
   profiles: DeckProfile[];

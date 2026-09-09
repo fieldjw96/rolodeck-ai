@@ -22,6 +22,9 @@ export const seededName = (index: number) => `Startup ${index}`;
  * `count` Profiles, oldest first: `seedProfiles(3)` returns the ids of Startup 0, 1 and 2, and
  * the Deck deals them back in the opposite order. Written as the superuser, which bypasses
  * RLS — a test arranging its fixtures is not the thing under test.
+ *
+ * Once per owner: the names repeat, and `(owner_id, source, name_key)` is unique per
+ * docs/adr/0008, so a second call for the same owner is a duplicate and Postgres says so.
  */
 export async function seedProfiles(
   db: Database,
@@ -32,6 +35,7 @@ export async function seedProfiles(
     .values(
       Array.from({ length: count }, (_unused, index) => ({
         ownerId,
+        source: "seed",
         name: seededName(index),
         description: "Seeded for the Deck.",
         sector: "Robotics",

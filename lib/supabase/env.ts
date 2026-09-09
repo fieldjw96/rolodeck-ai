@@ -29,6 +29,23 @@ const databaseSchema = z.object({
   DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }),
 });
 
+/**
+ * The one account every Profile belongs to. V1 is single-player per CLAUDE.md, but the id is
+ * read from the environment rather than compiled in, because it differs between the real
+ * project and any scratch one, and because the ingest path runs under the secret key.
+ *
+ * Getting this wrong is the quietest failure in the app: a Profile written with an `owner_id`
+ * nobody signs in as is not wrong-looking, it is invisible — no RLS policy matches it — and
+ * ingest, which bypasses RLS, would never notice. Hence a parse rather than a read.
+ *
+ * `z.guid()` rather than `z.uuid()`, matching `db/deck.ts`: Postgres's `uuid` type accepts any
+ * 128 bits laid out as hex, and a boundary stricter than the column it guards would reject an
+ * id the database is perfectly happy to hold.
+ */
+const ownerSchema = z.object({
+  ROLODECK_OWNER_ID: z.guid(),
+});
+
 export type SupabaseBrowserSafeEnv = z.infer<typeof browserSafeSchema>;
 
 /**
@@ -39,6 +56,7 @@ export type SupabaseBrowserSafeEnv = z.infer<typeof browserSafeSchema>;
 function parseEnv<Schema extends z.ZodType>(
   schema: Schema,
   raw: unknown,
+  subject = "Supabase environment",
 ): z.infer<Schema> {
   const result = schema.safeParse(raw);
 
@@ -50,7 +68,7 @@ function parseEnv<Schema extends z.ZodType>(
     .map((issue) => `${issue.path.join(".") || "(root)"}: ${issue.message}`)
     .join("; ");
 
-  throw new Error(`Supabase environment is not configured — ${detail}`);
+  throw new Error(`${subject} is not configured — ${detail}`);
 }
 
 /**
@@ -78,4 +96,12 @@ export function readDatabaseUrl(): string {
   return parseEnv(databaseSchema, {
     DATABASE_URL: process.env.DATABASE_URL,
   }).DATABASE_URL;
+}
+
+export function readOwnerId(): string {
+  return parseEnv(
+    ownerSchema,
+    { ROLODECK_OWNER_ID: process.env.ROLODECK_OWNER_ID },
+    "The account that owns every Profile",
+  ).ROLODECK_OWNER_ID;
 }
