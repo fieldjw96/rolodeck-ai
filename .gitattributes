@@ -3,3 +3,5 @@
 # rewrite every newline on checkout, which is exactly the guarantee these files exist to
 # make. `-text` pins them.
 db/fixtures/*.html -text
+db/fixtures/show-hn-*.json -text
+db/fixtures/*.meta.json text
