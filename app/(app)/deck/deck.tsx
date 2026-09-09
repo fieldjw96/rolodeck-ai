@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
 type Profile = {
   id: string;
@@ -107,7 +107,7 @@ export function Deck() {
   const [state, setState] = useState<DeckState>({ status: "loading" });
   const stateRef = useRef(state);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     stateRef.current = state;
   }, [state]);
 
