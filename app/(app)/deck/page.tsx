@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { ErrorBoundary } from "../../../lib/ui/error-boundary";
 import { Deck } from "./deck";
 
 export const metadata: Metadata = {
@@ -7,5 +8,9 @@ export const metadata: Metadata = {
 };
 
 export default function DeckPage() {
-  return <Deck />;
+  return (
+    <ErrorBoundary>
+      <Deck />
+    </ErrorBoundary>
+  );
 }
