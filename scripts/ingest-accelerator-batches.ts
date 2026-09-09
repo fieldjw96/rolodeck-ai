@@ -45,6 +45,19 @@ import {
  * no company list at all. Both are dropped and named here rather than shipping a parser that
  * returns nothing and reports fine.
  *
+ * Known limitation: a company already present under `sec-form-d` or `show-hn` is not matched
+ * here. `persistProfiles`'s natural key is `(owner_id, source, name_key)` — `source` is part
+ * of the key by design (docs/adr/0008), specifically so two Sources describing the same
+ * company do not collide and silently overwrite each other's `sector`, `stage` and
+ * provenance. That ADR names the resulting cost directly: "a company found by two Sources is
+ * two cards in the Deck until some later Ticket takes that on." Reconciling two Sources'
+ * accounts of one company is entity resolution — it needs a rule for which field wins — and
+ * ADR 0008 is explicit that this is not a thing to decide inside a single source's write path.
+ * This Source is exactly the overlap case: South Park Commons and AngelPad both pick from
+ * companies that may already have a `sec-form-d` or `show-hn` Profile, and running this script
+ * deals the Deck a second card for those. Left for the later Ticket ADR 0008 already points to,
+ * not solved here.
+ *
  * Exits non-zero when the run wrote nothing at all, across both sources. A scraper whose
  * selectors have gone stale returns zero rows and reports success, and that silence is the
  * failure this project keeps meeting.
