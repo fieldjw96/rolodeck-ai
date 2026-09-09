@@ -10,3 +10,5 @@ db/migrations
 # destroy the only thing they prove. Their .meta.json siblings are ours, and stay formatted.
 db/fixtures/*.html
 db/fixtures/*.xml
+# Raw investigation captures, not shipped source.
+.scratch
