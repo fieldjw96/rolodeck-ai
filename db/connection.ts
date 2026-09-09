@@ -3,7 +3,7 @@ import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
-import { readDatabaseUrl } from "../lib/supabase/env";
+import { readDatabaseUrl, readIngestDatabaseUrl } from "../lib/supabase/env";
 import * as schema from "./schema";
 
 /**
@@ -39,4 +39,25 @@ export function getDb(): Database {
   }
 
   return connection;
+}
+
+let ingestConnection: Database | null = null;
+
+/**
+ * Ingest's connection to Postgres, made once per process. Connected on `SUPABASE_DB_URL`, the
+ * direct connection string, which reaches Postgres as the `postgres` superuser and bypasses RLS
+ * completely — the Drizzle equivalent of the secret key in `lib/supabase/admin.ts`, and per
+ * CLAUDE.md it belongs to the same ingest-only scope. `getDb()`'s connection is a member of
+ * `authenticated`, which has no insert policy on `profiles`; writing through it is what
+ * `db/ingest.test.ts` proves Postgres itself refuses.
+ */
+export function getIngestDb(): Database {
+  if (ingestConnection === null) {
+    ingestConnection = drizzle(
+      postgres(readIngestDatabaseUrl(), { prepare: false }),
+      { schema },
+    );
+  }
+
+  return ingestConnection;
 }

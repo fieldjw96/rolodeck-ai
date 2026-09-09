@@ -1,4 +1,4 @@
-import { getDb } from "../db/connection";
+import { getIngestDb } from "../db/connection";
 import { backfillSeedProfiles } from "../db/seed-fallback";
 
 /**
@@ -6,10 +6,13 @@ import { backfillSeedProfiles } from "../db/seed-fallback";
  * this file is a database connection in, a log line out. Safe to run more than once — see
  * `backfillSeedProfiles`'s own idempotency guarantee.
  *
- *     DATABASE_URL=... ROLODECK_OWNER_ID=... npm run ingest:seed
+ * Connects through `getIngestDb()`, not `getDb()`: the backfill writes to `profiles` through
+ * `persistProfiles`, and only the RLS-bypassing connection has anywhere to write.
+ *
+ *     SUPABASE_DB_URL=... ROLODECK_OWNER_ID=... npm run ingest:seed
  */
 async function main(): Promise<void> {
-  const report = await backfillSeedProfiles(getDb());
+  const report = await backfillSeedProfiles(getIngestDb());
 
   if (report.added === 0) {
     console.log(

@@ -30,6 +30,16 @@ const databaseSchema = z.object({
 });
 
 /**
+ * Supabase's direct connection string, which connects as the `postgres` superuser and bypasses
+ * RLS completely. This is `db/connection.ts`'s equivalent of the secret key: per CLAUDE.md it
+ * belongs to ingest alone, and it is what lets `persistProfiles` write to `profiles` at all —
+ * `DATABASE_URL`'s `authenticated`-role connection has no insert policy to write through.
+ */
+const ingestDatabaseSchema = z.object({
+  SUPABASE_DB_URL: z.url({ protocol: /^postgres(ql)?$/ }),
+});
+
+/**
  * The one account every Profile belongs to. V1 is single-player per CLAUDE.md, but the id is
  * read from the environment rather than compiled in, because it differs between the real
  * project and any scratch one, and because the ingest path runs under the secret key.
@@ -96,6 +106,12 @@ export function readDatabaseUrl(): string {
   return parseEnv(databaseSchema, {
     DATABASE_URL: process.env.DATABASE_URL,
   }).DATABASE_URL;
+}
+
+export function readIngestDatabaseUrl(): string {
+  return parseEnv(ingestDatabaseSchema, {
+    SUPABASE_DB_URL: process.env.SUPABASE_DB_URL,
+  }).SUPABASE_DB_URL;
 }
 
 export function readOwnerId(): string {

@@ -107,3 +107,8 @@ anything that is not a real Supabase project, apply `db/testing/supabase-shim.sq
 supplies the `anon` and `authenticated` roles, the `auth` schema and `auth.uid()` that the
 migrations and RLS policies expect. The test suite does this for you, against an in-process
 Postgres, so no database needs to be running to run `npm run test`.
+
+Ingest connects separately, on `SUPABASE_DB_URL` through `getIngestDb()` in `db/connection.ts`.
+It is Supabase's direct connection string, as the `postgres` superuser, and so bypasses RLS —
+`DATABASE_URL`'s `authenticated` role has no insert policy on `profiles` to write through. Per
+CLAUDE.md this connection belongs to ingest alone, same as the secret key.
