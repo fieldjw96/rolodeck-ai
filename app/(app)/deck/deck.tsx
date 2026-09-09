@@ -1,6 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 
 type Profile = {
   id: string;
@@ -107,7 +113,11 @@ export function Deck() {
   const [state, setState] = useState<DeckState>({ status: "loading" });
   const stateRef = useRef(state);
 
-  useEffect(() => {
+  // `useLayoutEffect`, not `useEffect`: it flushes synchronously during commit, before the
+  // browser can dispatch another event, so a click landing right after a state update always
+  // sees the latest value here. A passive effect flushes later, leaving a real gap in which a
+  // fast keydown auto-repeat (or CI's more concurrent scheduling) reads a stale ref and no-ops.
+  useLayoutEffect(() => {
     stateRef.current = state;
   }, [state]);
 
