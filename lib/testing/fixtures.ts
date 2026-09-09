@@ -47,6 +47,20 @@ export function readCompanyFixtures(
   return Promise.all(slugs.map(readCompanyFixture));
 }
 
+export type AcceleratorFixture = {
+  readonly slug: string;
+  readonly html: string;
+  readonly capture: Capture;
+};
+
+/** One captured accelerator batch page — South Park Commons, AngelPad. */
+export async function readAcceleratorFixture(
+  slug: string,
+): Promise<AcceleratorFixture> {
+  const { text, capture } = await readFixture(slug, "html");
+  return { slug, html: text, capture };
+}
+
 export type FilingFixture = FormDFiling & { readonly slug: string };
 
 /** One captured SEC Form D, as EDGAR served its `primary_doc.xml`. */

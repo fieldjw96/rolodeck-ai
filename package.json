@@ -16,7 +16,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "account:provision": "tsx scripts/provision-account.ts",
-    "ingest:sec-form-d": "tsx scripts/ingest-sec-form-d.ts"
+    "ingest:sec-form-d": "tsx scripts/ingest-sec-form-d.ts",
+    "ingest:accelerators": "tsx scripts/ingest-accelerator-batches.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.5",
