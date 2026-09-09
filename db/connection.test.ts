@@ -64,14 +64,11 @@ describe("ingest's connection to Postgres", () => {
     ["is empty", ""],
     ["is not a URL at all", "localhost:5432"],
     ["points somewhere that is not Postgres", "https://example.com/db"],
-  ])(
-    "fails naming SUPABASE_DB_URL when it %s",
-    async (_description, value) => {
-      vi.stubEnv("SUPABASE_DB_URL", value);
+  ])("fails naming SUPABASE_DB_URL when it %s", async (_description, value) => {
+    vi.stubEnv("SUPABASE_DB_URL", value);
 
-      const { getIngestDb } = await freshModule();
+    const { getIngestDb } = await freshModule();
 
-      expect(() => getIngestDb()).toThrow(/SUPABASE_DB_URL/);
-    },
-  );
+    expect(() => getIngestDb()).toThrow(/SUPABASE_DB_URL/);
+  });
 });

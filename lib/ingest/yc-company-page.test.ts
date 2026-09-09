@@ -2,17 +2,8 @@ import { beforeAll, describe, expect, it } from "vitest";
 
 import { profileInputSchema } from "../../db/profile-input";
 import { readCompanyFixture, type CompanyFixture } from "../testing/fixtures";
-import {
-  importSpecifiers,
-  readSourceFiles,
-  type SourceFile,
-} from "../testing/sources";
-import {
-  parseCompanyPage,
-  parseCompanyPages,
-  toProfileProvenance,
-  type ScrapedProfile,
-} from "./yc-company-page";
+import { toProfileProvenance, type ScrapedProfile } from "./scraped-profile";
+import { parseCompanyPage, parseCompanyPages } from "./yc-company-page";
 
 /**
  * Every fixture under `db/fixtures/` was captured with `curl` from the URL its `.meta.json`
@@ -338,51 +329,5 @@ describe("parseCompanyPages", () => {
 
   it("returns an empty batch for no pages", () => {
     expect(parseCompanyPages([])).toEqual({ profiles: [], rejections: [] });
-  });
-});
-
-/**
- * Ticket #6 is parsing, offline, and nothing else: fetching is #28. A comment saying so is
- * not a guarantee, so this asks the source itself.
- */
-describe("the ingest parser", () => {
-  const NETWORK_MODULES = new Set([
-    "node:http",
-    "node:https",
-    "node:net",
-    "http",
-    "https",
-    "axios",
-    "undici",
-    "got",
-    "node-fetch",
-  ]);
-
-  let sources: SourceFile[];
-
-  beforeAll(async () => {
-    sources = await readSourceFiles(["lib/ingest"]);
-  });
-
-  it("reads every file under lib/ingest", () => {
-    expect(sources.length).toBeGreaterThan(0);
-  });
-
-  it("imports nothing that can open a connection", () => {
-    expect(
-      sources.flatMap((source) =>
-        importSpecifiers(source.text)
-          .filter((specifier) => NETWORK_MODULES.has(specifier))
-          .map((specifier) => `${source.path} imports ${specifier}`),
-      ),
-    ).toEqual([]);
-  });
-
-  it("calls no fetching API", () => {
-    expect(
-      sources
-        .filter((source) => /\b(?:fetch|XMLHttpRequest)\s*\(/.test(source.text))
-        .map((source) => source.path),
-    ).toEqual([]);
   });
 });

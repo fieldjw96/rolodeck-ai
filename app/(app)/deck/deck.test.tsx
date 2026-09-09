@@ -65,6 +65,24 @@ function stubFetch(answers: Record<string, unknown>): ReturnType<typeof vi.fn> {
   return fetchMock;
 }
 
+/**
+ * Resolves in the microtask straight after React commits its next change to `container` —
+ * which is before the passive effects of that commit have run, because React schedules those
+ * as a separate task. That gap is a real one in a browser: it is the moment a Profile is on
+ * screen with live buttons and the component's own effects have not caught up yet. Waiting
+ * this way rather than with `findBy` is what makes the test below land in it every time.
+ */
+function nextPaint(container: Element): Promise<void> {
+  return new Promise((resolve) => {
+    const observer = new MutationObserver(() => {
+      observer.disconnect();
+      resolve();
+    });
+
+    observer.observe(container, { childList: true, subtree: true });
+  });
+}
+
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
@@ -380,5 +398,35 @@ describe("the Deck", () => {
       ([url]) => url === `/api/profiles/${acme.id}/keep`,
     );
     expect(keepCalls).toHaveLength(1);
+  });
+
+  it("takes a Keep clicked the instant the first Profile appears, before its effects have run", async () => {
+    const fetchMock = stubFetch({
+      "GET /api/profiles": {
+        profiles: [acme, globex],
+        next_cursor: null,
+      },
+      [`POST /api/profiles/${acme.id}/keep`]: {
+        profile_id: acme.id,
+        decision: "keep",
+        decided_at: new Date().toISOString(),
+      },
+    });
+
+    const { container } = render(<Deck />);
+
+    await nextPaint(container);
+
+    fireEvent.click(screen.getByRole("button", { name: "Keep" }));
+
+    // A decision read from a `stateRef` the render had not caught up with was dropped on the
+    // floor: no request, no advance, and nothing on screen to say the click had happened.
+    expect(fetchMock).toHaveBeenCalledWith(
+      `/api/profiles/${acme.id}/keep`,
+      expect.objectContaining({ method: "POST" }),
+    );
+    expect(
+      await screen.findByRole("heading", { name: "Globex" }),
+    ).toBeInTheDocument();
   });
 });

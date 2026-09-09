@@ -14,8 +14,14 @@ export default defineConfig({
   retries: 0,
   reporter: "line",
   // The suite's own beforeAll builds the app with Turbopack before it starts the server,
-  // which is most of this: comfortably longer than Playwright's 30s default.
+  // which is most of this: comfortably longer than Playwright's 30s default. The hook raises
+  // its own budget past this again — see `deck-performance.spec.ts`.
   timeout: 5 * 60 * 1000,
+  // The outermost bound, under the `perf` job's own `timeout-minutes`. Every layer inside this
+  // one already fails with a message; this is what guarantees the *run* does too. A job killed
+  // by GitHub's timeout is reported with no Playwright output at all, which is a red check
+  // whose log says nothing about why — the failure this suite has already cost a cycle on.
+  globalTimeout: 20 * 60 * 1000,
   projects: [
     {
       name: "chromium",
