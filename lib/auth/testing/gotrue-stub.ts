@@ -207,9 +207,17 @@ export async function startGoTrueStub(): Promise<GoTrueStub> {
     url: `http://127.0.0.1:${port}`,
     secretKey: SECRET_KEY,
     publishableKey: PUBLISHABLE_KEY,
+    // `close` alone stops the stub accepting *new* connections and then waits for every open
+    // one to end on its own. Both `@supabase/supabase-js` and the app's middleware reach this
+    // stub through `fetch`, which keeps its sockets alive between requests, so an idle
+    // keep-alive connection is the normal state at teardown and `close` would sit on it. The
+    // callers are all tests that are finished with it, so tearing the sockets down first is
+    // correct — and it is the difference between a suite that ends and one that hangs until
+    // the runner's own timeout kills it with nothing to show.
     close: () =>
       new Promise<void>((resolve, reject) => {
         server.close((error) => (error ? reject(error) : resolve()));
+        server.closeAllConnections();
       }),
   };
 }

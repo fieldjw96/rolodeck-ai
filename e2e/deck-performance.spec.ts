@@ -11,7 +11,7 @@ import {
   type ThrowawayUser,
 } from "../lib/auth/testing/auth-backend";
 import { deckClientBundleGzipBytes } from "./support/bundle-size";
-import { buildApp, getFreePort, startApp } from "./support/server";
+import { buildApp, getFreePort, startApp, stopApp } from "./support/server";
 
 /** Playwright's own budget for the Ticket, in milliseconds. */
 const FCP_BUDGET_MS = 2500;
@@ -44,10 +44,10 @@ const NEXT_DIR = path.join(process.cwd(), ".next");
  * *running* app at the stub means building against it, which means this suite builds and
  * starts its own server rather than reusing whatever `npm run build` already produced.
  */
-let backend: AuthBackend;
-let user: ThrowawayUser;
+let backend: AuthBackend | undefined;
+let user: ThrowawayUser | undefined;
 let cookies: CookiePair[];
-let server: ChildProcess;
+let server: ChildProcess | undefined;
 let baseURL: string;
 
 test.beforeAll(async () => {
@@ -69,10 +69,21 @@ test.beforeAll(async () => {
   cookies = await signInForCookies(backend, user);
 });
 
+// Every step is guarded and ordered so that a `beforeAll` which failed part-way still tears
+// down what it did manage to start. Reaching straight for `server.kill()` would throw a
+// TypeError on an undefined server and bury the error that actually stopped the suite.
 test.afterAll(async () => {
-  server.kill();
-  await backend.deleteUser(user.id);
-  await backend.close();
+  if (server !== undefined) {
+    await stopApp(server);
+  }
+
+  if (backend !== undefined) {
+    if (user !== undefined) {
+      await backend.deleteUser(user.id);
+    }
+
+    await backend.close();
+  }
 });
 
 test("deck.tsx meets its performance budget", async ({ browser }) => {
