@@ -11,3 +11,4 @@ db/migrations
 db/fixtures/*.html
 db/fixtures/show-hn-*.json
 !db/fixtures/*.meta.json
+db/fixtures/*.xml

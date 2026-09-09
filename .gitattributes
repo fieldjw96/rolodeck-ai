@@ -5,3 +5,4 @@
 db/fixtures/*.html -text
 db/fixtures/show-hn-*.json -text
 db/fixtures/*.meta.json text
+db/fixtures/*.xml -text
