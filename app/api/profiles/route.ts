@@ -2,6 +2,7 @@ import { getDb } from "../../../db/connection";
 import {
   deckQuerySchema,
   readDeckPage,
+  readKeptProfiles,
   type DeckProfile,
 } from "../../../db/deck";
 import { asUser } from "../../../db/rls";
@@ -33,6 +34,7 @@ function toJson(profile: DeckProfile) {
 export const GET = authenticated(async (request, user) => {
   const searchParams = request.nextUrl.searchParams;
   const query = deckQuerySchema.safeParse({
+    filter: searchParams.get("filter") ?? undefined,
     limit: searchParams.get("limit") ?? undefined,
     cursor: searchParams.get("cursor") ?? undefined,
   });
@@ -41,8 +43,21 @@ export const GET = authenticated(async (request, user) => {
     return unprocessable(query.error);
   }
 
+  // The Watchlist: every Kept Profile, unpaged. See `readKeptProfiles`.
+  if (query.data.filter === "kept") {
+    const kept = await asUser(getDb(), user.id, (tx) =>
+      readKeptProfiles(tx, user.id),
+    );
+
+    return Response.json({ profiles: kept.map(toJson), next_cursor: null });
+  }
+
   const page = await asUser(getDb(), user.id, (tx) =>
-    readDeckPage(tx, { userId: user.id, ...query.data }),
+    readDeckPage(tx, {
+      userId: user.id,
+      limit: query.data.limit,
+      cursor: query.data.cursor,
+    }),
   );
 
   return Response.json({

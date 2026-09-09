@@ -14,6 +14,8 @@ import {
   startRouteHarness,
   type RouteHarness,
 } from "../../../lib/api/testing/route-harness";
+import { POST as keep } from "./[id]/keep/route";
+import { POST as pass } from "./[id]/pass/route";
 import { GET } from "./route";
 
 let harness: RouteHarness;
@@ -50,6 +52,14 @@ const dealt = async (query = "") => {
 };
 
 const names = (body: DeckBody) => body.profiles.map((profile) => profile.name);
+
+const swipe = (route: typeof keep, id: string): Promise<Response> =>
+  route(
+    new NextRequest(`http://localhost/api/profiles/${id}/keep`, {
+      method: "POST",
+    }),
+    { params: Promise.resolve({ id }) },
+  );
 
 beforeAll(async () => {
   harness = await startRouteHarness();
@@ -151,7 +161,50 @@ describe("GET /api/profiles", () => {
   });
 });
 
+describe("GET /api/profiles?filter=kept", () => {
+  it("lists an empty Watchlist as an empty page, not an error", async () => {
+    await harness.seed(1);
+
+    await expect(dealt("?filter=kept")).resolves.toEqual({
+      profiles: [],
+      next_cursor: null,
+    });
+  });
+
+  it("lists every Kept Profile, newest decision first, and never a Passed one", async () => {
+    const [older, newer] = await harness.seed(2);
+
+    await swipe(keep, older!);
+    await swipe(pass, newer!);
+    await swipe(keep, newer!);
+
+    expect(names(await dealt("?filter=kept"))).toEqual([
+      "Startup 1",
+      "Startup 0",
+    ]);
+  });
+
+  it("deals nobody else's Kept Profiles", async () => {
+    await harness.seed(2, harness.strangerId);
+
+    await expect(dealt("?filter=kept")).resolves.toEqual({
+      profiles: [],
+      next_cursor: null,
+    });
+  });
+});
+
 describe("GET /api/profiles with input it will not accept", () => {
+  it("answers 422 naming filter for a filter this endpoint does not know", async () => {
+    const response = await deal("?filter=banana");
+
+    expect(response.status).toBe(422);
+    await expect(response.json()).resolves.toMatchObject({
+      error: "invalid request",
+      field: "filter",
+    });
+  });
+
   it.each([
     ["a limit of zero", "?limit=0"],
     ["a limit above the maximum", "?limit=51"],

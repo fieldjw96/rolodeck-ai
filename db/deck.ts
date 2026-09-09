@@ -51,11 +51,14 @@ export function decodeCursor(raw: string): DeckCursor | null {
 }
 
 /**
- * The query string of `GET /api/profiles`, which is external input like any other. Both
- * fields are optional; `limit` is clamped by rejection rather than by silently capping, so a
- * caller asking for 500 Profiles is told no instead of quietly getting 50.
+ * The query string of `GET /api/profiles`, which is external input like any other. `limit`
+ * and `cursor` page the Deck; `filter` switches the endpoint to the Watchlist instead, which
+ * has no paging of its own — see `readKeptProfiles`. `limit` is clamped by rejection rather
+ * than by silently capping, so a caller asking for 500 Profiles is told no instead of quietly
+ * getting 50.
  */
 export const deckQuerySchema = z.object({
+  filter: z.enum(["kept"], { error: "must be 'kept'" }).optional(),
   limit: z.coerce
     .number({ error: "must be a number" })
     .int("must be a whole number of Profiles")
@@ -141,6 +144,30 @@ export async function readDeckPage(
     nextCursor:
       rows.length > limit && last !== undefined ? encodeCursor(last) : null,
   };
+}
+
+/**
+ * Every Profile the reader has Kept, newest decision first. Unlike `readDeckPage` this is not
+ * paginated: the Watchlist is meant to show everything in one place, and per the Ticket
+ * paging it is out of scope.
+ *
+ * Ownership is written out in the `where` clause as well as carried by the join and the RLS
+ * policy, matching `readDeckPage` — see CLAUDE.md on RLS as a backstop, never the only
+ * control.
+ */
+export async function readKeptProfiles(
+  db: Database,
+  userId: string,
+): Promise<DeckProfile[]> {
+  return db
+    .select(deckColumns)
+    .from(profiles)
+    .innerJoin(
+      swipes,
+      and(eq(swipes.profileId, profiles.id), eq(swipes.userId, userId)),
+    )
+    .where(and(eq(profiles.ownerId, userId), eq(swipes.decision, "keep")))
+    .orderBy(desc(swipes.decidedAt), desc(profiles.id));
 }
 
 export type SwipeRecord = {

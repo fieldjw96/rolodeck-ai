@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { requireUser } from "../../lib/auth/session";
@@ -24,6 +25,10 @@ export default async function AppLayout({
     <>
       <header>
         <span>{user.email}</span>
+        <nav>
+          <Link href="/deck">Deck</Link>
+          <Link href="/watchlist">Watchlist</Link>
+        </nav>
         <form action={signOut}>
           <button type="submit">Sign out</button>
         </form>
