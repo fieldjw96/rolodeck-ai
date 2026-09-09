@@ -1,7 +1,11 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { EMPTY_WATCHLIST_MESSAGE, LOAD_ERROR_MESSAGE, Watchlist } from "./watchlist";
+import {
+  EMPTY_WATCHLIST_MESSAGE,
+  LOAD_ERROR_MESSAGE,
+  Watchlist,
+} from "./watchlist";
 
 type KeptProfile = {
   id: string;
@@ -59,7 +63,9 @@ describe("the Watchlist", () => {
 
     render(<Watchlist />);
 
-    expect(await screen.findByText(EMPTY_WATCHLIST_MESSAGE)).toBeInTheDocument();
+    expect(
+      await screen.findByText(EMPTY_WATCHLIST_MESSAGE),
+    ).toBeInTheDocument();
   });
 
   it("shows an explicit error when the fetch fails, rather than staying on loading forever", async () => {
