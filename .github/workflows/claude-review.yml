@@ -1,23 +1,12 @@
 # Second-agent review, the last Gate before a pull request can auto-merge (agent-harness
-# ADR 0004 and ADR 0009). This repo has no human in that loop at all: the verdict this
-# workflow leaves is the only thing standing between a Run's pull request and it merging
-# itself. It is cold by construction, a fresh checkout with no memory of having written the
-# code, which is the whole point. An agent reviewing its own work re-derives its own
-# assumptions and finds nothing.
+# ADR 0004 and ADR 0009). This repo has no human in that loop: the verdict this workflow
+# leaves is the only thing between a Run's pull request and it merging itself.
 #
-# Kept byte-identical to the agent-harness copy apart from this header, so the two can be
-# diffed against each other. Change them together.
+# Kept in step with the agent-harness copy, which is where these steps are developed. The
+# two drifted once and it mattered: this file sat three improvements behind for days, so
+# this repo's Gate approved a pull request whose CI was red while the harness's would
+# have refused to review it at all. Change them together, or make this one call that one.
 #
-# This workflow writes its own review prompt rather than delegating to the `code-review`
-# plugin. The plugin version was non-deterministic about recording a verdict: four runs on
-# the same branch split two successes and two "no verdict was recorded", because the
-# instruction to write the verdict file was a postscript appended to somebody else's slash
-# command, and the plugin's own flow had no reason to honour it. Owning the prompt makes
-# writing the verdict the last step of our flow instead of a hopeful addendum, and it lets
-# the reviewer be given the Ticket, which the plugin had no way to accept.
-#
-# Requires a CLAUDE_CODE_OAUTH_TOKEN repo secret (`claude setup-token`) and the Claude
-# GitHub App installed on the repo.
 
 name: Claude Review
 
@@ -58,6 +47,20 @@ jobs:
       pull-requests: write
       issues: read
       id-token: write
+      # Only needed for the explicit check-run posted on an `issue_comment` run; see
+      # "Post a check on the pull request's head commit" below.
+      checks: write
+      # Required by "Check other CI before reviewing". `gh pr view --json statusCheckRollup`
+      # reaches through each check to its checkSuite.workflowRun, and without this the whole
+      # query fails with "Resource not accessible by integration" rather than returning the
+      # checks it could read. That step runs under `bash -e`, so the first call aborted it
+      # before it could write a verdict, and the job then failed on the missing verdict file
+      # instead of recording the REQUEST_CHANGES it was about to write.
+      #
+      # #29 was implemented correctly and then denied the permission it needs, which looked
+      # exactly like a Gate that had stopped working: no review on any pull request, and a
+      # queue that could not merge because auto-merge waits on a verdict nobody could post.
+      actions: read
     steps:
       # refs/pull/N/head resolves for both trigger shapes, which an `issue_comment` run
       # needs because it starts on the default branch rather than on the pull request.
@@ -68,11 +71,118 @@ jobs:
           ref: refs/pull/${{ github.event.pull_request.number || github.event.issue.number }}/head
           fetch-depth: 0
 
+      # An APPROVED badge on a pull request whose own CI is red is a claim the reviewer has
+      # no basis for: PR #27 was approved this way, with a red X sitting next to it, because
+      # the reviewer read only the diff and the Ticket and a failing check was invisible to
+      # it. Ticket #29. This step is the fix, and it runs before the agent so that a red or
+      # unresolved build never reaches it at all.
+      #
+      # Excludes this workflow's own check by workflow name: the "review" job that is running
+      # this very step always shows IN_PROGRESS in the rollup, since it is not finished by
+      # definition, and waiting on itself would never clear.
+      - name: Check other CI before reviewing
+        id: ci
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WORKFLOW: ${{ github.workflow }}
+        run: |
+          # Bounded rather than open-ended: a stuck runner must not hold this job, and
+          # possibly this GitHub Actions minute allotment, forever. 20 minutes comfortably
+          # covers this repo's 5-minute CI wall with room for queueing.
+          timeout=1200
+          interval=20
+          waited=0
+
+          while true; do
+            rollup=$(gh pr view "$PR" --repo "$REPO" --json statusCheckRollup --jq '.statusCheckRollup')
+
+            # CheckRun (GitHub Actions) reports status/conclusion; StatusContext (any other
+            # CI provider) reports state instead. Normalised to one shape so nothing below
+            # has to care which kind a given check is.
+            #
+            # Excluded by workflow name and, redundantly, by this job's own check name
+            # ("review", its job id — this workflow declares no matrix, so that is also its
+            # exact check-run name). Getting this exclusion wrong is the one failure mode
+            # that breaks silently: the job would see its own still-running check as a
+            # pending check, wait the full timeout every single time, and bounce every pull
+            # request regardless of its actual CI.
+            others=$(echo "$rollup" | jq -c --arg wf "$WORKFLOW" '
+              [ .[] | select(.workflowName != $wf and .name != "review") | {
+                  name: (.name // .context),
+                  bucket: (
+                    if .__typename == "StatusContext" then
+                      (if .state == "SUCCESS" then "SUCCESS"
+                       elif .state == "PENDING" or .state == "EXPECTED" then "PENDING"
+                       else "FAILURE" end)
+                    elif .status != "COMPLETED" then "PENDING"
+                    else .conclusion end
+                  )
+                }
+              ]')
+
+            count=$(echo "$others" | jq 'length')
+            if [ "$count" -eq 0 ]; then
+              # rolodeck has no CI. Proceeding is correct; this must not deadlock it.
+              # /tmp/ci-status.md hands the agent this same fact as review context; the
+              # "note" output is read back by "Post the verdict" so it lands in the verdict
+              # body deterministically too, rather than only when the agent remembers to
+              # repeat what it was told.
+              echo "No other checks exist on this pull request; proceeding without them."
+              printf '%s\n' "No CI checks exist on this pull request, so this review proceeds without waiting on any." > /tmp/ci-status.md
+              {
+                echo "note<<CINOTE"
+                echo "No CI checks exist on this pull request, so this review proceeded without waiting on any."
+                echo "CINOTE"
+                echo "skip_agent=false"
+              } >> "$GITHUB_OUTPUT"
+              break
+            fi
+
+            failing=$(echo "$others" | jq -c '[ .[] | select(.bucket == "FAILURE" or .bucket == "TIMED_OUT" or .bucket == "CANCELLED") ]')
+            failingCount=$(echo "$failing" | jq 'length')
+            if [ "$failingCount" -gt 0 ]; then
+              names=$(echo "$failing" | jq -r '[.[].name] | join(", ")')
+              echo "Failing check(s): $names"
+              {
+                echo "REQUEST_CHANGES"
+                echo "This pull request's own CI is not green: $names. There is nothing to review while the change does not build; fix the build and comment /review to try again."
+              } > /tmp/verdict.txt
+              echo "skip_agent=true" >> "$GITHUB_OUTPUT"
+              break
+            fi
+
+            pending=$(echo "$others" | jq -c '[ .[] | select(.bucket == "PENDING") ]')
+            pendingCount=$(echo "$pending" | jq 'length')
+            if [ "$pendingCount" -eq 0 ]; then
+              passedNames=$(echo "$others" | jq -r '[.[].name] | join(", ")')
+              echo "All other checks have concluded and none failed: $passedNames. Proceeding to review."
+              printf 'This pull request has other CI, and all of it concluded without a failure: %s.\n' "$passedNames" > /tmp/ci-status.md
+              echo "skip_agent=false" >> "$GITHUB_OUTPUT"
+              break
+            fi
+
+            pendingNames=$(echo "$pending" | jq -r '[.[].name] | join(", ")')
+            if [ "$waited" -ge "$timeout" ]; then
+              echo "Timed out after ${timeout}s still waiting on: $pendingNames"
+              {
+                echo "REQUEST_CHANGES"
+                echo "This pull request's CI had not finished after ${timeout}s: still waiting on $pendingNames. Reviewing against an unknown state would be worse than waiting; comment /review once CI has concluded."
+              } > /tmp/verdict.txt
+              echo "skip_agent=true" >> "$GITHUB_OUTPUT"
+              break
+            fi
+
+            echo "Waiting on: $pendingNames (${waited}s/${timeout}s elapsed)"
+            sleep "$interval"
+            waited=$((waited + interval))
+          done
+
       # The most valuable review question is "does this do what the Ticket asked", and the
       # reviewer could not previously ask it: it saw the diff and nothing else. The
       # dispatcher writes `Closes #N` into every pull request body it opens, so the Ticket
       # is recoverable from the pull request without the dispatcher passing anything.
       - name: Fetch the Ticket
+        if: steps.ci.outputs.skip_agent != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -93,6 +203,17 @@ jobs:
           wc -l /tmp/diff.patch
 
       - uses: anthropics/claude-code-action@v1
+        id: agent
+        if: steps.ci.outputs.skip_agent != 'true'
+        # PR #49: the agent wrote a well-formed verdict and then its own step exited 1
+        # anyway. Without this, that failure becomes the job's conclusion regardless of
+        # what "Post the verdict" below does, so a valid APPROVE shows up as a red X. The
+        # question this check answers is "was a verdict recorded", not "did every step
+        # exit zero" -- continue-on-error is what stops the second question from
+        # overriding the first. The failure is not swallowed: see "Note the agent step's
+        # failure" below, and "Post the verdict" still fails the job outright if the
+        # crash also meant no verdict was written.
+        continue-on-error: true
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           prompt: |
@@ -100,12 +221,14 @@ jobs:
             write this code and you have no memory of writing it. Review it cold.
 
             The Ticket it claims to satisfy is in /tmp/ticket.md. The diff is in
-            /tmp/diff.patch. The full repository is checked out in the working directory
-            at the pull request's head, so you can read and search any file for context.
+            /tmp/diff.patch. This pull request's other CI has already been checked before
+            you were invoked; that status is in /tmp/ci-status.md. The full repository is
+            checked out in the working directory at the pull request's head, so you can
+            read and search any file for context.
 
             Work in this order:
 
-            1. Read /tmp/ticket.md and /tmp/diff.patch.
+            1. Read /tmp/ticket.md, /tmp/diff.patch, and /tmp/ci-status.md.
             2. Read CLAUDE.md and CONTEXT.md, and any ADR in docs/adr/ whose subject the
                diff touches. A change that contradicts an accepted ADR is a finding even
                when the code is correct.
@@ -115,7 +238,9 @@ jobs:
             4. Look for correctness bugs: wrong logic, unhandled failure, a case the code
                does not cover, a claim in a comment the code does not honour.
             5. Post findings as inline comments on the diff.
-            6. Write your verdict to /tmp/verdict.txt as your final action.
+            6. Write your verdict to /tmp/verdict.txt as your final action. If
+               /tmp/ci-status.md says this pull request has no CI, say so in the verdict
+               too.
 
             The verdict file is the only thing that records your review. Nothing else you
             do records it, and the job fails if the file is missing, so write it even when
@@ -134,6 +259,36 @@ jobs:
             --max-turns 40
             --allowedTools "Read,Grep,Glob,Write,Bash(cat:*),Bash(git diff:*),Bash(git log:*),Bash(git show:*),mcp__github_inline_comment__create_inline_comment"
 
+      # continue-on-error above means a crashing agent step no longer costs the job its
+      # conclusion, but that must not make the crash invisible: a verdict produced by a
+      # run that failed afterwards is real, but it is worth reading differently than one
+      # from a clean run. GitHub Actions exposes no numeric exit code for a `uses:` step
+      # (only success/failure), so outcome and the action's own reported conclusion are
+      # the most specific things there are to show.
+      - name: Note the agent step's failure in the job summary
+        if: always() && steps.agent.outcome == 'failure'
+        run: |
+          {
+            echo "### The review agent step did not exit cleanly"
+            echo ""
+            echo "Step outcome: \`${{ steps.agent.outcome }}\`; action-reported conclusion:" \
+                 "\`${{ steps.agent.outputs.conclusion || 'unknown' }}\`."
+            echo "Any verdict recorded below still stands, but it came from a run that" \
+                 "failed afterwards, not a clean one."
+            echo ""
+            echo "<details><summary>Tail of the agent's output</summary>"
+            echo ""
+            echo '```'
+            file="${{ steps.agent.outputs.execution_file }}"
+            if [ -n "$file" ] && [ -f "$file" ]; then
+              tail -c 4000 "$file"
+            else
+              echo "(no execution output was captured)"
+            fi
+            echo '```'
+            echo "</details>"
+          } >> "$GITHUB_STEP_SUMMARY"
+
       # The agent states a verdict; this step records it. Never let the thing being judged
       # also be the thing that reports the judgement: an earlier version asked the agent to
       # call `gh pr review` itself, enforced only by prose, and in rolodeck-ai it silently
@@ -141,16 +296,22 @@ jobs:
       # hours with every check green and nothing to point at.
       - name: Post the verdict
         if: always()
+        id: post_verdict
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           # A missing file fails the job rather than passing it. Silence here is
           # indistinguishable from a review that never ran, and a sibling repo merges on
           # APPROVED without a human, so passing on silence would merge unreviewed code.
+          #
+          # `recorded` is read by "Post a check on the pull request's head commit" below,
+          # so an issue_comment run's explicit check agrees with what this step decided
+          # rather than re-deriving it.
           if [ ! -s /tmp/verdict.txt ]; then
             echo "::error::No verdict file was written, so no review is recorded. Failing" \
                  "rather than passing, which would be indistinguishable from a review that" \
                  "never ran. Comment /review on the pull request to try again."
+            echo "recorded=false" >> "$GITHUB_OUTPUT"
             exit 1
           fi
 
@@ -158,17 +319,65 @@ jobs:
           summary=$(tail -n +2 /tmp/verdict.txt | head -c 60000)
           [ -n "$summary" ] || summary="(no summary given)"
 
+          # Folded in here rather than left to the agent to remember: the note the CI check
+          # step recorded when this pull request has no checks at all is appended
+          # deterministically, so it lands in the verdict body every time rather than
+          # whenever the prompt happens to be honoured.
+          note="${{ steps.ci.outputs.note }}"
+          if [ -n "$note" ]; then
+            # printf, not a literal multi-line string. A continuation line that dedents to
+            # column 0 ends the YAML block scalar, so the whole workflow stops being valid
+            # YAML. GitHub then reports a startup failure named after the file path, on a
+            # push event, with no jobs. Every review on every branch stopped for seventeen
+            # hours and nothing anywhere said why.
+            summary="$(printf '%s\n\n%s' "$summary" "$note")"
+          fi
+
           case "$verdict" in
             APPROVE)
               echo "Verdict: APPROVE"
               gh pr review "$PR" --repo "$REPO" --approve --body "$summary"
+              echo "recorded=true" >> "$GITHUB_OUTPUT"
               ;;
             REQUEST_CHANGES)
               echo "Verdict: REQUEST_CHANGES"
               gh pr review "$PR" --repo "$REPO" --request-changes --body "$summary"
+              echo "recorded=true" >> "$GITHUB_OUTPUT"
               ;;
             *)
               echo "::error::Unrecognised verdict '$verdict'; expected APPROVE or REQUEST_CHANGES."
+              echo "recorded=false" >> "$GITHUB_OUTPUT"
               exit 1
               ;;
           esac
+
+      # `issue_comment` is how `/review` re-runs a review. That run starts on the default
+      # branch -- GitHub takes the workflow file from there, and the automatic per-job
+      # check follows the same commit -- so a `/review` verdict landed on the pull
+      # request as a review but left no check on it at all (PR #37), and whatever check
+      # an earlier `pull_request` run had left for that same head commit just sat there
+      # unanswered (PR #40). This posts a check explicitly, against the actual head
+      # commit, under this job's own name ("review"): GitHub's per-commit check display
+      # shows the latest check run for a given name, so this one supersedes whatever an
+      # earlier run left for the same commit rather than sitting beside it.
+      - name: Post a check on the pull request's head commit
+        if: always() && github.event_name == 'issue_comment'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sha=$(git rev-parse HEAD)
+          if [ "${{ steps.post_verdict.outputs.recorded }}" = "true" ]; then
+            conclusion=success
+            summary="A verdict was recorded for this head commit; see the review on the pull request for what it was."
+          else
+            conclusion=failure
+            summary="No verdict was recorded for this head commit; see this run's job log for why. Comment /review to try again."
+          fi
+          gh api "repos/$REPO/check-runs" \
+            --method POST \
+            -f name="review" \
+            -f head_sha="$sha" \
+            -f status="completed" \
+            -f conclusion="$conclusion" \
+            -f output.title="Claude Review" \
+            -f output.summary="$summary"
