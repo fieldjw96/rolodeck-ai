@@ -1,0 +1,90 @@
+/* One card, centred in the column, with the two decisions under it. Nothing else on the page:
+   the interaction is a fast judgement, so the card and its two actions are all there is. */
+
+.deck {
+  display: flex;
+  flex: 1;
+  width: 100%;
+  max-width: var(--measure);
+  margin-inline: auto;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-6);
+  padding: var(--space-6) var(--space-4) var(--space-8);
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.action {
+  display: inline-flex;
+  min-width: 0;
+  min-height: var(--space-8);
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  font-size: var(--text-base);
+  line-height: var(--leading-tight);
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+.action:active {
+  transform: translateY(1px);
+}
+
+/* Outlined, lighter, and the narrower of the two. */
+.pass {
+  flex: 2;
+  background: transparent;
+  border-color: var(--color-border-strong);
+  color: var(--color-text);
+  font-weight: var(--weight-medium);
+}
+
+.pass:hover {
+  background: var(--color-surface-muted);
+}
+
+/* Filled, heavier, lifted, and half again as wide: the primary action of the whole product. */
+.keep {
+  flex: 3;
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+  font-weight: var(--weight-semibold);
+  box-shadow: var(--shadow-card);
+}
+
+.keep:hover {
+  background: var(--color-accent-hover);
+}
+
+.icon {
+  width: var(--space-4);
+  height: var(--space-4);
+  flex: none;
+}
+
+/* The Deck answers the arrow keys, so the buttons say so. Dropped on narrow viewports, where
+   there is no keyboard to hint at and the width is better spent on the labels. */
+.hint {
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid currentColor;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  line-height: var(--leading-tight);
+}
+
+@media (max-width: 30rem) {
+  .hint {
+    display: none;
+  }
+}

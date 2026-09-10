@@ -1,17 +1,7 @@
 import path from "node:path";
-import type { ChildProcess } from "node:child_process";
 
-import { expect, test } from "@playwright/test";
-
-import {
-  signInForCookies,
-  stubBackend,
-  type AuthBackend,
-  type CookiePair,
-  type ThrowawayUser,
-} from "../lib/auth/testing/auth-backend";
 import { deckClientBundleGzipBytes } from "./support/bundle-size";
-import { buildApp, getFreePort, startApp, stopApp } from "./support/server";
+import { expect, test } from "./support/signed-in-app";
 
 /** Playwright's own budget for the Ticket, in milliseconds. */
 const FCP_BUDGET_MS = 2500;
@@ -36,70 +26,10 @@ const CPU_THROTTLING_RATE = 4;
 
 const NEXT_DIR = path.join(process.cwd(), ".next");
 
-/**
- * `/deck` sits behind Supabase Auth (docs/adr/0004), and CI has no Supabase project to sign
- * in against — same problem the integration tests solve with the in-process GoTrue stub in
- * `lib/auth/testing`. A browser test needs more than that stub alone: `NEXT_PUBLIC_SUPABASE_URL`
- * is inlined into the build by Next at compile time (see `lib/supabase/env.ts`), so pointing a
- * *running* app at the stub means building against it, which means this suite builds and
- * starts its own server rather than reusing whatever `npm run build` already produced.
- */
-let backend: AuthBackend | undefined;
-let user: ThrowawayUser | undefined;
-let cookies: CookiePair[];
-let server: ChildProcess | undefined;
-let baseURL: string;
-
-test.beforeAll(async () => {
-  // Headroom over `buildApp`'s own 8-minute limit, so a slow cold build fails as "next build
-  // did not finish", quoting the build, rather than as a bare hook timeout naming nothing.
-  test.setTimeout(12 * 60 * 1000);
-
-  backend = await stubBackend();
-
-  const env: NodeJS.ProcessEnv = {
-    ...process.env,
-    NEXT_PUBLIC_SUPABASE_URL: backend.url,
-    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: backend.publishableKey,
-  };
-
-  await buildApp(env);
-
-  const port = await getFreePort();
-  baseURL = `http://127.0.0.1:${String(port)}`;
-  server = await startApp(env, port);
-
-  user = await backend.createUser();
-  cookies = await signInForCookies(backend, user);
-});
-
-// Every step is guarded and ordered so that a `beforeAll` which failed part-way still tears
-// down what it did manage to start. Reaching straight for `server.kill()` would throw a
-// TypeError on an undefined server and bury the error that actually stopped the suite.
-test.afterAll(async () => {
-  // Teardown is bounded too. Every step below already escalates rather than waiting forever,
-  // but this is the backstop that decides the shape of the failure if one ever does wait: a
-  // named afterAll timeout, against a run that otherwise ends with its tests passed and no
-  // result reported.
-  test.setTimeout(60_000);
-
-  if (server !== undefined) {
-    await stopApp(server);
-  }
-
-  if (backend !== undefined) {
-    if (user !== undefined) {
-      await backend.deleteUser(user.id);
-    }
-
-    await backend.close();
-  }
-});
-
-test("deck.tsx meets its performance budget", async ({ browser }) => {
+test("deck.tsx meets its performance budget", async ({ browser, app }) => {
   const context = await browser.newContext();
   await context.addCookies(
-    cookies.map(({ name, value }) => ({ name, value, url: baseURL })),
+    app.cookies.map(({ name, value }) => ({ name, value, url: app.baseURL })),
   );
 
   const page = await context.newPage();
@@ -110,7 +40,7 @@ test("deck.tsx meets its performance budget", async ({ browser }) => {
     rate: CPU_THROTTLING_RATE,
   });
 
-  await page.goto(`${baseURL}/deck`, { waitUntil: "load" });
+  await page.goto(`${app.baseURL}/deck`, { waitUntil: "load" });
 
   // A redirect back to `/login` would mean the stub sign-in failed, and every FCP measured
   // from there on would be timing the wrong page.

@@ -11,19 +11,24 @@ export type SourceFile = {
   text: string;
 };
 
-const SOURCE_EXTENSIONS = new Set([".ts", ".tsx", ".mts"]);
+const SOURCE_EXTENSIONS = [".ts", ".tsx", ".mts"];
 
-async function filesUnder(root: string): Promise<string[]> {
+/** Every stylesheet is a CSS Module bar `app/globals.css`, which holds the design tokens. */
+export const STYLE_EXTENSIONS = [".css"];
+
+async function filesUnder(
+  root: string,
+  extensions: string[],
+): Promise<string[]> {
+  const wanted = new Set(extensions);
+
   const entries = await readdir(path.join(REPO_ROOT, root), {
     recursive: true,
     withFileTypes: true,
   });
 
   return entries
-    .filter(
-      (entry) =>
-        entry.isFile() && SOURCE_EXTENSIONS.has(path.extname(entry.name)),
-    )
+    .filter((entry) => entry.isFile() && wanted.has(path.extname(entry.name)))
     .map((entry) =>
       path
         .relative(REPO_ROOT, path.join(entry.parentPath, entry.name))
@@ -41,8 +46,23 @@ export async function readSourceFiles(
   roots: string[],
   extraFiles: string[] = [],
 ): Promise<SourceFile[]> {
+  return readFiles(roots, SOURCE_EXTENSIONS, extraFiles);
+}
+
+/**
+ * The same tree walk for any extension. The design-system checks in `app/design-system.test.ts`
+ * ask it for `.css`, on the same reasoning: a rule about "no stylesheet names its own colour"
+ * only holds if a stylesheet added tomorrow is read too.
+ */
+export async function readFiles(
+  roots: string[],
+  extensions: string[],
+  extraFiles: string[] = [],
+): Promise<SourceFile[]> {
   const paths = [
-    ...(await Promise.all(roots.map(filesUnder))).flat(),
+    ...(
+      await Promise.all(roots.map((root) => filesUnder(root, extensions)))
+    ).flat(),
     ...extraFiles,
   ];
 

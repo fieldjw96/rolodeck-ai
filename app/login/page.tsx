@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { LoginForm } from "./login-form";
+import styles from "./page.module.css";
 
 export const metadata: Metadata = {
   title: "Sign in · Rolodeck AI",
@@ -19,7 +20,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const { error } = await searchParams;
 
   return (
-    <main>
+    <main className={styles.main}>
       <LoginForm error={error} />
     </main>
   );

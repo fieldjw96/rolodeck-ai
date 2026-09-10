@@ -12,6 +12,7 @@ import {
   Deck,
   EMPTY_DECK_MESSAGE,
   LOAD_ERROR_MESSAGE,
+  LOADING_DECK_MESSAGE,
 } from "./deck";
 
 type Profile = {
@@ -102,6 +103,19 @@ describe("the Deck", () => {
     expect(screen.getByText("Widgets, but faster.")).toBeInTheDocument();
     expect(screen.getByText("Hardware")).toBeInTheDocument();
     expect(screen.getByText("Seed")).toBeInTheDocument();
+  });
+
+  it("shows a designed loading state while the first page is in flight, rather than nothing at all", async () => {
+    // Never resolves: the Deck stays in the state this test is about for as long as it takes.
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => new Promise<Response>(() => {})),
+    );
+
+    render(<Deck />);
+
+    expect(await screen.findByText(LOADING_DECK_MESSAGE)).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveAttribute("aria-busy", "true");
   });
 
   it("shows an explicit error when the initial fetch fails, rather than staying on loading forever", async () => {

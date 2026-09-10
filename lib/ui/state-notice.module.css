@@ -1,0 +1,74 @@
+/* The designed form of every state that is not a Profile: loading, empty, failed. One shape
+   for all three so an exhausted Deck and an empty Watchlist read as the same product. */
+
+.notice {
+  display: flex;
+  max-width: var(--measure);
+  margin-inline: auto;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-8) var(--space-5);
+  text-align: center;
+  background: var(--color-surface);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.danger {
+  background: var(--color-danger-soft);
+  border-style: solid;
+  border-color: var(--color-danger-border);
+}
+
+/* Carries the state without carrying any meaning of its own: the title below always says it
+   in words, so this is decoration and is hidden from assistive tech. */
+.mark {
+  width: var(--space-3);
+  height: var(--space-3);
+  margin-bottom: var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--color-accent);
+}
+
+.danger .mark {
+  background: var(--color-danger);
+}
+
+.busy .mark {
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.4;
+    transform: scale(0.75);
+  }
+}
+
+.title {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-snug);
+  letter-spacing: var(--tracking-tight);
+}
+
+.danger .title {
+  color: var(--color-danger);
+}
+
+.body {
+  max-width: 34ch;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.danger .body {
+  color: var(--color-text);
+}

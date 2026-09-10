@@ -2,6 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { ProfileCard } from "../../../lib/ui/profile-card";
+import { StateNotice } from "../../../lib/ui/state-notice";
+import styles from "./deck.module.css";
+
 type Profile = {
   id: string;
   name: string;
@@ -25,13 +29,17 @@ type ReadyState = {
 type DeckState =
   | { status: "loading" }
   | { status: "empty" }
-  | { status: "error"; message: string }
+  | { status: "error"; message: string; detail: string }
   | ReadyState;
 
 type Decision = "keep" | "pass";
 
 /** A real string rather than a blank screen, per the Ticket. */
 export const EMPTY_DECK_MESSAGE = "No Profiles left in the Deck.";
+
+/** Shown while the first `GET /api/profiles` is in flight. The Deck used to render nothing
+ * at all here, which is indistinguishable from a page that failed to boot. */
+export const LOADING_DECK_MESSAGE = "Dealing the Deck…";
 
 /** Shown when the initial `GET /api/profiles` fails, so a dead network leaves Jack looking
  * at an explicit message rather than a Deck stuck on "loading" forever. */
@@ -41,6 +49,15 @@ export const LOAD_ERROR_MESSAGE = "Couldn't load the Deck.";
  * already happened server-side, so staying on the same Profile with no explanation would
  * read as though nothing was recorded, not as though the network dropped. */
 export const ADVANCE_ERROR_MESSAGE = "Couldn't load the next Profile.";
+
+// The second line of each designed state: what it means, or what to do next. Not exported,
+// because the line a test pins a state on is the title above it.
+const LOADING_DECK_DETAIL = "Fetching the Profiles you have not judged yet.";
+const EMPTY_DECK_DETAIL =
+  "Everything in the Deck has been Kept or Passed. More arrive the next time a Source runs.";
+const LOAD_ERROR_DETAIL = "Check your connection, then reload the page.";
+const ADVANCE_ERROR_DETAIL =
+  "Your decision was recorded. Reload the page to carry on from the next Profile.";
 
 async function fetchPage(cursor: string | null): Promise<ProfilesPage> {
   const url =
@@ -122,7 +139,11 @@ export function Deck() {
       .then((page) => commit(stateAfter(page)))
       .catch((error: unknown) => {
         console.error(error);
-        commit({ status: "error", message: LOAD_ERROR_MESSAGE });
+        commit({
+          status: "error",
+          message: LOAD_ERROR_MESSAGE,
+          detail: LOAD_ERROR_DETAIL,
+        });
       });
   }, [commit]);
 
@@ -159,7 +180,11 @@ export function Deck() {
             .then(commit)
             .catch((error: unknown) => {
               console.error(error);
-              commit({ status: "error", message: ADVANCE_ERROR_MESSAGE });
+              commit({
+                status: "error",
+                message: ADVANCE_ERROR_MESSAGE,
+                detail: ADVANCE_ERROR_DETAIL,
+              });
             })
             .finally(() => {
               decidingRef.current = false;
@@ -187,36 +212,126 @@ export function Deck() {
   }, [decide]);
 
   if (state.status === "loading") {
-    return null;
+    return (
+      <main className={styles.deck}>
+        <StateNotice
+          busy
+          title={LOADING_DECK_MESSAGE}
+          body={LOADING_DECK_DETAIL}
+        />
+      </main>
+    );
   }
 
   if (state.status === "error") {
-    return <p role="alert">{state.message}</p>;
+    return (
+      <main className={styles.deck}>
+        <StateNotice
+          tone="danger"
+          live="alert"
+          title={state.message}
+          body={state.detail}
+        />
+      </main>
+    );
   }
 
   if (state.status === "empty") {
-    return <p>{EMPTY_DECK_MESSAGE}</p>;
+    return (
+      <main className={styles.deck}>
+        <StateNotice title={EMPTY_DECK_MESSAGE} body={EMPTY_DECK_DETAIL} />
+      </main>
+    );
   }
 
   // Same invariant as in `decide`: a "ready" state always has a valid index.
   const profile = state.profiles[state.index]!;
 
   return (
-    <main>
-      <h1>{profile.name}</h1>
-      <p>{profile.description}</p>
-      <dl>
-        <dt>Sector</dt>
-        <dd>{profile.sector}</dd>
-        <dt>Stage</dt>
-        <dd>{profile.stage}</dd>
-      </dl>
-      <button type="button" onClick={() => decide("pass")}>
-        Pass
-      </button>
-      <button type="button" onClick={() => decide("keep")}>
-        Keep
-      </button>
+    <main className={styles.deck}>
+      <ProfileCard
+        headingLevel={1}
+        name={profile.name}
+        description={profile.description}
+        sector={profile.sector}
+        stage={profile.stage}
+      />
+
+      {/*
+       * Keep and Pass are the page's primary actions and are told apart without being read:
+       * Pass is an outlined button carrying a cross, Keep a filled accent button carrying a
+       * tick and taking half again the width. Colour is the last of those three signals, not
+       * the only one — Ticket #12 asserts exactly that.
+       */}
+      <div className={styles.actions}>
+        <button
+          type="button"
+          className={`${styles.action} ${styles.pass}`}
+          onClick={() => decide("pass")}
+        >
+          <CrossIcon />
+          Pass
+          <kbd className={styles.hint} aria-hidden="true">
+            ←
+          </kbd>
+        </button>
+        <button
+          type="button"
+          className={`${styles.action} ${styles.keep}`}
+          onClick={() => decide("keep")}
+        >
+          <TickIcon />
+          Keep
+          <kbd className={styles.hint} aria-hidden="true">
+            →
+          </kbd>
+        </button>
+      </div>
     </main>
+  );
+}
+
+/*
+ * Two paths of inline SVG rather than an icon dependency: `/deck` has a gzipped bundle budget
+ * (`e2e/deck-performance.spec.ts`) and these cost a few dozen bytes between them. Both are
+ * hidden from assistive tech, so each button's accessible name stays exactly "Pass" or "Keep".
+ */
+
+function CrossIcon() {
+  return (
+    <svg
+      className={styles.icon}
+      viewBox="0 0 16 16"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path
+        d="M4.5 4.5l7 7m0-7l-7 7"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function TickIcon() {
+  return (
+    <svg
+      className={styles.icon}
+      viewBox="0 0 16 16"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path
+        d="M3.5 8.5l3 3 6-6.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }

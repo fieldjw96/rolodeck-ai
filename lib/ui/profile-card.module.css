@@ -1,0 +1,74 @@
+/* The one card. The Deck shows a single one; the Watchlist grids the compact variant of the
+   same component, so "consistent with the Deck's card" is the same file rather than a
+   resemblance. Every value here comes from a token in app/globals.css. */
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-6);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+}
+
+.compact {
+  gap: var(--space-3);
+  padding: var(--space-5);
+  height: 100%;
+}
+
+.name {
+  font-size: var(--text-2xl);
+  /* Company names arrive scraped, and some are a single unbroken token. */
+  overflow-wrap: anywhere;
+}
+
+.compact .name {
+  font-size: var(--text-xl);
+}
+
+.description {
+  font-size: var(--text-lg);
+  line-height: var(--leading-normal);
+  color: var(--color-text-muted);
+}
+
+/*
+ * Sector and Stage read as labelled values rather than four stacked lines: the labels are
+ * small, mono, uppercase and faint; the values sit under them at body size and medium weight.
+ * A rule above them separates the metadata from the pitch.
+ */
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-6);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
+}
+
+.field {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.fieldLabel {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-medium);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--color-text-faint);
+}
+
+.fieldValue {
+  font-size: var(--text-base);
+  font-weight: var(--weight-medium);
+  line-height: var(--leading-snug);
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+}

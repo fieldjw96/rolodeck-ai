@@ -1,0 +1,22 @@
+/* Where the app lands. Deliberately bare: which route a sign-in lands on is Ticket #47. */
+
+.home {
+  display: flex;
+  flex: 1;
+  width: 100%;
+  max-width: var(--measure);
+  margin-inline: auto;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-8) var(--space-4);
+}
+
+.title {
+  font-size: var(--text-3xl);
+}
+
+.tagline {
+  font-size: var(--text-lg);
+  color: var(--color-text-muted);
+}

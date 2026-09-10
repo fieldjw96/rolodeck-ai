@@ -1,11 +1,12 @@
 import { defineConfig, devices } from "@playwright/test";
 
 /**
- * A budget test, not a broad e2e suite: one spec, one Chromium project (CDP's network and
- * CPU throttling, which the Ticket asks for by name, is a Chromium-only API), and no
- * `webServer` entry because the spec builds and starts its own server against the in-process
- * Supabase Auth stub — see `e2e/deck-performance.spec.ts` for why a normal build cannot be
- * reused for that.
+ * A budget and a layout check, not a broad e2e suite: two specs, one Chromium project (CDP's
+ * network and CPU throttling, which Ticket #16 asks for by name, is a Chromium-only API), and
+ * no `webServer` entry because the suite builds and starts its own server against the
+ * in-process Supabase Auth stub — see `e2e/support/signed-in-app.ts` for why a normal build
+ * cannot be reused for that. The fixture there is worker-scoped, so the two specs share one
+ * build between them.
  */
 export default defineConfig({
   testDir: "./e2e",
