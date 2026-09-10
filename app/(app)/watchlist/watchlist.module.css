@@ -1,0 +1,41 @@
+/* The Deck's card, gridded. Wider column than the Deck because this is a scan across many
+   Profiles rather than a judgement on one. */
+
+.watchlist {
+  display: flex;
+  flex: 1;
+  width: 100%;
+  max-width: var(--shell-width);
+  margin-inline: auto;
+  flex-direction: column;
+  gap: var(--space-5);
+  padding: var(--space-6) var(--space-4) var(--space-8);
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2) var(--space-4);
+}
+
+.title {
+  font-size: var(--text-2xl);
+}
+
+.count {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--color-text-faint);
+}
+
+/* `min(16rem, 100%)` rather than a bare `16rem`: on a 390px phone the column tracks down to
+   the container's own width instead of overflowing it. */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(16rem, 100%), 1fr));
+  gap: var(--space-4);
+  list-style: none;
+}

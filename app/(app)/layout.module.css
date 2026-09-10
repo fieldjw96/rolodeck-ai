@@ -1,0 +1,94 @@
+/* The signed-in chrome: quiet, one rule deep, and out of the way of the card. */
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* Wraps rather than overflows: on a phone the nav drops to a second row of its own, which is
+   why `e2e/layout.spec.ts` can assert nothing scrolls sideways at 390px. */
+.bar {
+  display: flex;
+  width: 100%;
+  max-width: var(--shell-width);
+  margin-inline: auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-4);
+  padding: var(--space-3) var(--space-4);
+}
+
+.wordmark {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-tight);
+}
+
+.nav {
+  display: flex;
+  order: 1;
+  flex-basis: 100%;
+  gap: var(--space-4);
+}
+
+.navLink {
+  border-bottom: 2px solid transparent;
+  padding-bottom: var(--space-1);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-muted);
+  transition:
+    color var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+.navLink:hover {
+  color: var(--color-text);
+  border-bottom-color: var(--color-accent);
+}
+
+.account {
+  display: flex;
+  min-width: 0;
+  margin-left: auto;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.email {
+  overflow: hidden;
+  font-size: var(--text-xs);
+  color: var(--color-text-faint);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.signOut {
+  padding: var(--space-1) var(--space-3);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.signOut:hover {
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+}
+
+@media (min-width: 48rem) {
+  .nav {
+    order: 0;
+    flex-basis: auto;
+    margin-left: var(--space-4);
+  }
+}
