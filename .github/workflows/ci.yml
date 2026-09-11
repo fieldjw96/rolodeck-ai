@@ -33,6 +33,26 @@ jobs:
       # after the build: it greps what the build produced.
       - run: npm run check:bundle-secrets
 
+  # Ticket #17: the app has to build for someone who has only `.env.example` to go on — a
+  # fresh Vercel project, or Jack setting one up. This job proves it: the variables it sets
+  # are read straight out of `.env.example` (values and all, since none of them are real), so
+  # a variable added there without a matching line here cannot happen — there is exactly one
+  # place to add it. The job declares no other `env:`, and GitHub Actions jobs get no secret
+  # unless a step asks for one by name, so nothing else is available to paper over a variable
+  # the app needed but nobody documented.
+  build-with-documented-env:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Load only the variables .env.example documents
+        run: grep -E '^[A-Z_]+=' .env.example >> "$GITHUB_ENV"
+      - run: npm run build
+
   # Ticket #16: an explicit, enforced budget for `/deck` rather than an implicit "it feels
   # fine". The spec builds and starts its own server against the in-process Supabase Auth
   # stub — see `e2e/deck-performance.spec.ts` — so, like `migrate`, it needs no secret this
