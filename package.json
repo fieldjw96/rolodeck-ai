@@ -12,6 +12,7 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:e2e": "playwright test",
+    "test:e2e:db": "playwright test --config=playwright.db.config.ts",
     "check:bundle-secrets": "tsx scripts/check-bundle-secrets.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",

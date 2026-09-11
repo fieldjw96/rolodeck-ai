@@ -53,6 +53,37 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
 
+  # Ticket #13: the core swipe flow — Keep, Pass, the Watchlist, and the Deck's empty state —
+  # against a real Postgres and a real browser, not the mocked `/api/profiles` the `perf` job's
+  # specs use. Its own job, with its own service container, so a Postgres this suite needs is
+  # never assumed to be there for `perf`, which has none.
+  e2e-db:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e:db
+
   # The integration tests run Postgres in-process, which proves the policies behave but not
   # that the migration applies to a stock server. This job is that second question: a
   # scratch Postgres, the Supabase shim, then the migration, from empty.
