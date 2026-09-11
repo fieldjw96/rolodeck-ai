@@ -7,9 +7,14 @@ import { defineConfig, devices } from "@playwright/test";
  * in-process Supabase Auth stub — see `e2e/support/signed-in-app.ts` for why a normal build
  * cannot be reused for that. The fixture there is worker-scoped, so the two specs share one
  * build between them.
+ *
+ * `swipe-flow.spec.ts` is deliberately not among these specs: it asserts against a real
+ * Postgres (Ticket #13), which this config's server never has, and runs instead under
+ * `playwright.db.config.ts` and the `e2e-db` CI job.
  */
 export default defineConfig({
   testDir: "./e2e",
+  testIgnore: ["swipe-flow.spec.ts"],
   fullyParallel: false,
   workers: 1,
   retries: 0,
