@@ -22,6 +22,13 @@
       "when": 1788943340789,
       "tag": "0002_profile_natural_key",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1789107533253,
+      "tag": "0003_sector_controlled_vocabulary",
+      "breakpoints": true
     }
   ]
 }

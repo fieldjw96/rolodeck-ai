@@ -13,6 +13,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { authUid, authUsers, authenticatedRole } from "drizzle-orm/supabase";
 
+import { SECTOR_VALUES } from "./profile-input";
 import {
   PROVENANCE_VALUES,
   PROVENANCED_FIELDS,
@@ -22,6 +23,8 @@ import {
 const provenanceLiterals = PROVENANCE_VALUES.map((value) => `'${value}'`).join(
   ", ",
 );
+
+const sectorLiterals = SECTOR_VALUES.map((value) => `'${value}'`).join(", ");
 
 const hasValidProvenance = (field: string) =>
   `provenance ->> '${field}' in (${provenanceLiterals})`;
@@ -87,6 +90,12 @@ export const profiles = pgTable(
   },
   (table) => [
     check("profiles_provenance_covers_every_field", provenanceCoversEveryField),
+    /**
+     * The database's own half of the Sector vocabulary being closed. Zod guards the boundary
+     * in TypeScript; this guards it for the service-role ingest path, which bypasses RLS but
+     * not a check constraint, so `sector` cannot drift back to free text through it.
+     */
+    check("profiles_sector_is_controlled", sql.raw(`sector in (${sectorLiterals})`)),
     /**
      * The natural key ingest is idempotent on: one Profile per company name, per source, per
      * owner. It is a constraint rather than a convention because the write path runs under the

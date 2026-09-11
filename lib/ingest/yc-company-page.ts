@@ -12,6 +12,7 @@ import {
   type ScrapedProfile,
   type ScrapedProfileResult,
 } from "./scraped-profile";
+import { sectorFromRawText } from "./sector";
 import { stageFromTeamSize } from "./stage";
 
 /**
@@ -115,6 +116,7 @@ export function parseCompanyPage(
   }
 
   const company = page.data.props.company;
+  const rawSector = trimmed(company.tags[0]);
   const candidate: Record<string, unknown> = {
     name: trimmed(company.name),
     // The long description is the page's own prose about the company; the one-liner is the
@@ -123,8 +125,9 @@ export function parseCompanyPage(
     description:
       trimmed(company.long_description) ?? trimmed(company.one_liner),
     // YC's `tags` are its industry labels, most general first, which is what `sector` means
-    // here. A page that lists none has no sector, and is rejected for it.
-    sector: trimmed(company.tags[0]),
+    // here. A page that lists none has no sector, and is rejected for it; one that does is
+    // mapped onto the controlled vocabulary. See `lib/ingest/sector.ts`.
+    sector: rawSector === undefined ? undefined : sectorFromRawText(rawSector),
     // Derived from headcount, never stated by the page: a YC page carries batch, founding
     // year, status and team size, and no funding round at all. A page with no usable team
     // size yields no stage, and the candidate is rejected naming `stage`. See docs/adr/0007.

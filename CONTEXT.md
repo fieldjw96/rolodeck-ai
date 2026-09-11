@@ -1,35 +1,63 @@
 # Rolodeck AI
 
 A fully AI-authored build of the rolodeck concept: a swipeable deck of Bay Area startup
-profiles. This repo exists as a stress test of the agent-harness dispatcher running
-unattended with auto-merge on, not as a separate product decision from rolodeck itself.
+profiles. This repo exists as a stress test of the foreman dispatcher running unattended
+with auto-merge on, not as a separate product decision from rolodeck itself.
 
-This repo runs on agent-harness's dispatcher and inherits its vocabulary as-is: Ticket,
-Lane, Run, Gate, Bounce, Blocker and Acceptance Criteria are all defined in
-`agent-harness/CONTEXT.md` and are not redefined here.
+This repo runs on foreman's dispatcher and inherits its vocabulary as-is: Ticket, Lane, Run,
+Gate, Bounce, Blocker and Acceptance Criteria are all defined in `foreman/CONTEXT.md` and are
+not redefined here.
 
 ## Language
 
-**Profile**:
-One startup's record in the Deck: name, description, sector, stage, and provenance.
-_Avoid_: card, entry, listing
+**Company Profile**:
+One startup's record in the Deck: name, description, sector, stage, and provenance. Formerly
+just "Profile"; qualify it always now that **User Profile** below is a distinct thing.
+_Avoid_: card, entry, listing, and the bare word Profile
+
+**User Profile**:
+The owner's stated preferences, which rank the Deck: sectors, stages, area, exclusions.
+_Avoid_: settings, preferences, brief
 
 **Deck**:
-The ordered set of Profiles a session works through.
+The ordered set of Company Profiles a session works through.
 _Avoid_: feed, list, queue
 
 **Keep** / **Pass**:
-The two swipe actions on a Profile. Keep marks it worth a conversation; Pass dismisses it
-from the current Deck without deleting the Profile.
+The two swipe actions on a Company Profile. Keep marks it worth a conversation; Pass
+dismisses it from the current Deck without deleting the Company Profile.
 _Avoid_: like/dislike, save/skip, accept/reject
 
+**Sector**:
+A Company Profile's industry, drawn from a closed list of twelve so a User Profile's stated
+preference has something fixed to rank against: `ai-ml`, `developer-tools`,
+`data-infrastructure`, `saas-enterprise`, `fintech`, `health-bio`, `security`,
+`hardware-robotics`, `climate-energy`, `consumer-marketplace`, `vertical-saas`, `other`. Every
+Source maps its own raw sector text onto one of these at ingest, rather than writing free
+text; `other` is the honest answer when nothing else fits, not a bug.
+_Avoid_: industry, category, tag
+
 **Provenance**:
-Where a Profile field's value came from: `scraped`, `enriched`, or `jack`. Carried per
-field, not per Profile, matching rolodeck's own rule so the two repos stay comparable.
+Where a Company Profile field's value came from: `scraped`, `enriched`, or `jack`. Carried
+per field, not per Company Profile, matching rolodeck's own rule so the two repos stay
+comparable.
 _Avoid_: source, origin
 
 **Source**:
-One place Profiles are ingested from — SEC filings, Show HN, an accelerator's own pages —
-named as a lowercase slug. A Source is where a record came from; its Provenance is what kind
-of value each of its fields is.
+One place Company Profiles are ingested from — SEC filings, Show HN, an accelerator's own
+pages — named as a lowercase slug. A Source is where a record came from; its Provenance is
+what kind of value each of its fields is.
 _Avoid_: feed, provider, site
+
+**News**:
+Articles about a Kept Company Profile.
+_Avoid_: dispatch, feed, updates
+
+**Diary**:
+The calendar of Events.
+_Avoid_: calendar, agenda
+
+**Event**:
+A startup event with a name, date, location and link. Exists independently of any company;
+companies may attend it.
+_Avoid_: meetup, conference

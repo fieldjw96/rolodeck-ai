@@ -94,6 +94,17 @@ describe("parseFormDFiling, against captured filings", () => {
     },
   );
 
+  it("maps the filing's raw industry group text onto the controlled Sector list", () => {
+    // "Retailing" is the raw `industryGroupType` this filing states; see the description test
+    // below, which composes its prose from that same raw text.
+    const result = parseFormDFiling(fixture("sec-form-d-sporty-and-rich"));
+
+    expect(result.outcome).toBe("profile");
+    if (result.outcome !== "profile") return;
+
+    expect(result.profile.input.sector).toBe("consumer-marketplace");
+  });
+
   it("composes a description out of the facts the filing states", () => {
     const result = parseFormDFiling(fixture("sec-form-d-elder-swamp-club"));
 

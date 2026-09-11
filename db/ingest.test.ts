@@ -34,7 +34,7 @@ const SCRAPED_EXCEPT_STAGE: ProfileProvenance = {
 const SPROCKET: ProfileInput = {
   name: "Sprocket",
   description: "Developer tooling for warehouse robotics.",
-  sector: "Robotics",
+  sector: "hardware-robotics",
   stage: "seed",
   website: "https://sprocket.example",
 };
@@ -85,7 +85,7 @@ describe("persistProfiles", () => {
         candidateFor({
           name: "Quiet Co",
           description: "Stealth, no site yet.",
-          sector: "Fintech",
+          sector: "fintech",
           stage: "pre-seed",
         }),
       ],
@@ -162,7 +162,7 @@ describe("persistProfiles", () => {
         candidateFor({
           name: "Quiet Co",
           description: "Stealth, no site yet.",
-          sector: "Fintech",
+          sector: "fintech",
           stage: "pre-seed",
         }),
       ],
@@ -196,7 +196,7 @@ describe("persistProfiles idempotency", () => {
     candidateFor({
       name: "Quiet Co",
       description: "Stealth, no site yet.",
-      sector: "Fintech",
+      sector: "fintech",
       stage: "pre-seed",
     }),
   ];
@@ -277,7 +277,7 @@ describe("persistProfiles idempotency", () => {
       source: "yc",
       candidates: [
         candidateFor(SPROCKET),
-        candidateFor({ ...SPROCKET, sector: "Logistics" }),
+        candidateFor({ ...SPROCKET, sector: "saas-enterprise" }),
       ],
     });
 
@@ -287,7 +287,7 @@ describe("persistProfiles idempotency", () => {
     const rows = await scratch.db.select().from(profiles);
 
     expect(rows).toHaveLength(1);
-    expect(rows[0]?.sector).toBe("Logistics");
+    expect(rows[0]?.sector).toBe("saas-enterprise");
   });
 
   it("keeps the same company separate when two sources found it", async () => {

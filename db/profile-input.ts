@@ -20,6 +20,37 @@ export const stageSchema = z.enum(STAGE_VALUES);
 export type Stage = z.infer<typeof stageSchema>;
 
 /**
+ * The controlled vocabulary a Company Profile's `sector` is ranked against. Closed for the
+ * same reason `Stage` is: a source's own spelling — "Artificial Intelligence" next to "Machine
+ * Learning", "SaaS" next to "Enterprise Software" — cannot be allowed to fragment what ranking
+ * against a stated preference means. `other` is deliberate: ingest must be able to place every
+ * row, and a visible `other` is honest where a silent mis-map is not. See CONTEXT.md.
+ */
+export const SECTOR_VALUES = [
+  "ai-ml",
+  "developer-tools",
+  "data-infrastructure",
+  "saas-enterprise",
+  "fintech",
+  "health-bio",
+  "security",
+  "hardware-robotics",
+  "climate-energy",
+  "consumer-marketplace",
+  "vertical-saas",
+  "other",
+] as const;
+
+export const sectorSchema = z.enum(SECTOR_VALUES, {
+  // The default enum message lists the valid options but not what was actually sent; naming
+  // the offending value here is what lets a rejection be diagnosed from the log line alone.
+  error: (issue) =>
+    `must be one of the controlled Sector values, not ${JSON.stringify(issue.input)}`,
+});
+
+export type Sector = z.infer<typeof sectorSchema>;
+
+/**
  * The one shared boundary schema for anything that produces a Profile: scraper, seed loader,
  * and future enrichment all validate against this before a value reaches Postgres. Per
  * CLAUDE.md, scraped data is hostile, so a source that changes shape must fail loudly here,
@@ -35,7 +66,7 @@ const nonBlankString = z
 export const profileInputSchema = z.strictObject({
   name: nonBlankString,
   description: nonBlankString,
-  sector: nonBlankString,
+  sector: sectorSchema,
   stage: stageSchema,
   // Restricted to http(s) rather than any URL scheme z.url() would otherwise accept, so a
   // scraped `javascript:` or `data:` value is rejected here instead of surviving as a
