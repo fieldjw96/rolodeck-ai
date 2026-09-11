@@ -1,13 +1,17 @@
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+// @vitest-environment node
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("next/navigation", () => ({
+  redirect: vi.fn(),
+}));
+
+import { redirect } from "next/navigation";
 import Home from "./page";
 
 describe("Home", () => {
-  it("renders the Rolodeck AI heading", () => {
-    render(<Home />);
+  it("redirects to the Deck", () => {
+    Home();
 
-    expect(
-      screen.getByRole("heading", { name: "Rolodeck AI" }),
-    ).toBeInTheDocument();
+    expect(redirect).toHaveBeenCalledWith("/deck");
   });
 });

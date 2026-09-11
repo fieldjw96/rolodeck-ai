@@ -88,7 +88,7 @@ describe.each(authBackends())("the auth gate, against $name", ({ start }) => {
     const response = await applyAuthGate(request("/login", signedIn));
 
     expect(response.status).toBe(307);
-    expect(response.headers.get("location")).toBe(`${ORIGIN}/`);
+    expect(response.headers.get("location")).toBe(`${ORIGIN}/deck`);
   });
 
   it("turns away a session cookie that no longer names a real user", async () => {

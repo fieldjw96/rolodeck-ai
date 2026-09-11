@@ -50,6 +50,11 @@
   border-bottom-color: var(--color-accent);
 }
 
+.navLink[aria-current="page"] {
+  color: var(--color-text);
+  border-bottom-color: var(--color-accent);
+}
+
 .account {
   display: flex;
   min-width: 0;

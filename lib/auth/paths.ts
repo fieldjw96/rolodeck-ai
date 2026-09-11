@@ -6,7 +6,7 @@
 export const LOGIN_PATH = "/login";
 
 /** Where the gate sends a signed-in user who lands on `/login`. */
-export const HOME_PATH = "/";
+export const HOME_PATH = "/deck";
 
 /** Everything under here is a route handler, and answers in JSON. */
 export const API_PREFIX = "/api";
