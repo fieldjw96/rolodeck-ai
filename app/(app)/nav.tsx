@@ -16,7 +16,6 @@ export function Nav() {
         className={styles.navLink}
         href="/deck"
         aria-current={isCurrentRoute("/deck") ? "page" : undefined}
-        data-current={isCurrentRoute("/deck")}
       >
         Deck
       </Link>
@@ -24,7 +23,6 @@ export function Nav() {
         className={styles.navLink}
         href="/watchlist"
         aria-current={isCurrentRoute("/watchlist") ? "page" : undefined}
-        data-current={isCurrentRoute("/watchlist")}
       >
         Watchlist
       </Link>
