@@ -73,7 +73,7 @@ describe("signing in", () => {
     await expect(
       signIn(form({ email: user.email, password: user.password })),
     ).rejects.toMatchObject({
-      digest: expect.stringContaining("NEXT_REDIRECT"),
+      digest: expect.stringContaining("/deck"),
     });
 
     expect(sessionCookies().length).toBeGreaterThan(0);

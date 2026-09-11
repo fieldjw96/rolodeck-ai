@@ -1,8 +1,8 @@
-import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { requireUser } from "../../lib/auth/session";
 import { signOut } from "./actions";
+import { Nav } from "./nav";
 import styles from "./layout.module.css";
 
 /**
@@ -27,14 +27,7 @@ export default async function AppLayout({
       <header className={styles.header}>
         <div className={styles.bar}>
           <span className={styles.wordmark}>Rolodeck AI</span>
-          <nav className={styles.nav}>
-            <Link className={styles.navLink} href="/deck">
-              Deck
-            </Link>
-            <Link className={styles.navLink} href="/watchlist">
-              Watchlist
-            </Link>
-          </nav>
+          <Nav />
           <div className={styles.account}>
             <span className={styles.email}>{user.email}</span>
             <form action={signOut}>
