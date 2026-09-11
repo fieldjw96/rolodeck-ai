@@ -443,4 +443,21 @@ describe("the Deck", () => {
       await screen.findByRole("heading", { name: "Globex" }),
     ).toBeInTheDocument();
   });
+
+  it("tells Keep and Pass apart by text, not colour alone", async () => {
+    stubFetch({
+      "GET /api/profiles": { profiles: [acme], next_cursor: null },
+    });
+
+    render(<Deck />);
+
+    const pass = await screen.findByRole("button", { name: "Pass" });
+    const keep = screen.getByRole("button", { name: "Keep" });
+
+    // Ticket #12: a screen reader announces these distinctly, and the check is at the level
+    // of rendered content rather than of the colour each is styled with.
+    expect(pass.textContent).toContain("Pass");
+    expect(keep.textContent).toContain("Keep");
+    expect(pass.textContent).not.toBe(keep.textContent);
+  });
 });
