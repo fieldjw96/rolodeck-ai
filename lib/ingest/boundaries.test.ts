@@ -8,14 +8,18 @@ import {
 } from "../testing/sources";
 
 /**
- * Every Source parser under `lib/ingest` reads bytes a caller already has, and one module —
- * `edgar.ts` — goes and gets them. That split is what lets the parsers be tested offline
- * against committed captures, so it is asserted here rather than left to a comment.
+ * Every Source parser under `lib/ingest` reads bytes a caller already has, and two modules —
+ * `edgar.ts` for the SEC Form D Source, `accelerator-fetch.ts` for the accelerator batch pages
+ * — go and get them. That split is what lets the parsers be tested offline against committed
+ * captures, so it is asserted here rather than left to a comment.
  *
  * A file added tomorrow is covered too: this reads the tree rather than a hand-kept list, and
- * the only way to add a second fetching module is to say so on the line below.
+ * the only way to add a third fetching module is to say so on the line below.
  */
-const MAY_FETCH = new Set(["lib/ingest/edgar.ts"]);
+const MAY_FETCH = new Set([
+  "lib/ingest/accelerator-fetch.ts",
+  "lib/ingest/edgar.ts",
+]);
 
 describe("the ingest boundary", () => {
   const NETWORK_MODULES = new Set([
