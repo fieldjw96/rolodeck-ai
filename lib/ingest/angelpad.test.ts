@@ -67,12 +67,12 @@ describe("parseAngelPadPortfolio, against the captured page", () => {
     const postmates = profiles.find(
       (profile) => profile.input.name === "Postmates",
     );
-    expect(postmates?.input.sector).toBe("Gig Economy");
+    expect(postmates?.input.sector).toBe("consumer-marketplace");
 
     const iterable = profiles.find(
       (profile) => profile.input.name === "Iterable",
     );
-    expect(iterable?.input.sector).toBe("Marketing");
+    expect(iterable?.input.sector).toBe("saas-enterprise");
   });
 
   it("records every alumnus as pre-seed, regardless of how far it has since gone", () => {

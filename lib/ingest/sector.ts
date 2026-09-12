@@ -58,6 +58,7 @@ const SECTOR_BY_RAW_TEXT: ReadonlyMap<string, Sector> = new Map([
 
   // consumer-marketplace
   ["marketplace", "consumer-marketplace"],
+  ["gig economy", "consumer-marketplace"],
   ["community", "consumer-marketplace"],
   ["e-commerce", "consumer-marketplace"],
   ["retailing", "consumer-marketplace"],

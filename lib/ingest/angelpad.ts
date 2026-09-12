@@ -3,6 +3,7 @@ import {
   type IngestRejection,
 } from "../../db/profile-input";
 import { decodeEntities } from "./entities";
+import { sectorFromRawText } from "./sector";
 import {
   attribute,
   type Capture,
@@ -104,7 +105,12 @@ function parseEntry(
   const input = parseProfileInput({
     name: trimmed(decodeEntities(rawName)),
     description: trimmed(textOf(descriptionHtml)),
-    sector: sectorOf(filterAttribute),
+    // The filter attribute is free text; the column takes the controlled vocabulary, so it
+    // is mapped here as every other Source does. See `lib/ingest/sector.ts`.
+    sector:
+      sectorOf(filterAttribute) === undefined
+        ? undefined
+        : sectorFromRawText(sectorOf(filterAttribute)!),
     // Never stated by the page: AngelPad's own admission bar. See the module comment.
     stage: "pre-seed",
   });
