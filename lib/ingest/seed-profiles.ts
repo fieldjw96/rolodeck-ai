@@ -12,7 +12,9 @@ import { sectorFromRawText } from "./sector";
 export const SEED_SOURCE = "jack";
 
 /** A hand-curated row, with `sector` still in Jack's own words rather than the controlled list. */
-type RawSeedProfile = Omit<ProfileInput, "sector"> & { readonly sector: string };
+type RawSeedProfile = Omit<ProfileInput, "sector"> & {
+  readonly sector: string;
+};
 
 /**
  * Real, named, Bay-Area-headquartered startups, hand-curated from public knowledge rather than

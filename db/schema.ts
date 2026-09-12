@@ -95,7 +95,10 @@ export const profiles = pgTable(
      * in TypeScript; this guards it for the service-role ingest path, which bypasses RLS but
      * not a check constraint, so `sector` cannot drift back to free text through it.
      */
-    check("profiles_sector_is_controlled", sql.raw(`sector in (${sectorLiterals})`)),
+    check(
+      "profiles_sector_is_controlled",
+      sql.raw(`sector in (${sectorLiterals})`),
+    ),
     /**
      * The natural key ingest is idempotent on: one Profile per company name, per source, per
      * owner. It is a constraint rather than a convention because the write path runs under the

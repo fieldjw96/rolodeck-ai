@@ -30,9 +30,9 @@ describe("SEED_PROFILES", () => {
   it("maps Jack's own sector text onto the controlled Sector list", () => {
     // Anthropic is hand-curated as "Artificial Intelligence"; see the raw list in
     // `seed-profiles.ts`.
-    expect(SEED_PROFILES.find((input) => input.name === "Anthropic")?.sector).toBe(
-      "ai-ml",
-    );
+    expect(
+      SEED_PROFILES.find((input) => input.name === "Anthropic")?.sector,
+    ).toBe("ai-ml");
   });
 });
 
