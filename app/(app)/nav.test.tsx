@@ -8,7 +8,7 @@ vi.mock("next/navigation", () => ({
 import { usePathname } from "next/navigation";
 import { Nav } from "./nav";
 
-const LINKS = ["Deck", "Watchlist", "News"] as const;
+const LINKS = ["Deck", "Watchlist", "News", "Settings"] as const;
 
 beforeEach(() => {
   vi.mocked(usePathname).mockReset();
@@ -28,14 +28,14 @@ function currentLinks(): string[] {
 }
 
 describe("Nav", () => {
-  it("links to the Deck, the Watchlist and News, in that order", () => {
+  it("links to the Deck, the Watchlist, News and Settings, in that order", () => {
     vi.mocked(usePathname).mockReturnValue("/deck");
 
     render(<Nav />);
 
     expect(
       screen.getAllByRole("link").map((link) => link.getAttribute("href")),
-    ).toEqual(["/deck", "/watchlist", "/news"]);
+    ).toEqual(["/deck", "/watchlist", "/news", "/settings"]);
   });
 
   it("marks the Deck link with aria-current when on the Deck", () => {
@@ -60,6 +60,14 @@ describe("Nav", () => {
     render(<Nav />);
 
     expect(currentLinks()).toEqual(["News"]);
+  });
+
+  it("marks the Settings link with aria-current when on Settings", () => {
+    vi.mocked(usePathname).mockReturnValue("/settings");
+
+    render(<Nav />);
+
+    expect(currentLinks()).toEqual(["Settings"]);
   });
 
   it("does not mark any link when on a different route", () => {

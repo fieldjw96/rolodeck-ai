@@ -43,6 +43,13 @@
       "when": 1789336272254,
       "tag": "0005_news_items",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1789341483457,
+      "tag": "0006_user_profiles",
+      "breakpoints": true
     }
   ]
 }

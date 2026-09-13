@@ -14,7 +14,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { authUid, authUsers, authenticatedRole } from "drizzle-orm/supabase";
 
-import { SECTOR_VALUES } from "./profile-input";
+import { SECTOR_VALUES, type Sector, type Stage } from "./profile-input";
 import {
   PROVENANCE_VALUES,
   PROVENANCED_FIELDS,
@@ -215,6 +215,80 @@ export const swipes = pgTable(
 
 export type Swipe = typeof swipes.$inferSelect;
 export type NewSwipe = typeof swipes.$inferInsert;
+
+/**
+ * The owner's stated preferences, which the ranking Ticket reads. See CONTEXT.md: a User
+ * Profile is distinct from a Company Profile, and this table is keyed by user id rather than
+ * having an id of its own because the owner has exactly one row — see `readUserProfile` in
+ * `db/user-profile.ts` for what a never-saved owner reads instead of a missing row.
+ */
+export const userProfiles = pgTable(
+  "user_profiles",
+  {
+    userId: uuid("user_id")
+      .primaryKey()
+      .references(() => authUsers.id, { onDelete: "cascade" }),
+    sectors: text("sectors").array().$type<Sector[]>().notNull().default([]),
+    stages: text("stages").array().$type<Stage[]>().notNull().default([]),
+    // A plain string rather than an enum: there is exactly one value today, and inventing a
+    // region taxonomy before there is a second region is speculative. See CLAUDE.md and the
+    // Ticket's own notes.
+    area: text("area").notNull().default("Bay Area"),
+    excludedSectors: text("excluded_sectors")
+      .array()
+      .$type<Sector[]>()
+      .notNull()
+      .default([]),
+  },
+  (table) => [
+    /**
+     * The database's own half of the Sector vocabulary being closed, matching
+     * `profiles_sector_is_controlled`: `sectors` and `excluded_sectors` can only ever hold
+     * values from the closed list, even for a write that reaches Postgres some way other than
+     * this app's own Zod boundary. `<@` is "is contained by".
+     */
+    check(
+      "user_profiles_sectors_are_controlled",
+      sql.raw(`sectors <@ array[${sectorLiterals}]::text[]`),
+    ),
+    check(
+      "user_profiles_excluded_sectors_are_controlled",
+      sql.raw(`excluded_sectors <@ array[${sectorLiterals}]::text[]`),
+    ),
+    /**
+     * A Sector cannot be both stated and excluded at once — the rule the Ticket asks be
+     * enforced rather than documented. `&&` is array overlap: true when the two sets share at
+     * least one element.
+     */
+    check(
+      "user_profiles_sectors_excluded_disjoint",
+      sql`not (${table.sectors} && ${table.excludedSectors})`,
+    ),
+    /**
+     * The only way to read or write a User Profile is to be signed in as its owner, matching
+     * the pattern `profiles` and `swipes` already use.
+     */
+    pgPolicy("user_profiles_select_own", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`${authUid} = ${table.userId}`,
+    }),
+    pgPolicy("user_profiles_insert_own", {
+      for: "insert",
+      to: authenticatedRole,
+      withCheck: sql`${authUid} = ${table.userId}`,
+    }),
+    pgPolicy("user_profiles_update_own", {
+      for: "update",
+      to: authenticatedRole,
+      using: sql`${authUid} = ${table.userId}`,
+      withCheck: sql`${authUid} = ${table.userId}`,
+    }),
+  ],
+);
+
+export type UserProfileRow = typeof userProfiles.$inferSelect;
+export type NewUserProfileRow = typeof userProfiles.$inferInsert;
 
 /**
  * News: articles about a Kept Company Profile, one row per article per Company Profile.
