@@ -88,7 +88,7 @@ async function main(): Promise<void> {
     );
 
     results.push(
-      await check("Deck deals a Company Profile from Postgres", async () => {
+      await check("Deck answers from Postgres", async () => {
         await page.goto(`${options.baseUrl}/deck`, {
           waitUntil: "networkidle",
         });
@@ -104,13 +104,25 @@ async function main(): Promise<void> {
           );
         }
 
+        // An exhausted Deck is a healthy answer, not a failure. Requiring a dealt Company
+        // Profile would turn this check red the day the last one is judged, on a deployment
+        // with nothing wrong with it. The Gate caught this on PR #129; the question the
+        // check is actually asking is whether the Deck reached the database and said
+        // something, not whether the database happened to have a row left.
+        if (/No Profiles left in the Deck/i.test(body))
+          return "empty Deck, which is healthy";
+
+        if (/Dealing the Deck/i.test(body)) {
+          throw new Error("the Deck is still on its loading state after 2s");
+        }
+
         const keep = page.getByRole("button", { name: /keep/i });
         if ((await keep.count()) === 0) {
           throw new Error(
-            "no Keep control on the Deck, so no Company Profile was dealt",
+            "the Deck rendered neither a Company Profile, an empty state, nor an error",
           );
         }
-        return `${body.slice(0, 60).trim()}...`;
+        return `dealt: ${body.slice(0, 50).trim()}...`;
       }),
     );
 
