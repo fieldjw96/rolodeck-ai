@@ -1,6 +1,6 @@
 {
-  "id": "9e2f12bc-18a7-4001-83e0-140b78f9b80c",
-  "prevId": "baa43193-4c15-46e1-a4e7-75ed12b6f831",
+  "id": "ebddd0e8-1163-4cf2-874b-18e60f2b0ebb",
+  "prevId": "8a3b5fff-3fe4-4ce5-a818-764988b6cfb4",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -222,6 +222,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "location": {
+          "name": "location",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "provenance": {
           "name": "provenance",
           "type": "jsonb",
@@ -334,7 +340,7 @@
       "checkConstraints": {
         "profiles_provenance_covers_every_field": {
           "name": "profiles_provenance_covers_every_field",
-          "value": "coalesce(\n  provenance ->> 'name' in ('scraped', 'enriched', 'jack')\n  and provenance ->> 'description' in ('scraped', 'enriched', 'jack')\n  and provenance ->> 'sector' in ('scraped', 'enriched', 'jack')\n  and provenance ->> 'stage' in ('scraped', 'enriched', 'jack')\n  and (website is null) = (provenance ->> 'website' is null)\n  and (website is null or provenance ->> 'website' in ('scraped', 'enriched', 'jack'))\n, false)"
+          "value": "coalesce(\n  provenance ->> 'name' in ('scraped', 'enriched', 'jack')\n  and provenance ->> 'description' in ('scraped', 'enriched', 'jack')\n  and provenance ->> 'sector' in ('scraped', 'enriched', 'jack')\n  and provenance ->> 'stage' in ('scraped', 'enriched', 'jack')\n  and (website is null) = (provenance ->> 'website' is null)\n  and (website is null or provenance ->> 'website' in ('scraped', 'enriched', 'jack'))\n  and (location is null) = (provenance ->> 'location' is null)\n  and (location is null or provenance ->> 'location' in ('scraped', 'enriched', 'jack'))\n, false)"
         },
         "profiles_sector_is_controlled": {
           "name": "profiles_sector_is_controlled",
