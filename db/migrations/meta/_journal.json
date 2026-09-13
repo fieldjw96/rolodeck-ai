@@ -29,6 +29,13 @@
       "when": 1789107533253,
       "tag": "0003_sector_controlled_vocabulary",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1789322729708,
+      "tag": "0004_company_profile_location",
+      "breakpoints": true
     }
   ]
 }

@@ -53,6 +53,8 @@ describe("backfillSeedProfiles", () => {
       expect(row.provenance.sector).toBe("jack");
       expect(row.provenance.stage).toBe("jack");
       expect(row.provenance.website).toBe(row.website === null ? null : "jack");
+      expect(row.location).not.toBeNull();
+      expect(row.provenance.location).toBe("jack");
     }
   });
 

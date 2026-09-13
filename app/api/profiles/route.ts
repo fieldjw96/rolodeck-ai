@@ -22,6 +22,7 @@ function toJson(profile: DeckProfile) {
     sector: profile.sector,
     stage: profile.stage,
     website: profile.website,
+    location: profile.location,
     provenance: profile.provenance,
     created_at: profile.createdAt.toISOString(),
   };

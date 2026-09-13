@@ -134,6 +134,13 @@ describe("provenance", () => {
     }
   });
 
+  it("writes a null location, and no null provenance to attribute it, because a Show HN post states none", () => {
+    const result = parsed("show-hn-unblur");
+
+    expect(result.input.location).toBeUndefined();
+    expect(result.attribution.location).toBeNull();
+  });
+
   it("marks sector enriched, because it is derived from the post's own words, not stated", () => {
     expect(parsed("show-hn-unblur").attribution.sector.provenance).toBe(
       "enriched",
@@ -157,6 +164,7 @@ describe("provenance", () => {
       sector: "enriched",
       stage: "enriched",
       website: "scraped",
+      location: null,
     });
   });
 });

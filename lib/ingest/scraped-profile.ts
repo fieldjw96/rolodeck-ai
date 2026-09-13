@@ -39,14 +39,15 @@ export type FieldProvenance = Capture & {
 };
 
 /**
- * A field with no value has no provenance: `website` is the one optional Profile field, so it
- * is the one entry that can be null here. This mirrors the shape the `profiles` check
- * constraint enforces — see docs/adr/0003.
+ * A field with no value has no provenance: `website` and `location` are the two optional
+ * Profile fields, so they are the two entries that can be null here. This mirrors the shape
+ * the `profiles` check constraint enforces — see docs/adr/0003.
  */
 export type ProfileAttribution = Readonly<
-  Record<Exclude<ProvenancedField, "website">, FieldProvenance>
+  Record<Exclude<ProvenancedField, "website" | "location">, FieldProvenance>
 > & {
   readonly website: FieldProvenance | null;
+  readonly location: FieldProvenance | null;
 };
 
 export type ScrapedProfile = {
@@ -85,5 +86,6 @@ export function toProfileProvenance(
     sector: attribution.sector.provenance,
     stage: attribution.stage.provenance,
     website: attribution.website?.provenance ?? null,
+    location: attribution.location?.provenance ?? null,
   };
 }

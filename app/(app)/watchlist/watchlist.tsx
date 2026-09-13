@@ -11,6 +11,7 @@ type KeptProfile = {
   name: string;
   sector: string;
   stage: string;
+  location: string | null;
 };
 
 type ProfilesPage = {
@@ -130,6 +131,7 @@ export function Watchlist() {
               name={profile.name}
               sector={profile.sector}
               stage={profile.stage}
+              location={profile.location}
             />
           </li>
         ))}

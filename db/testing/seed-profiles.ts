@@ -2,13 +2,15 @@ import type { Database } from "../connection";
 import type { ProfileProvenance } from "../provenance";
 import { profiles } from "../schema";
 
-/** Valid provenance for every field of a seeded Profile, which has no website to attribute. */
+/** Valid provenance for every field of a seeded Profile, which has no website or location to
+ * attribute. */
 export const SEEDED_PROVENANCE: ProfileProvenance = {
   name: "scraped",
   description: "scraped",
   sector: "enriched",
   stage: "jack",
   website: null,
+  location: null,
 };
 
 /** Far enough apart that "newest first" is a fact about the data, not about insert order. */
