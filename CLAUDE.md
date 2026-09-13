@@ -1,10 +1,12 @@
 # Rolodeck AI
 
 A fully AI-authored build of the rolodeck concept: a swipeable deck of Bay Area startup
-profiles. This is the sibling of `fieldjw96/rolodeck`, built entirely through
-`agent-harness` Runs with auto-merge on, as a stress test of the dispatcher running
-unattended overnight. See `agent-harness/CLAUDE.md` for how the dispatcher works, and
-[[CONTEXT]] plus `docs/adr/` for this repo's own vocabulary and decisions.
+profiles. It began as a stress test of an unattended dispatcher and is now the product:
+deployed at https://rolodeck-ai.vercel.app and built entirely through Runs.
+
+The supervisor is `foreman`, which replaced `agent-harness` on 2026-09-10; that repo is
+archived and nothing here should be read as depending on it. See `foreman/README.md` for how
+Runs work, and [[CONTEXT]] plus `docs/adr/` for this repo's own vocabulary and decisions.
 
 ## Scope, and what this is not
 
@@ -43,7 +45,15 @@ than propagating `undefined` into a Profile.
 
 ## Definition of done, here specifically
 
-Unlike rolodeck, this repo merges without Jack: a pull request merges itself once
-typecheck, lint, format, the full test suite, coverage on changed lines, and a build are
-all green, and the second-agent review Gate has approved it. See `agent-harness` ADR 0004,
-ADR 0009 and this repo's own ADR 0001 for why.
+Most of this repo merges without Jack. A pull request merges itself once every required
+check is green, the second-agent review Gate has approved it, and the branch is up to date
+with `main`. Those rules are enforced by a GitHub branch ruleset rather than by the
+supervisor, so they cannot be got wrong by a bug in ours.
+
+Three paths are the exception and always need Jack's own approval, listed in
+`.github/CODEOWNERS`: `.github/workflows/`, because it is the Gate itself; `db/migrations/`,
+because reverting a commit does not unmake a schema change; and CODEOWNERS, because a rule
+must not be editable by what it constrains.
+
+See ADR 0010, which supersedes ADR 0001. The `agent-harness` ADRs that ADR 0001 referred to
+are archived along with that repo; `foreman` replaced it.
