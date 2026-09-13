@@ -48,10 +48,10 @@ const candidateSchema = z
     provenance: profileProvenanceSchema,
   })
   /**
-   * `website` is the one optional Profile field, so it is the one field whose provenance can
-   * be null — and it must be null exactly when there is no website to attribute. The
-   * `profiles_provenance_covers_every_field` check constraint refuses the same row
-   * underneath; catching it here is what turns a constraint violation that aborts a batch
+   * `website` and `location` are the two optional Profile fields, so they are the two fields
+   * whose provenance can be null — and each must be null exactly when there is no value to
+   * attribute. The `profiles_provenance_covers_every_field` check constraint refuses the same
+   * row underneath; catching it here is what turns a constraint violation that aborts a batch
    * into one rejection, named, that the rest of the batch survives.
    */
   .refine(
@@ -62,6 +62,16 @@ const candidateSchema = z
       error:
         "must be null exactly when the Profile has no website, and set when it has one",
       path: ["provenance", "website"],
+    },
+  )
+  .refine(
+    (candidate) =>
+      (candidate.input.location === undefined) ===
+      (candidate.provenance.location === null),
+    {
+      error:
+        "must be null exactly when the Profile has no location, and set when it has one",
+      path: ["provenance", "location"],
     },
   );
 
@@ -157,6 +167,7 @@ export async function persistProfiles(
           sector: candidate.input.sector,
           stage: candidate.input.stage,
           website: candidate.input.website ?? null,
+          location: candidate.input.location ?? null,
           provenance: candidate.provenance,
         })
         .onConflictDoUpdate({
@@ -169,6 +180,7 @@ export async function persistProfiles(
             sector: sql`excluded.sector`,
             stage: sql`excluded.stage`,
             website: sql`excluded.website`,
+            location: sql`excluded.location`,
             provenance: sql`excluded.provenance`,
           },
         })

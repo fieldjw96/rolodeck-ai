@@ -51,14 +51,16 @@ export type FieldProvenance = Capture & {
 };
 
 /**
- * `website` is the one optional Profile field, so it is the one entry that can be null here —
- * a post with no company URL at all never reaches this shape, since it is rejected before one
- * is built. Kept nullable anyway so this type says the same thing `yc-company-page.ts`'s does.
+ * `website` is the one optional Profile field a post always has by the time this shape is
+ * built — a post with no company URL at all is rejected before one is built — but `location`
+ * is never stated by a Show HN post at all, so it is the one entry that is always null here.
+ * Kept nullable for both anyway so this type says the same thing `yc-company-page.ts`'s does.
  */
 export type ProfileAttribution = Readonly<
-  Record<Exclude<ProvenancedField, "website">, FieldProvenance>
+  Record<Exclude<ProvenancedField, "website" | "location">, FieldProvenance>
 > & {
   readonly website: FieldProvenance | null;
+  readonly location: FieldProvenance | null;
 };
 
 export type ScrapedProfile = {
@@ -423,6 +425,8 @@ export function parseShowHnPost(
         // A population assumption, not read from this post at all. See the module docstring.
         stage: attribute(capture, "enriched"),
         website: scraped,
+        // A Show HN post states no location at all, unlike a filing's own address.
+        location: null,
       },
     },
   };
@@ -472,5 +476,6 @@ export function toProfileProvenance(
     sector: attribution.sector.provenance,
     stage: attribution.stage.provenance,
     website: attribution.website?.provenance ?? null,
+    location: attribution.location?.provenance ?? null,
   };
 }

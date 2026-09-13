@@ -45,6 +45,9 @@ export const nameKeyOf = (value: SQL): SQL =>
 const hasValidProvenance = (field: string) =>
   `provenance ->> '${field}' in (${provenanceLiterals})`;
 
+/** The Profile fields nullable enough that their provenance can be null too. */
+const NULLABLE_FIELDS: readonly string[] = ["website", "location"];
+
 /**
  * The database's own half of the per-field provenance rule. Zod guards the boundary in
  * TypeScript; this guards it for anything that reaches Postgres another way, including the
@@ -55,13 +58,15 @@ const provenanceCoversEveryField = sql.raw(
   // no provenance key at all would slip through unwrapped. The coalesce is what turns a
   // missing field into a rejection rather than a silently unattributed value.
   `coalesce(\n  ${[
-    ...PROVENANCED_FIELDS.filter((field) => field !== "website").map(
-      hasValidProvenance,
-    ),
-    // `website` is the one nullable Profile field: it carries provenance exactly when it
-    // has a value to attribute.
-    `(website is null) = (provenance ->> 'website' is null)`,
-    `(website is null or ${hasValidProvenance("website")})`,
+    ...PROVENANCED_FIELDS.filter(
+      (field) => !NULLABLE_FIELDS.includes(field),
+    ).map(hasValidProvenance),
+    // `website` and `location` are the two nullable Profile fields: each carries provenance
+    // exactly when it has a value to attribute.
+    ...NULLABLE_FIELDS.flatMap((field) => [
+      `(${field} is null) = (provenance ->> '${field}' is null)`,
+      `(${field} is null or ${hasValidProvenance(field)})`,
+    ]),
   ].join("\n  and ")}\n, false)`,
 );
 
@@ -87,6 +92,12 @@ export const profiles = pgTable(
     sector: text("sector").notNull(),
     stage: text("stage").notNull(),
     website: text("website"),
+    /**
+     * A human-readable place, such as "San Francisco, CA" — nullable because not every
+     * Source states one. See CLAUDE.md: the product's central "Bay Area" claim is otherwise
+     * unenforceable and unverifiable.
+     */
+    location: text("location"),
     provenance: jsonb("provenance").$type<ProfileProvenance>().notNull(),
     /**
      * The name reduced to what identity actually depends on: case-folded, with runs of
