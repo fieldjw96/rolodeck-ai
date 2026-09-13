@@ -33,8 +33,15 @@
     {
       "idx": 4,
       "version": "7",
-      "when": 1789330187054,
-      "tag": "0005_user_profiles",
+      "when": 1789330022045,
+      "tag": "0006_news_items",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1789336139625,
+      "tag": "0007_user_profiles",
       "breakpoints": true
     }
   ]

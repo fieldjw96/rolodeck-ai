@@ -53,6 +53,12 @@ _Avoid_: feed, provider, site
 Articles about a Kept Company Profile.
 _Avoid_: dispatch, feed, updates
 
+**Confidence**:
+How sure News is that an article is about the Kept Company Profile it is attributed to, from 0
+to 1. Stored for every candidate article; only those at or above the display threshold are
+shown. See `docs/adr/0010`.
+_Avoid_: relevance, score, match quality
+
 **Diary**:
 The calendar of Events.
 _Avoid_: calendar, agenda
