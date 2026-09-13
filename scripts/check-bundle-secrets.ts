@@ -17,13 +17,15 @@ import path from "node:path";
  * The variables that carry a secret. Names, not values: a name in a client chunk means Next
  * either inlined the value or is about to be asked to, and either way the build is wrong.
  * `SUPABASE_SERVICE_ROLE_KEY` is Supabase's older name for the secret key and is here so that
- * reaching for the old name is caught too.
+ * reaching for the old name is caught too. `GNEWS_API_KEY` is News's provider credential: it
+ * spends a quota on Jack's account, and nothing in the browser fetches News from GNews.
  */
 const SECRET_VARIABLES = [
   "SUPABASE_SECRET_KEY",
   "SUPABASE_SERVICE_ROLE_KEY",
   "DATABASE_URL",
   "SUPABASE_DB_URL",
+  "GNEWS_API_KEY",
 ];
 
 /**

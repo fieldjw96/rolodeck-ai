@@ -26,6 +26,33 @@ async function stubProfiles(page: Page): Promise<void> {
   });
 }
 
+/** One article about the same Profile, for the News page's own checks. */
+async function stubNews(page: Page): Promise<void> {
+  await page.route("**/api/news", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        companies: [
+          {
+            profile: { id: PROFILE.id, name: PROFILE.name, sector: "other" },
+            items: [
+              {
+                id: "22222222-2222-2222-2222-222222222222",
+                title: "Acme raises a seed round for faster widgets",
+                url: "https://news.example/acme",
+                published_at: "2026-09-01T12:00:00.000Z",
+                source_name: "The Example Times",
+                confidence: 0.75,
+              },
+            ],
+          },
+        ],
+      }),
+    });
+  });
+}
+
 /** A signed-in, stubbed page in its own browser context, the way `layout.spec.ts` builds one
  * per test — pulled into one helper here because every test in this file needs exactly this. */
 async function openSignedInPage(
@@ -39,6 +66,7 @@ async function openSignedInPage(
 
   const page = await context.newPage();
   await stubProfiles(page);
+  await stubNews(page);
   return page;
 }
 
@@ -91,7 +119,28 @@ test("/watchlist has no critical or serious accessibility violations", async ({
   await page.context().close();
 });
 
-test("Tab reaches Deck, Watchlist, Sign out, Pass and Keep on /deck, in DOM order, each with a visible focus outline", async ({
+test("/news has no critical or serious accessibility violations", async ({
+  browser,
+  app,
+}) => {
+  const page = await openSignedInPage(browser, app);
+  await page.goto(`${app.baseURL}/news`);
+  await expect(
+    page.getByRole("heading", { level: 2, name: PROFILE.name }),
+  ).toBeVisible();
+
+  const results = await new AxeBuilder({ page }).analyze();
+  const seriousOrWorse = results.violations.filter(
+    (violation) =>
+      violation.impact === "critical" || violation.impact === "serious",
+  );
+
+  expect(seriousOrWorse, JSON.stringify(seriousOrWorse, null, 2)).toEqual([]);
+
+  await page.context().close();
+});
+
+test("Tab reaches Deck, Watchlist, News, Sign out, Pass and Keep on /deck, in DOM order, each with a visible focus outline", async ({
   browser,
   app,
 }) => {
@@ -112,6 +161,11 @@ test("Tab reaches Deck, Watchlist, Sign out, Pass and Keep on /deck, in DOM orde
   await expectVisibleFocusOutline(focused);
 
   await page.keyboard.press("Tab");
+  await expect(focused).toHaveRole("link");
+  await expect(focused).toHaveAccessibleName("News");
+  await expectVisibleFocusOutline(focused);
+
+  await page.keyboard.press("Tab");
   await expect(focused).toHaveRole("button");
   await expect(focused).toHaveAccessibleName("Sign out");
   await expectVisibleFocusOutline(focused);
@@ -129,7 +183,7 @@ test("Tab reaches Deck, Watchlist, Sign out, Pass and Keep on /deck, in DOM orde
   await page.context().close();
 });
 
-test("Tab reaches Deck, Watchlist and Sign out on /watchlist, in DOM order, each with a visible focus outline", async ({
+test("Tab reaches Deck, Watchlist, News and Sign out on /watchlist, in DOM order, each with a visible focus outline", async ({
   browser,
   app,
 }) => {
@@ -149,6 +203,11 @@ test("Tab reaches Deck, Watchlist and Sign out on /watchlist, in DOM order, each
   await page.keyboard.press("Tab");
   await expect(focused).toHaveRole("link");
   await expect(focused).toHaveAccessibleName("Watchlist");
+  await expectVisibleFocusOutline(focused);
+
+  await page.keyboard.press("Tab");
+  await expect(focused).toHaveRole("link");
+  await expect(focused).toHaveAccessibleName("News");
   await expectVisibleFocusOutline(focused);
 
   await page.keyboard.press("Tab");

@@ -3,9 +3,12 @@ import { describe, expect, it } from "vitest";
 
 import {
   createEdgarThrottle,
+  createGNewsThrottle,
   createThrottle,
   EDGAR_RATE_WINDOW_MS,
   EDGAR_REQUESTS_PER_SECOND,
+  GNEWS_RATE_WINDOW_MS,
+  GNEWS_REQUESTS_PER_SECOND,
 } from "./throttle";
 
 /**
@@ -131,5 +134,19 @@ describe("the EDGAR throttle", () => {
     );
 
     expect(order).toEqual([0, 1, 2]);
+  });
+});
+
+describe("the GNews throttle", () => {
+  it("never sends more than one request in any one second", async () => {
+    const clock = fakeClock();
+    const throttle = createGNewsThrottle(clock);
+
+    const at = await send(throttle, clock.now, 4);
+
+    expect(busiestWindow(at, GNEWS_RATE_WINDOW_MS)).toBe(
+      GNEWS_REQUESTS_PER_SECOND,
+    );
+    expect(at).toEqual([0, 1_000, 2_000, 3_000]);
   });
 });
