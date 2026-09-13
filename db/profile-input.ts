@@ -72,6 +72,10 @@ export const profileInputSchema = z.strictObject({
   // scraped `javascript:` or `data:` value is rejected here instead of surviving as a
   // Profile's website.
   website: z.url({ protocol: /^https?$/ }).optional(),
+  // A human-readable place — "San Francisco, CA" — not a query result to geocode. Optional
+  // because not every Source states one; see docs/adr/0002 on not inventing what a Source
+  // never said.
+  location: nonBlankString.optional(),
 });
 
 export type ProfileInput = z.infer<typeof profileInputSchema>;

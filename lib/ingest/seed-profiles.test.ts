@@ -34,6 +34,14 @@ describe("SEED_PROFILES", () => {
       SEED_PROFILES.find((input) => input.name === "Anthropic")?.sector,
     ).toBe("ai-ml");
   });
+
+  it("states a location for every row, the way the module doc says it is", () => {
+    // The whole list is hand-curated as Bay-Area-headquartered; a row with no location would
+    // be a gap in that curation, not something a real Source failed to state.
+    for (const input of SEED_PROFILES) {
+      expect(typeof input.location).toBe("string");
+    }
+  });
 });
 
 describe("SEED_CANDIDATES", () => {
@@ -51,6 +59,12 @@ describe("SEED_CANDIDATES", () => {
       expect(candidate.provenance.website).toBe(
         candidate.input.website === undefined ? null : "jack",
       );
+    }
+  });
+
+  it("attributes location jack for every candidate, which all state one", () => {
+    for (const candidate of SEED_CANDIDATES) {
+      expect(candidate.provenance.location).toBe("jack");
     }
   });
 

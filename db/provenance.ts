@@ -22,13 +22,15 @@ export const PROVENANCED_FIELDS = [
   "sector",
   "stage",
   "website",
+  "location",
 ] as const;
 
 export type ProvenancedField = (typeof PROVENANCED_FIELDS)[number];
 
 /**
- * `website` is the one nullable Profile field, so it is the one field whose provenance can
- * be null: a Profile with no website has no source to record for it.
+ * `website` and `location` are the two nullable Profile fields, so they are the two fields
+ * whose provenance can be null: a Profile with no website, or no stated place, has no source
+ * to record for it.
  */
 export const profileProvenanceSchema = z.strictObject({
   name: provenanceSchema,
@@ -36,6 +38,7 @@ export const profileProvenanceSchema = z.strictObject({
   sector: provenanceSchema,
   stage: provenanceSchema,
   website: provenanceSchema.nullable(),
+  location: provenanceSchema.nullable(),
 });
 
 export type ProfileProvenance = z.infer<typeof profileProvenanceSchema>;

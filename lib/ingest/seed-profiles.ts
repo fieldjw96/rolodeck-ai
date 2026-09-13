@@ -37,6 +37,7 @@ const RAW_SEED_PROFILES: readonly RawSeedProfile[] = [
     sector: "Artificial Intelligence",
     stage: "growth",
     website: "https://www.anthropic.com",
+    location: "San Francisco, CA",
   },
   {
     name: "OpenAI",
@@ -45,6 +46,7 @@ const RAW_SEED_PROFILES: readonly RawSeedProfile[] = [
     sector: "Artificial Intelligence",
     stage: "growth",
     website: "https://openai.com",
+    location: "San Francisco, CA",
   },
   {
     name: "Databricks",
@@ -53,6 +55,7 @@ const RAW_SEED_PROFILES: readonly RawSeedProfile[] = [
     sector: "Data Infrastructure",
     stage: "growth",
     website: "https://www.databricks.com",
+    location: "San Francisco, CA",
   },
   {
     name: "Stripe",
@@ -61,6 +64,7 @@ const RAW_SEED_PROFILES: readonly RawSeedProfile[] = [
     sector: "Fintech",
     stage: "growth",
     website: "https://stripe.com",
+    location: "South San Francisco, CA",
   },
   {
     name: "Scale AI",
@@ -69,6 +73,7 @@ const RAW_SEED_PROFILES: readonly RawSeedProfile[] = [
     sector: "Artificial Intelligence",
     stage: "growth",
     website: "https://scale.com",
+    location: "San Francisco, CA",
   },
   {
     name: "Notion Labs",
@@ -77,6 +82,7 @@ const RAW_SEED_PROFILES: readonly RawSeedProfile[] = [
     sector: "Productivity Software",
     stage: "growth",
     website: "https://www.notion.so",
+    location: "San Francisco, CA",
   },
   {
     name: "Rippling",
@@ -85,6 +91,7 @@ const RAW_SEED_PROFILES: readonly RawSeedProfile[] = [
     sector: "HR Technology",
     stage: "growth",
     website: "https://www.rippling.com",
+    location: "San Francisco, CA",
   },
   {
     name: "Brex",
@@ -93,6 +100,7 @@ const RAW_SEED_PROFILES: readonly RawSeedProfile[] = [
     sector: "Fintech",
     stage: "growth",
     website: "https://www.brex.com",
+    location: "San Francisco, CA",
   },
   {
     name: "Plaid",
@@ -101,6 +109,7 @@ const RAW_SEED_PROFILES: readonly RawSeedProfile[] = [
     sector: "Fintech Infrastructure",
     stage: "growth",
     website: "https://plaid.com",
+    location: "San Francisco, CA",
   },
   {
     name: "Airtable",
@@ -109,6 +118,7 @@ const RAW_SEED_PROFILES: readonly RawSeedProfile[] = [
     sector: "No-Code Software",
     stage: "growth",
     website: "https://www.airtable.com",
+    location: "San Francisco, CA",
   },
   {
     name: "Gusto",
@@ -117,6 +127,7 @@ const RAW_SEED_PROFILES: readonly RawSeedProfile[] = [
     sector: "HR Technology",
     stage: "growth",
     website: "https://gusto.com",
+    location: "San Francisco, CA",
   },
   {
     name: "Deel",
@@ -125,6 +136,7 @@ const RAW_SEED_PROFILES: readonly RawSeedProfile[] = [
     sector: "HR Technology",
     stage: "growth",
     website: "https://www.deel.com",
+    location: "San Francisco, CA",
   },
   {
     name: "Vanta",
@@ -133,6 +145,7 @@ const RAW_SEED_PROFILES: readonly RawSeedProfile[] = [
     sector: "Security & Compliance",
     stage: "series-b-plus",
     website: "https://www.vanta.com",
+    location: "San Francisco, CA",
   },
   {
     name: "Retool",
@@ -141,6 +154,7 @@ const RAW_SEED_PROFILES: readonly RawSeedProfile[] = [
     sector: "Developer Tools",
     stage: "series-b-plus",
     website: "https://retool.com",
+    location: "San Francisco, CA",
   },
   {
     name: "Mercury",
@@ -148,6 +162,7 @@ const RAW_SEED_PROFILES: readonly RawSeedProfile[] = [
     sector: "Fintech",
     stage: "series-b-plus",
     website: "https://mercury.com",
+    location: "San Francisco, CA",
   },
   {
     name: "Ironclad",
@@ -156,6 +171,7 @@ const RAW_SEED_PROFILES: readonly RawSeedProfile[] = [
     sector: "Legal Technology",
     stage: "series-b-plus",
     website: "https://ironcladapp.com",
+    location: "San Francisco, CA",
   },
   {
     name: "Sourcegraph",
@@ -164,6 +180,7 @@ const RAW_SEED_PROFILES: readonly RawSeedProfile[] = [
     sector: "Developer Tools",
     stage: "series-b-plus",
     website: "https://sourcegraph.com",
+    location: "San Francisco, CA",
   },
   {
     name: "Replit",
@@ -172,6 +189,7 @@ const RAW_SEED_PROFILES: readonly RawSeedProfile[] = [
     sector: "Developer Tools",
     stage: "series-b-plus",
     website: "https://replit.com",
+    location: "San Francisco, CA",
   },
   {
     name: "Glean",
@@ -180,6 +198,7 @@ const RAW_SEED_PROFILES: readonly RawSeedProfile[] = [
     sector: "Enterprise Software",
     stage: "series-b-plus",
     website: "https://www.glean.com",
+    location: "Palo Alto, CA",
   },
   {
     name: "Together AI",
@@ -188,6 +207,7 @@ const RAW_SEED_PROFILES: readonly RawSeedProfile[] = [
     sector: "Artificial Intelligence",
     stage: "series-b-plus",
     website: "https://www.together.ai",
+    location: "San Francisco, CA",
   },
   {
     name: "Weights & Biases",
@@ -196,6 +216,7 @@ const RAW_SEED_PROFILES: readonly RawSeedProfile[] = [
     sector: "Developer Tools",
     stage: "series-b-plus",
     website: "https://wandb.ai",
+    location: "San Francisco, CA",
   },
   {
     name: "Applied Intuition",
@@ -204,6 +225,7 @@ const RAW_SEED_PROFILES: readonly RawSeedProfile[] = [
     sector: "Autonomous Vehicles",
     stage: "series-b-plus",
     website: "https://www.appliedintuition.com",
+    location: "Mountain View, CA",
   },
   {
     name: "Vercel",
@@ -212,6 +234,7 @@ const RAW_SEED_PROFILES: readonly RawSeedProfile[] = [
     sector: "Developer Tools",
     stage: "series-b-plus",
     website: "https://vercel.com",
+    location: "San Francisco, CA",
   },
   {
     name: "Cresta",
@@ -220,6 +243,7 @@ const RAW_SEED_PROFILES: readonly RawSeedProfile[] = [
     sector: "Artificial Intelligence",
     stage: "series-b-plus",
     website: "https://cresta.com",
+    location: "Palo Alto, CA",
   },
   {
     name: "Anyscale",
@@ -228,6 +252,7 @@ const RAW_SEED_PROFILES: readonly RawSeedProfile[] = [
     sector: "Developer Tools",
     stage: "series-b-plus",
     website: "https://www.anyscale.com",
+    location: "San Francisco, CA",
   },
   {
     name: "Skydio",
@@ -236,6 +261,7 @@ const RAW_SEED_PROFILES: readonly RawSeedProfile[] = [
     sector: "Robotics",
     stage: "series-b-plus",
     website: "https://www.skydio.com",
+    location: "San Mateo, CA",
   },
   {
     name: "Nuro",
@@ -243,6 +269,7 @@ const RAW_SEED_PROFILES: readonly RawSeedProfile[] = [
     sector: "Robotics",
     stage: "series-b-plus",
     website: "https://www.nuro.ai",
+    location: "Mountain View, CA",
   },
   {
     name: "Astranis",
@@ -251,6 +278,7 @@ const RAW_SEED_PROFILES: readonly RawSeedProfile[] = [
     sector: "Aerospace",
     stage: "series-b-plus",
     website: "https://www.astranis.com",
+    location: "San Francisco, CA",
   },
   {
     name: "Watershed",
@@ -259,6 +287,7 @@ const RAW_SEED_PROFILES: readonly RawSeedProfile[] = [
     sector: "Climate Technology",
     stage: "series-b-plus",
     website: "https://watershed.com",
+    location: "San Francisco, CA",
   },
   {
     name: "Ashby",
@@ -266,6 +295,7 @@ const RAW_SEED_PROFILES: readonly RawSeedProfile[] = [
     sector: "HR Technology",
     stage: "series-a",
     website: "https://www.ashbyhq.com",
+    location: "San Francisco, CA",
   },
   {
     name: "Modal Labs",
@@ -274,6 +304,7 @@ const RAW_SEED_PROFILES: readonly RawSeedProfile[] = [
     sector: "Developer Tools",
     stage: "series-a",
     website: "https://modal.com",
+    location: "San Francisco, CA",
   },
   {
     name: "LlamaIndex",
@@ -282,6 +313,7 @@ const RAW_SEED_PROFILES: readonly RawSeedProfile[] = [
     sector: "Artificial Intelligence",
     stage: "seed",
     website: "https://www.llamaindex.ai",
+    location: "San Francisco, CA",
   },
 ];
 
@@ -295,9 +327,9 @@ export const SEED_PROFILES: readonly ProfileInput[] = RAW_SEED_PROFILES.map(
 
 /**
  * Every field on a hand-written seed row is Jack's own manual curation rather than scraped or
- * agent-enriched, so every field — the website included, when there is one — is attributed
- * `jack`. Per the `profiles_provenance_covers_every_field` check constraint, `website`'s
- * provenance is null exactly when there is no website to attribute.
+ * agent-enriched, so every field — the website and location included, when there is one — is
+ * attributed `jack`. Per the `profiles_provenance_covers_every_field` check constraint, each
+ * one's provenance is null exactly when there is no value to attribute.
  */
 function jackProvenance(input: ProfileInput): ProfileProvenance {
   return {
@@ -306,6 +338,7 @@ function jackProvenance(input: ProfileInput): ProfileProvenance {
     sector: "jack",
     stage: "jack",
     website: input.website === undefined ? null : "jack",
+    location: input.location === undefined ? null : "jack",
   };
 }
 
