@@ -26,6 +26,13 @@ export function Nav() {
       >
         Watchlist
       </Link>
+      <Link
+        className={styles.navLink}
+        href="/settings"
+        aria-current={isCurrentRoute("/settings") ? "page" : undefined}
+      >
+        Settings
+      </Link>
     </nav>
   );
 }

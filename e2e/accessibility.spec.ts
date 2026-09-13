@@ -91,7 +91,7 @@ test("/watchlist has no critical or serious accessibility violations", async ({
   await page.context().close();
 });
 
-test("Tab reaches Deck, Watchlist, Sign out, Pass and Keep on /deck, in DOM order, each with a visible focus outline", async ({
+test("Tab reaches Deck, Watchlist, Settings, Sign out, Pass and Keep on /deck, in DOM order, each with a visible focus outline", async ({
   browser,
   app,
 }) => {
@@ -112,6 +112,11 @@ test("Tab reaches Deck, Watchlist, Sign out, Pass and Keep on /deck, in DOM orde
   await expectVisibleFocusOutline(focused);
 
   await page.keyboard.press("Tab");
+  await expect(focused).toHaveRole("link");
+  await expect(focused).toHaveAccessibleName("Settings");
+  await expectVisibleFocusOutline(focused);
+
+  await page.keyboard.press("Tab");
   await expect(focused).toHaveRole("button");
   await expect(focused).toHaveAccessibleName("Sign out");
   await expectVisibleFocusOutline(focused);
@@ -129,7 +134,7 @@ test("Tab reaches Deck, Watchlist, Sign out, Pass and Keep on /deck, in DOM orde
   await page.context().close();
 });
 
-test("Tab reaches Deck, Watchlist and Sign out on /watchlist, in DOM order, each with a visible focus outline", async ({
+test("Tab reaches Deck, Watchlist, Settings and Sign out on /watchlist, in DOM order, each with a visible focus outline", async ({
   browser,
   app,
 }) => {
@@ -149,6 +154,11 @@ test("Tab reaches Deck, Watchlist and Sign out on /watchlist, in DOM order, each
   await page.keyboard.press("Tab");
   await expect(focused).toHaveRole("link");
   await expect(focused).toHaveAccessibleName("Watchlist");
+  await expectVisibleFocusOutline(focused);
+
+  await page.keyboard.press("Tab");
+  await expect(focused).toHaveRole("link");
+  await expect(focused).toHaveAccessibleName("Settings");
   await expectVisibleFocusOutline(focused);
 
   await page.keyboard.press("Tab");
