@@ -1,6 +1,7 @@
-import { sql } from "drizzle-orm";
+import { sql, type SQL } from "drizzle-orm";
 import {
   check,
+  date,
   index,
   jsonb,
   pgPolicy,
@@ -25,6 +26,20 @@ const provenanceLiterals = PROVENANCE_VALUES.map((value) => `'${value}'`).join(
 );
 
 const sectorLiterals = SECTOR_VALUES.map((value) => `'${value}'`).join(", ");
+
+/**
+ * A company name reduced to what identity actually depends on: case-folded, with runs of
+ * whitespace collapsed and the ends trimmed. See docs/adr/0008.
+ *
+ * One expression, used twice: as the definition of `profiles.name_key`, and by events ingest
+ * to match an attendee a Source names against the Company Profiles already in the Deck. Kept
+ * as the single source of that rule so there is never a second way of comparing names.
+ */
+export const nameKeyOf = (value: SQL): SQL =>
+  // POSIX `[[:space:]]` rather than `\s`, which a TypeScript template literal would eat
+  // before Postgres ever saw it. Every function here is IMMUTABLE, as a generated column
+  // requires.
+  sql`lower(btrim(regexp_replace(${value}, '[[:space:]]+', ' ', 'g')))`;
 
 const hasValidProvenance = (field: string) =>
   `provenance ->> '${field}' in (${provenanceLiterals})`;
@@ -78,12 +93,7 @@ export const profiles = pgTable(
      * TypeScript so that the key a row is deduplicated on cannot disagree with the name it
      * carries, whichever path wrote it. See docs/adr/0008.
      */
-    nameKey: text("name_key").generatedAlwaysAs(
-      // POSIX `[[:space:]]` rather than `\s`, which a TypeScript template literal would eat
-      // before Postgres ever saw it. Every function here is IMMUTABLE, as a generated column
-      // requires.
-      sql`lower(btrim(regexp_replace(name, '[[:space:]]+', ' ', 'g')))`,
-    ),
+    nameKey: text("name_key").generatedAlwaysAs(nameKeyOf(sql.raw("name"))),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -203,3 +213,91 @@ export const swipes = pgTable(
 
 export type Swipe = typeof swipes.$inferSelect;
 export type NewSwipe = typeof swipes.$inferInsert;
+
+/**
+ * The Diary's Events. An Event exists in its own right, per CONTEXT.md: `YC Demo Day` is one
+ * row that many companies attend, not one row per attending company, which is why attendance
+ * is a join table below rather than a column here.
+ */
+export const events = pgTable(
+  "events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    /** Owned from day one for the reason `profiles.owner_id` is. See CLAUDE.md. */
+    ownerId: uuid("owner_id")
+      .notNull()
+      .references(() => authUsers.id, { onDelete: "cascade" }),
+    /** Which ingest path wrote this row, as on `profiles`: `techmeme-events`, and so on. */
+    source: text("source").notNull(),
+    /**
+     * The Source's own identifier for the Event: an iCalendar `UID`, a JSON-LD `@id`. Both
+     * events Sources publish one, which is what ADR 0008 found `profiles` had no field for;
+     * here it exists, and it survives a Source correcting an Event's name or moving its date,
+     * which a key on the name would not. Half the natural key below.
+     */
+    externalId: text("external_id").notNull(),
+    name: text("name").notNull(),
+    /** Calendar dates in the Event's own local time, not instants: a Diary is read by day. */
+    startDate: date("start_date", { mode: "string" }).notNull(),
+    endDate: date("end_date", { mode: "string" }),
+    location: text("location"),
+    url: text("url").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    check(
+      "events_end_date_not_before_start_date",
+      sql`${table.endDate} is null or ${table.endDate} >= ${table.startDate}`,
+    ),
+    /**
+     * The natural key events ingest is idempotent on, and a constraint rather than a
+     * convention for the reason `profiles` gives: the write path runs under the secret key.
+     */
+    uniqueIndex("events_owner_id_source_external_id_idx").on(
+      table.ownerId,
+      table.source,
+      table.externalId,
+    ),
+    /** The Diary reads by owner in date order, so the index carries both. */
+    index("events_owner_id_start_date_idx").on(table.ownerId, table.startDate),
+    pgPolicy("events_select_own", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`${authUid} = ${table.ownerId}`,
+    }),
+  ],
+);
+
+/**
+ * A Company Profile a Source states takes part in an Event. Many-to-many: one Event has many
+ * companies and one company many Events. Only ever what a Source states, never inferred — see
+ * `eventInputSchema.attendees`.
+ */
+export const eventAttendances = pgTable(
+  "event_attendances",
+  {
+    eventId: uuid("event_id")
+      .notNull()
+      .references(() => events.id, { onDelete: "cascade" }),
+    profileId: uuid("profile_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+  },
+  (table) => [
+    primaryKey({ columns: [table.eventId, table.profileId] }),
+    /** The other direction: every Event one Company Profile attends. */
+    index("event_attendances_profile_id_idx").on(table.profileId),
+    /**
+     * Visible exactly when both ends are. There is no owner column to match on, so the policy
+     * reads `events` and `profiles` through their own policies instead, the way
+     * `swipes_insert_own` does. There is no write policy: ingest is the only writer.
+     */
+    pgPolicy("event_attendances_select_own", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`exists (select 1 from ${events} where ${events.id} = ${table.eventId}) and exists (select 1 from ${profiles} where ${profiles.id} = ${table.profileId})`,
+    }),
+  ],
+);

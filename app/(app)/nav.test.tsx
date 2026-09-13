@@ -8,6 +8,12 @@ vi.mock("next/navigation", () => ({
 import { usePathname } from "next/navigation";
 import { Nav } from "./nav";
 
+const LINKS = [
+  ["Deck", "/deck"],
+  ["Watchlist", "/watchlist"],
+  ["Diary", "/diary"],
+] as const;
+
 beforeEach(() => {
   vi.mocked(usePathname).mockReset();
 });
@@ -17,39 +23,44 @@ afterEach(() => {
 });
 
 describe("Nav", () => {
-  it("marks the Deck link with aria-current when on the Deck", () => {
+  it.each(LINKS)(
+    "marks only the %s link with aria-current when on %s",
+    (current, path) => {
+      vi.mocked(usePathname).mockReturnValue(path);
+
+      render(<Nav />);
+
+      for (const [name] of LINKS) {
+        const link = screen.getByRole("link", { name });
+
+        if (name === current) {
+          expect(link).toHaveAttribute("aria-current", "page");
+        } else {
+          expect(link).not.toHaveAttribute("aria-current");
+        }
+      }
+    },
+  );
+
+  it("links each entry to its own route", () => {
     vi.mocked(usePathname).mockReturnValue("/deck");
 
     render(<Nav />);
 
-    const deckLink = screen.getByRole("link", { name: "Deck" });
-    const watchlistLink = screen.getByRole("link", { name: "Watchlist" });
-
-    expect(deckLink).toHaveAttribute("aria-current", "page");
-    expect(watchlistLink).not.toHaveAttribute("aria-current");
+    for (const [name, path] of LINKS) {
+      expect(screen.getByRole("link", { name })).toHaveAttribute("href", path);
+    }
   });
 
-  it("marks the Watchlist link with aria-current when on the Watchlist", () => {
-    vi.mocked(usePathname).mockReturnValue("/watchlist");
-
-    render(<Nav />);
-
-    const deckLink = screen.getByRole("link", { name: "Deck" });
-    const watchlistLink = screen.getByRole("link", { name: "Watchlist" });
-
-    expect(watchlistLink).toHaveAttribute("aria-current", "page");
-    expect(deckLink).not.toHaveAttribute("aria-current");
-  });
-
-  it("does not mark either link when on a different route", () => {
+  it("does not mark any link when on a different route", () => {
     vi.mocked(usePathname).mockReturnValue("/other");
 
     render(<Nav />);
 
-    const deckLink = screen.getByRole("link", { name: "Deck" });
-    const watchlistLink = screen.getByRole("link", { name: "Watchlist" });
-
-    expect(deckLink).not.toHaveAttribute("aria-current");
-    expect(watchlistLink).not.toHaveAttribute("aria-current");
+    for (const [name] of LINKS) {
+      expect(screen.getByRole("link", { name })).not.toHaveAttribute(
+        "aria-current",
+      );
+    }
   });
 });

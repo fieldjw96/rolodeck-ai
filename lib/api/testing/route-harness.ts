@@ -1,4 +1,4 @@
-import { profiles, swipes } from "../../../db/schema";
+import { events, profiles, swipes } from "../../../db/schema";
 import {
   createScratchDb,
   type ScratchDb,
@@ -67,6 +67,8 @@ export async function startRouteHarness(): Promise<RouteHarness> {
       // that made 40 requests would otherwise leave only 20 for the next one.
       apiRateLimiter.reset();
       await scratch.reset();
+      // Deleting Events and Profiles cascades to `event_attendances` from both ends.
+      await scratch.db.delete(events);
       await scratch.db.delete(swipes);
       await scratch.db.delete(profiles);
     },

@@ -115,3 +115,18 @@ export async function readShowHnFixture(slug: string): Promise<ShowHnFixture> {
     capture: showHnCaptureSchema.parse(JSON.parse(meta)),
   };
 }
+
+export type EventSourceFixture = {
+  readonly slug: string;
+  readonly text: string;
+  readonly capture: Capture;
+};
+
+/** One captured events Source document: Techmeme's iCalendar feed, a Luma calendar page. */
+export async function readEventSourceFixture(
+  slug: string,
+  extension: "ics" | "html",
+): Promise<EventSourceFixture> {
+  const { text, capture } = await readFixture(slug, extension);
+  return { slug, text, capture };
+}

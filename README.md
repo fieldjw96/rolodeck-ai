@@ -164,6 +164,19 @@ The connection it writes through is its own: `getIngestDb()` in `db/connection.t
 and `docs/adr/0008` describe — the app's connection is a member of `authenticated` on purpose,
 and every Source's fetch script needs the one that is not.
 
+### The Diary's events Sources
+
+Events come from two named Sources, each a parser under `lib/ingest/` tested offline against a
+capture in `db/fixtures/`: `techmeme-events` reads Techmeme's own iCalendar feed, and
+`luma-bond-ai-sf` reads the schema.org JSON-LD on Bond AI's Bay Area calendar on Luma, whose
+hosting organisations are the Diary's Attendance. `persistEvents` in `db/events.ts` is the one
+write path into `events` and `event_attendances`, idempotent on `(owner_id, source,
+external_id)`, and it matches each attendee to Company Profiles on `name_key`.
+
+`npm run ingest:events` fetches both live and writes through `SUPABASE_DB_URL`, like the Profile
+Sources. Run those first: an attendee only links to a Company Profile already in the Deck, and
+the links fill in on the next run once it is.
+
 ## Database
 
 The schema lives in `db/schema.ts`. After changing it, run `npm run db:generate` to write a

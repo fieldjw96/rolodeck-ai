@@ -23,7 +23,8 @@
     "source:show-hn": "tsx scripts/fetch-show-hn.ts",
     "ingest:sec-form-d": "tsx scripts/ingest-sec-form-d.ts",
     "ingest:accelerators": "tsx scripts/ingest-accelerator-batches.ts",
-    "ingest:seed": "tsx scripts/ingest-seed.ts"
+    "ingest:seed": "tsx scripts/ingest-seed.ts",
+    "ingest:events": "tsx scripts/ingest-events.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.5",

@@ -26,6 +26,13 @@ export function Nav() {
       >
         Watchlist
       </Link>
+      <Link
+        className={styles.navLink}
+        href="/diary"
+        aria-current={isCurrentRoute("/diary") ? "page" : undefined}
+      >
+        Diary
+      </Link>
     </nav>
   );
 }
