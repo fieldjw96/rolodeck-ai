@@ -61,8 +61,10 @@ Deploying is: create a Vercel project pointed at this repository, set every vari
 `.env.example` in the Vercel project's Environment Variables with real values from the
 Supabase dashboard (never the placeholders), and deploy. Only the `NEXT_PUBLIC_`-prefixed
 ones are safe to also expose to Preview or Development environments; the rest —
-`SUPABASE_SECRET_KEY`, `DATABASE_URL`, `SUPABASE_DB_URL` — are server-only per `CLAUDE.md` and
-belong in Production alone. `ROLODECK_OWNER_ID` comes from running
+`SUPABASE_SECRET_KEY`, `DATABASE_URL`, `SUPABASE_DB_URL`, `GNEWS_API_KEY` — are server-only per
+`CLAUDE.md` and belong in Production alone. `GNEWS_API_KEY` is only read by
+`npm run ingest:news` on the server laptop; the deployed app never needs it, so it can be left
+out of Vercel entirely. `ROLODECK_OWNER_ID` comes from running
 `npm run account:provision` once, against the real project, before the first deploy matters.
 
 The `build-with-documented-env` job in CI is what keeps this list honest: it builds with only
@@ -74,21 +76,25 @@ step outside any Ticket's scope.
 ## The Profiles API
 
 Profiles reach the browser only through these route handlers, never by querying Postgres from
-a client. All three require a session and answer `401` without one.
+a client. All of them require a session and answer `401` without one.
 
 | Endpoint                      | What it does                                                     |
 | ----------------------------- | ---------------------------------------------------------------- |
 | `GET /api/profiles`           | One page of the Deck, newest first                               |
 | `POST /api/profiles/:id/keep` | Records a Keep, which drops the Profile from later pages         |
 | `POST /api/profiles/:id/pass` | Records a Pass, which does the same without deleting the Profile |
+| `GET /api/news`               | News about Kept Profiles, grouped by company, newest first       |
 
-`GET` takes `?limit=` (1 to 50, default 20) and `?cursor=`, and answers with the Profiles plus
-a `next_cursor`, which is `null` on the last page. The cursor is opaque: hand back the one the
-previous page issued. Anything else, including a limit outside its range, gets a `422` naming
-the field it objected to.
+`GET /api/profiles` takes `?limit=` (1 to 50, default 20) and `?cursor=`, and answers with the
+Profiles plus a `next_cursor`, which is `null` on the last page. The cursor is opaque: hand back
+the one the previous page issued. Anything else, including a limit outside its range, gets a
+`422` naming the field it objected to.
 
-All three share one budget of 60 requests a minute per account. Spend it and they answer `429`
-with a `Retry-After` in seconds until the oldest request in the window ages out.
+`GET /api/news` takes nothing, and answers with `companies`: each Kept Profile that has News at
+or above the display threshold, its articles newest first, each carrying its `confidence`.
+
+All of them share one budget of 60 requests a minute per account. Spend it and they answer
+`429` with a `Retry-After` in seconds until the oldest request in the window ages out.
 
 ## Security
 
@@ -163,6 +169,28 @@ The connection it writes through is its own: `getIngestDb()` in `db/connection.t
 `SUPABASE_DB_URL` rather than the app's own `DATABASE_URL`. That is the RLS bypass CLAUDE.md
 and `docs/adr/0008` describe — the app's connection is a member of `authenticated` on purpose,
 and every Source's fetch script needs the one that is not.
+
+## News
+
+News is articles about the Company Profiles you Kept, read from the
+[GNews API](https://gnews.io) and shown on `/news`, grouped by company, newest first.
+
+```
+GNEWS_API_KEY=... SUPABASE_DB_URL=... ROLODECK_OWNER_ID=... npm run ingest:news
+```
+
+searches GNews once per Kept Company Profile — never for one that is unswiped or Passed — and
+stores every article that comes back in `news_items`, each with a `confidence` from
+`scoreNewsMatch` in `lib/news/match.ts` for how sure it is that the article is about that
+company and not a namesake. The page shows only items at or above `NEWS_DISPLAY_THRESHOLD` in
+the same file; the rest stay stored, so the threshold can be retuned without fetching anything
+again. Running it twice adds no rows: articles are keyed on `(profile_id, url)`. Requests go
+through `lib/ingest/throttle.ts` at GNews's free-plan limit of one a second, and the run exits
+non-zero if any company could not be searched for. See `docs/adr/0010`.
+
+`GNEWS_API_KEY` is server-only. It is sent in a header rather than the URL, never logged, and
+listed in `npm run check:bundle-secrets`. Like every Source's script, this is on demand and not
+part of `npm test` or CI.
 
 ## Database
 
