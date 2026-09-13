@@ -51,6 +51,27 @@ create and delete users through the Admin API.
 - `npm run build` followed by `npm run check:bundle-secrets` confirms nothing server-only
   leaked into the client bundle; CI runs this pair on every pull request.
 
+## Smoke testing a deployment
+
+```
+ROLODECK_SMOKE_EMAIL=... ROLODECK_SMOKE_PASSWORD=... npm run smoke
+npm run smoke -- http://localhost:3000
+```
+
+Signs in to a running deployment and checks that the login page renders, that signing in
+lands on the Deck, that the Deck deals a Company Profile out of Postgres, and that the
+Watchlist renders. Exits non-zero if any of that fails.
+
+**It writes nothing.** It never Keeps or Passes. Destructive testing belongs in
+`npm run test:e2e:db`, which runs against a throwaway Postgres and a throwaway user; this
+one runs against the real deployment and the real single account, so a Keep here would put a
+Company Profile on Jack's Watchlist that he never chose.
+
+It exists for the class of failure a diff cannot show. Both real bugs in the first
+deployment were of that kind: a UTF-8 BOM prepended to an environment variable, so every
+sign-in failed against a URL that looked correct, and a database host that resolves locally
+but not from a serverless function. Tests and review passed both.
+
 ## Deploying
 
 This is a standard Next.js App Router project. `vercel.json` pins the install command, the
