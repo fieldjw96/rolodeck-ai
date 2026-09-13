@@ -33,8 +33,15 @@
     {
       "idx": 4,
       "version": "7",
-      "when": 1789330022045,
-      "tag": "0006_news_items",
+      "when": 1789322729708,
+      "tag": "0004_company_profile_location",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1789336272254,
+      "tag": "0005_news_items",
       "breakpoints": true
     }
   ]

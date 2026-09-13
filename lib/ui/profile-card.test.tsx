@@ -74,4 +74,39 @@ describe("a Profile card", () => {
     expect(screen.queryByText("Widgets, but faster.")).not.toBeInTheDocument();
     expect(screen.getByText("Hardware")).toBeInTheDocument();
   });
+
+  it("pairs Location with its value when the Profile states one", () => {
+    render(
+      <ProfileCard
+        headingLevel={1}
+        name="Acme"
+        sector="Hardware"
+        stage="Seed"
+        location="San Francisco, CA"
+      />,
+    );
+
+    const term = screen.getByText("Location");
+
+    expect(term.tagName).toBe("DT");
+    expect(term.nextElementSibling?.tagName).toBe("DD");
+    expect(term.nextElementSibling).toHaveTextContent("San Francisco, CA");
+  });
+
+  it.each([
+    ["null, because the Profile's location is unknown", null],
+    ["undefined, because the caller reads no location at all", undefined],
+  ])("renders no Location field when it is %s", (_description, location) => {
+    render(
+      <ProfileCard
+        headingLevel={1}
+        name="Acme"
+        sector="Hardware"
+        stage="Seed"
+        location={location}
+      />,
+    );
+
+    expect(screen.queryByText("Location")).not.toBeInTheDocument();
+  });
 });

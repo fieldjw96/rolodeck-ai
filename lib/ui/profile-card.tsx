@@ -7,6 +7,9 @@ type ProfileCardProps = {
   /** The Watchlist reads no description, so the card renders without one rather than with a
    * gap where one would be. */
   description?: string;
+  /** Not every Source states a location, so the field is left off the card rather than
+   * shown blank, matching how `description` above is handled. */
+  location?: string | null;
   /** The Deck's card is the page's only subject and carries its `h1`; the Watchlist's cards
    * sit under a heading of their own, so theirs are one level down. */
   headingLevel: 1 | 2;
@@ -24,6 +27,7 @@ export function ProfileCard({
   sector,
   stage,
   description,
+  location,
   headingLevel,
   compact = false,
 }: ProfileCardProps) {
@@ -48,6 +52,12 @@ export function ProfileCard({
           <dt className={styles.fieldLabel}>Stage</dt>
           <dd className={styles.fieldValue}>{stage}</dd>
         </div>
+        {location === null || location === undefined ? null : (
+          <div className={styles.field}>
+            <dt className={styles.fieldLabel}>Location</dt>
+            <dd className={styles.fieldValue}>{location}</dd>
+          </div>
+        )}
       </dl>
     </article>
   );
