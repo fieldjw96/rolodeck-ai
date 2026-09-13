@@ -24,7 +24,8 @@
     "ingest:sec-form-d": "tsx scripts/ingest-sec-form-d.ts",
     "ingest:accelerators": "tsx scripts/ingest-accelerator-batches.ts",
     "ingest:seed": "tsx scripts/ingest-seed.ts",
-    "ingest:news": "tsx scripts/ingest-news.ts"
+    "ingest:news": "tsx scripts/ingest-news.ts",
+    "smoke": "tsx scripts/smoke.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.5",
