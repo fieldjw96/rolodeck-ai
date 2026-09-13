@@ -1,6 +1,7 @@
 import type { ProfileCandidate } from "../../db/ingest";
 import type { ProfileInput } from "../../db/profile-input";
 import type { ProfileProvenance } from "../../db/provenance";
+import { sectorFromRawText } from "./sector";
 
 /**
  * The Source slug this pipeline writes under — half of a Profile's natural key, per
@@ -10,6 +11,11 @@ import type { ProfileProvenance } from "../../db/provenance";
  */
 export const SEED_SOURCE = "jack";
 
+/** A hand-curated row, with `sector` still in Jack's own words rather than the controlled list. */
+type RawSeedProfile = Omit<ProfileInput, "sector"> & {
+  readonly sector: string;
+};
+
 /**
  * Real, named, Bay-Area-headquartered startups, hand-curated from public knowledge rather than
  * scraped — the fallback docs/adr/0002 describes for when the live scrapers alone do not reach
@@ -17,8 +23,13 @@ export const SEED_SOURCE = "jack";
  * reach `MINIMUM_PROFILE_COUNT`, so order matters: earlier entries are the ones an empty table
  * gets first. Kept a few deep past the minimum so the guarantee holds even if some of it is
  * already spoken for by a `source` that isn't this one.
+ *
+ * `sector` is written here the way Jack would actually describe each company, and mapped onto
+ * the controlled vocabulary below with the same `sectorFromRawText` every scraped Source uses —
+ * seed data is hand-curated, not scraped, but it is still raw sector text until it crosses that
+ * mapping.
  */
-export const SEED_PROFILES: readonly ProfileInput[] = [
+const RAW_SEED_PROFILES: readonly RawSeedProfile[] = [
   {
     name: "Anthropic",
     description:
@@ -273,6 +284,14 @@ export const SEED_PROFILES: readonly ProfileInput[] = [
     website: "https://www.llamaindex.ai",
   },
 ];
+
+/** `RAW_SEED_PROFILES`, with `sector` mapped onto the controlled vocabulary. */
+export const SEED_PROFILES: readonly ProfileInput[] = RAW_SEED_PROFILES.map(
+  (profile) => ({
+    ...profile,
+    sector: sectorFromRawText(profile.sector),
+  }),
+);
 
 /**
  * Every field on a hand-written seed row is Jack's own manual curation rather than scraped or

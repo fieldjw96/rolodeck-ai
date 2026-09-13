@@ -11,6 +11,7 @@ import type {
   ProvenancedField,
 } from "../../db/provenance";
 import { issueField } from "../zod/issues";
+import { sectorFromRawText } from "./sector";
 
 /**
  * Parses Show HN posts, read from Algolia's Hacker News Search API, into validated
@@ -394,7 +395,9 @@ export function parseShowHnPost(
   const candidate: Record<string, unknown> = {
     name,
     description,
-    sector,
+    // The keyword category is itself derived text, mapped onto the controlled vocabulary the
+    // same way every other Source's raw sector text is. See `lib/ingest/sector.ts`.
+    sector: sectorFromRawText(sector),
     // A population assumption, not a fact about this post. See the module docstring.
     stage: "pre-seed",
     website: classification.url,

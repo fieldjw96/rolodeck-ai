@@ -5,6 +5,7 @@ import {
   type IngestRejection,
 } from "../../db/profile-input";
 import { issueField } from "../zod/issues";
+import { sectorFromRawText } from "./sector";
 import {
   attribute,
   type Capture,
@@ -67,7 +68,13 @@ function parseCompany(
   const input = parseProfileInput({
     name: trimmed(company.name),
     description: trimmed(company.bio),
-    sector: trimmed(company.industry),
+    // The page states a free-text industry; the column takes the controlled vocabulary,
+    // so it is mapped here the same way every other Source maps its own raw text.
+    // See `lib/ingest/sector.ts`.
+    sector:
+      trimmed(company.industry) === undefined
+        ? undefined
+        : sectorFromRawText(trimmed(company.industry)!),
     // Never stated by the page: South Park Commons's own admission bar, not a round any
     // company here is presently in. See the module comment.
     stage: "pre-seed",

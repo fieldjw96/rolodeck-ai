@@ -64,7 +64,8 @@ describe("parseShowHnPost, against captured posts", () => {
 
     expect(input.name).toBe("Unblur");
     expect(input.description).toContain("spending");
-    expect(input.sector).toBe("Fintech");
+    // Derived keyword category "Fintech", mapped onto the controlled vocabulary.
+    expect(input.sector).toBe("fintech");
     expect(input.stage).toBe("pre-seed");
     expect(input.website).toBe("https://unblur.money");
   });
@@ -259,7 +260,7 @@ describe("parseShowHnPost, against a post that has changed shape", () => {
 
     expect(result.success).toBe(true);
     if (!result.success) return;
-    expect(result.profile.input.sector).toBe("Developer Tools");
+    expect(result.profile.input.sector).toBe("developer-tools");
   });
 
   it("decodes numeric hex entities, the form the API escapes an apostrophe with", () => {
@@ -297,7 +298,7 @@ describe("parseShowHnPost, against a post that has changed shape", () => {
     expect(result.profile.input.description).toBe(
       'Developer tooling for "R&D" teams. See our API docs .',
     );
-    expect(result.profile.input.sector).toBe("Developer Tools");
+    expect(result.profile.input.sector).toBe("developer-tools");
   });
 });
 

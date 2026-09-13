@@ -71,7 +71,8 @@ describe("parseCompanyPage, against captured pages", () => {
     const { input } = parsed("yc-stripe");
 
     expect(input.name).toBe("Stripe");
-    expect(input.sector).toBe("Banking as a Service");
+    // Raw tag "Banking as a Service", mapped onto the controlled vocabulary.
+    expect(input.sector).toBe("fintech");
     expect(input.stage).toBe("growth");
     expect(input.website).toBe("http://stripe.com");
     expect(input.description).toContain(

@@ -48,10 +48,10 @@ describe("parseSouthParkCommonsCompanies, against the captured page", () => {
     expect(compound?.input.description).toBe(
       "Autonomous interest rates, onchain",
     );
-    expect(compound?.input.sector).toBe("Crypto");
+    expect(compound?.input.sector).toBe("other");
 
     const vanta = profiles.find((profile) => profile.input.name === "Vanta");
-    expect(vanta?.input.sector).toBe("Security");
+    expect(vanta?.input.sector).toBe("security");
   });
 
   it("records every company as pre-seed, regardless of how far it has since grown", () => {

@@ -38,7 +38,7 @@ export async function seedProfiles(
         source: "seed",
         name: seededName(index),
         description: "Seeded for the Deck.",
-        sector: "Robotics",
+        sector: "hardware-robotics",
         stage: "seed",
         website: null,
         provenance: SEEDED_PROVENANCE,

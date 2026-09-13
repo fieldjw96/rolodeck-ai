@@ -6,7 +6,7 @@ import { parseProfileInput, profileInputSchema } from "./profile-input";
 const VALID_INPUT = {
   name: "Sprocket",
   description: "Developer tooling for warehouse robotics.",
-  sector: "Robotics",
+  sector: "hardware-robotics",
   stage: "seed",
   website: "https://sprocket.example",
 } as const;
@@ -44,6 +44,11 @@ const MALFORMED_PAYLOADS: ReadonlyArray<{
     description: "an invalid stage value",
     payload: { ...VALID_INPUT, stage: "unicorn" },
     field: "stage",
+  },
+  {
+    description: "a sector off the controlled list",
+    payload: { ...VALID_INPUT, sector: "Robotics" },
+    field: "sector",
   },
   {
     description: "a blank string",
@@ -105,6 +110,16 @@ describe("parseProfileInput", () => {
     expect(typeof result.rejection.reason).toBe("string");
     expect(result.rejection.reason.length).toBeGreaterThan(0);
     expect(result.rejection.raw).toBe(raw);
+  });
+
+  it("names the offending value when a sector is off the controlled list", () => {
+    const result = parseProfileInput({ ...VALID_INPUT, sector: "Robotics" });
+
+    expect(result.success).toBe(false);
+    if (result.success) return;
+
+    expect(result.rejection.field).toBe("sector");
+    expect(result.rejection.reason).toContain("Robotics");
   });
 
   it("names the extra key when a source adds a field the schema does not expect", () => {

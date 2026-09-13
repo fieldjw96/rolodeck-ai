@@ -59,7 +59,7 @@ describe("profiles provenance", () => {
         source: "test",
         name: "Sprocket",
         description: "Developer tooling for warehouse robotics.",
-        sector: "Robotics",
+        sector: "hardware-robotics",
         stage: "Seed",
         website: "https://sprocket.example",
         provenance: MIXED_PROVENANCE,
@@ -87,7 +87,7 @@ describe("profiles provenance", () => {
         source: "test",
         name: "Quiet Co",
         description: "Stealth, no site yet.",
-        sector: "Unknown",
+        sector: "other",
         stage: "Pre-seed",
         website: null,
         provenance: { ...MIXED_PROVENANCE, website: null },
@@ -108,7 +108,7 @@ describe("profiles provenance", () => {
         source: "test",
         name: "Sprocket",
         description: "Developer tooling for warehouse robotics.",
-        sector: "Robotics",
+        sector: "hardware-robotics",
         stage: "Seed",
         website: "https://sprocket.example",
         provenance: missingSector as ProfileProvenance,
@@ -125,7 +125,7 @@ describe("profiles provenance", () => {
         source: "test",
         name: "Sprocket",
         description: "Developer tooling for warehouse robotics.",
-        sector: "Robotics",
+        sector: "hardware-robotics",
         stage: "Seed",
         website: "https://sprocket.example",
         provenance: {
@@ -145,7 +145,7 @@ describe("profiles provenance", () => {
         source: "test",
         name: "Quiet Co",
         description: "Stealth, no site yet.",
-        sector: "Unknown",
+        sector: "other",
         stage: "Pre-seed",
         website: null,
         provenance: MIXED_PROVENANCE,
@@ -162,7 +162,7 @@ describe("profiles provenance", () => {
         source: "test",
         name: "Sprocket",
         description: "Developer tooling for warehouse robotics.",
-        sector: "Robotics",
+        sector: "hardware-robotics",
         stage: "Seed",
         website: "https://sprocket.example",
         provenance: { ...MIXED_PROVENANCE, website: null },
@@ -179,7 +179,7 @@ describe("profiles provenance", () => {
         source: "test",
         name: "Orphan",
         description: "No owner.",
-        sector: "Robotics",
+        sector: "hardware-robotics",
         stage: "Seed",
         website: null,
         provenance: { ...MIXED_PROVENANCE, website: null },
@@ -187,6 +187,23 @@ describe("profiles provenance", () => {
     );
 
     expect(violated).toBe("profiles_owner_id_users_id_fk");
+  });
+
+  it("rejects a sector off the controlled list, even from the service-role ingest path", async () => {
+    const violated = await constraintViolatedBy(
+      scratch.db.insert(profiles).values({
+        ownerId: JACK,
+        source: "test",
+        name: "Sprocket",
+        description: "Developer tooling for warehouse robotics.",
+        sector: "Robotics",
+        stage: "Seed",
+        website: "https://sprocket.example",
+        provenance: MIXED_PROVENANCE,
+      }),
+    );
+
+    expect(violated).toBe("profiles_sector_is_controlled");
   });
 });
 
@@ -198,7 +215,7 @@ describe("profiles row level security", () => {
         source: "test",
         name: "Sprocket",
         description: "Developer tooling for warehouse robotics.",
-        sector: "Robotics",
+        sector: "hardware-robotics",
         stage: "Seed",
         website: "https://sprocket.example",
         provenance: MIXED_PROVENANCE,
@@ -208,7 +225,7 @@ describe("profiles row level security", () => {
         source: "test",
         name: "Not Jack's",
         description: "Belongs to another account.",
-        sector: "Fintech",
+        sector: "fintech",
         stage: "Series A",
         website: null,
         provenance: { ...MIXED_PROVENANCE, website: null },

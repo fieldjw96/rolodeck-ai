@@ -12,6 +12,7 @@ import {
   type Capture,
   type ScrapedProfile,
 } from "./scraped-profile";
+import { sectorFromRawText } from "./sector";
 import { stageFromRoundName, stageFromTeamSize } from "./stage";
 import { parseXml, type XmlDocument } from "./xml";
 
@@ -297,9 +298,12 @@ export function parseFormDFiling({
 
   const input = parseProfileInput({
     name: trimmed(filing.primaryIssuer.entityName),
-    // Composed from the filing's own facts. A Form D writes no prose of its own.
+    // Composed from the filing's own facts, using its own industry text verbatim. A Form D
+    // writes no prose of its own.
     description: describeOffering(filing, sector),
-    sector,
+    // Mapped onto the controlled vocabulary; the filing's own words stay in `description`
+    // above. See `lib/ingest/sector.ts`.
+    sector: sectorFromRawText(sector),
     stage: derived.stage,
     // A Form D carries a phone number and an address, and no website at all. The field is
     // optional, so it is left off rather than guessed at from the company's name.
