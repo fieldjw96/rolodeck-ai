@@ -108,6 +108,16 @@ describe("migration 0004_company_profile_location", () => {
       description: "Widgets, but faster.",
     });
 
+    // A sec-form-d row whose city itself contains a period — "St. Helena" is a Bay Area city
+    // per lib/location/bay-area.ts — the case a naive "stop at the first period" regex
+    // truncates into a wrong, invented location.
+    await insertPreMigrationRow(client, {
+      source: "sec-form-d",
+      name: "Period In City Co",
+      description:
+        "Fintech issuer in St. Helena, CA. Raising $500,000 in a private placement.",
+    });
+
     await applyRawMigration(client, LOCATION_MIGRATION);
   }, 60_000);
 
@@ -134,6 +144,18 @@ describe("migration 0004_company_profile_location", () => {
     );
 
     expect(rows[0]?.location).toBe("CA");
+  });
+
+  it("extracts the full city and state when the city name itself contains a period", async () => {
+    const { rows } = await client.query<{
+      location: string | null;
+      provenance: { location: string | null };
+    }>("select location, provenance from profiles where name = $1", [
+      "Period In City Co",
+    ]);
+
+    expect(rows[0]?.location).toBe("St. Helena, CA");
+    expect(rows[0]?.provenance.location).toBe("scraped");
   });
 
   it("leaves a row from a Source that never stated a location null, rather than inventing one", async () => {
