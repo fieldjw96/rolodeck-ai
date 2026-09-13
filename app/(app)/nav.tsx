@@ -28,6 +28,13 @@ export function Nav() {
       </Link>
       <Link
         className={styles.navLink}
+        href="/news"
+        aria-current={isCurrentRoute("/news") ? "page" : undefined}
+      >
+        News
+      </Link>
+      <Link
+        className={styles.navLink}
         href="/diary"
         aria-current={isCurrentRoute("/diary") ? "page" : undefined}
       >

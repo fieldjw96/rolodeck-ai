@@ -11,6 +11,7 @@ import { Nav } from "./nav";
 const LINKS = [
   ["Deck", "/deck"],
   ["Watchlist", "/watchlist"],
+  ["News", "/news"],
   ["Diary", "/diary"],
 ] as const;
 
@@ -22,7 +23,26 @@ afterEach(() => {
   cleanup();
 });
 
+/** Which of the nav's links carry `aria-current="page"`, by name. */
+function currentLinks(): string[] {
+  return LINKS.map(([name]) => name).filter(
+    (name) =>
+      screen.getByRole("link", { name }).getAttribute("aria-current") ===
+      "page",
+  );
+}
+
 describe("Nav", () => {
+  it("links to the Deck, the Watchlist, News and the Diary, in that order", () => {
+    vi.mocked(usePathname).mockReturnValue("/deck");
+
+    render(<Nav />);
+
+    expect(
+      screen.getAllByRole("link").map((link) => link.getAttribute("href")),
+    ).toEqual(LINKS.map(([, path]) => path));
+  });
+
   it.each(LINKS)(
     "marks only the %s link with aria-current when on %s",
     (current, path) => {
@@ -30,15 +50,7 @@ describe("Nav", () => {
 
       render(<Nav />);
 
-      for (const [name] of LINKS) {
-        const link = screen.getByRole("link", { name });
-
-        if (name === current) {
-          expect(link).toHaveAttribute("aria-current", "page");
-        } else {
-          expect(link).not.toHaveAttribute("aria-current");
-        }
-      }
+      expect(currentLinks()).toEqual([current]);
     },
   );
 
@@ -57,10 +69,6 @@ describe("Nav", () => {
 
     render(<Nav />);
 
-    for (const [name] of LINKS) {
-      expect(screen.getByRole("link", { name })).not.toHaveAttribute(
-        "aria-current",
-      );
-    }
+    expect(currentLinks()).toEqual([]);
   });
 });
