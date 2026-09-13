@@ -1,0 +1,15 @@
+# Paths that may never reach main without Jack's own approval.
+#
+# Everything else in this repo can be approved by the review Gate and merged unattended.
+# These three cannot, because each one removes or weakens the thing that would catch the
+# next mistake:
+#
+#   .github/workflows/  is the Gate itself. A Run that weakened claude-review.yml or ci.yml
+#                       would face no reviewer on the pull request after it.
+#   db/migrations/      is the least reversible thing here. A bad schema change cannot be
+#                       undone by reverting a commit.
+#   CODEOWNERS          is this rule. It must not be editable by the thing it constrains.
+
+/.github/workflows/   @fieldjw96
+/db/migrations/       @fieldjw96
+/.github/CODEOWNERS   @fieldjw96
