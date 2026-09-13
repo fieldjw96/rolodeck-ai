@@ -120,6 +120,7 @@ describe("provenance", () => {
       sector: "scraped",
       stage: "enriched",
       website: null,
+      location: null,
     });
   });
 });

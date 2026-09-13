@@ -187,6 +187,7 @@ describe("provenance", () => {
       sector: "scraped",
       stage: "enriched",
       website: "scraped",
+      location: null,
     });
   });
 

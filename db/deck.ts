@@ -103,6 +103,7 @@ const deckColumns = {
   sector: profiles.sector,
   stage: profiles.stage,
   website: profiles.website,
+  location: profiles.location,
   provenance: profiles.provenance,
   createdAt: profiles.createdAt,
 };

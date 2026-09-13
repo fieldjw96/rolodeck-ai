@@ -137,6 +137,8 @@ function parseEntry(
         // indiscriminately as a company's website would misrecord it, so this Source
         // states none.
         website: null,
+        // Never stated by AngelPad's own page.
+        location: null,
       },
     },
   };

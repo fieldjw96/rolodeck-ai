@@ -29,6 +29,7 @@ const SCRAPED_EXCEPT_STAGE: ProfileProvenance = {
   sector: "scraped",
   stage: "enriched",
   website: "scraped",
+  location: "scraped",
 };
 
 const SPROCKET: ProfileInput = {
@@ -52,6 +53,7 @@ function candidateFor(
     provenance: {
       ...provenance,
       website: input.website === undefined ? null : provenance.website,
+      location: input.location === undefined ? null : provenance.location,
     },
   };
 }
@@ -150,7 +152,12 @@ describe("persistProfiles", () => {
 
     const [row] = await scratch.db.select().from(profiles);
 
-    expect(row?.provenance).toEqual(SCRAPED_EXCEPT_STAGE);
+    // SPROCKET states no location, so `candidateFor` nulls that one field out; every other
+    // field keeps the mixed provenance the test is actually about.
+    expect(row?.provenance).toEqual({
+      ...SCRAPED_EXCEPT_STAGE,
+      location: null,
+    });
     expect(row?.provenance.sector).toBe("scraped");
     expect(row?.provenance.stage).toBe("enriched");
   });

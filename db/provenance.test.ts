@@ -10,6 +10,7 @@ describe("profileProvenanceSchema", () => {
       sector: "scraped",
       stage: "scraped",
       website: "enriched",
+      location: "scraped",
     };
 
     expect(profileProvenanceSchema.parse(mixed)).toEqual(mixed);
@@ -22,9 +23,25 @@ describe("profileProvenanceSchema", () => {
       sector: "scraped",
       stage: "scraped",
       website: null,
+      location: "scraped",
     });
 
     expect(parsed.website).toBeNull();
+  });
+
+  it("accepts a null provenance for a Profile whose location is unknown", () => {
+    // The Ticket's own criterion: a Profile whose location is unknown still has a valid,
+    // null provenance for that field.
+    const parsed = profileProvenanceSchema.parse({
+      name: "scraped",
+      description: "scraped",
+      sector: "scraped",
+      stage: "scraped",
+      website: null,
+      location: null,
+    });
+
+    expect(parsed.location).toBeNull();
   });
 
   it.each(PROVENANCE_VALUES)("accepts %s as a field's provenance", (value) => {
@@ -34,6 +51,7 @@ describe("profileProvenanceSchema", () => {
       sector: value,
       stage: value,
       website: value,
+      location: value,
     });
 
     expect(parsed.name).toBe(value);
@@ -46,6 +64,7 @@ describe("profileProvenanceSchema", () => {
       sector: "scraped",
       stage: "scraped",
       website: null,
+      location: null,
     });
 
     expect(result.success).toBe(false);
@@ -59,6 +78,7 @@ describe("profileProvenanceSchema", () => {
         description: "scraped",
         sector: "scraped",
         website: null,
+        location: null,
       }).success,
     ).toBe(false);
   });
@@ -71,6 +91,7 @@ describe("profileProvenanceSchema", () => {
         sector: "scraped",
         stage: "scraped",
         website: null,
+        location: null,
         founder: "scraped",
       }).success,
     ).toBe(false);
@@ -84,6 +105,7 @@ describe("profileProvenanceSchema", () => {
         sector: "scraped",
         stage: "scraped",
         website: null,
+        location: null,
       }).success,
     ).toBe(false);
   });

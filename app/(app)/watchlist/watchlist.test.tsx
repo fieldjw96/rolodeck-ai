@@ -12,6 +12,7 @@ type KeptProfile = {
   name: string;
   sector: string;
   stage: string;
+  location: string | null;
 };
 
 const acme: KeptProfile = {
@@ -19,6 +20,7 @@ const acme: KeptProfile = {
   name: "Acme",
   sector: "Hardware",
   stage: "Seed",
+  location: "San Francisco, CA",
 };
 
 const globex: KeptProfile = {
@@ -26,6 +28,7 @@ const globex: KeptProfile = {
   name: "Globex",
   sector: "Logistics",
   stage: "Series A",
+  location: null,
 };
 
 function jsonResponse(body: unknown): Response {
@@ -52,6 +55,7 @@ describe("the Watchlist", () => {
     expect(screen.getByText("Globex")).toBeInTheDocument();
     expect(screen.getByText("Logistics")).toBeInTheDocument();
     expect(screen.getByText("Series A")).toBeInTheDocument();
+    expect(screen.getByText("San Francisco, CA")).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledWith("/api/profiles?filter=kept");
   });
 

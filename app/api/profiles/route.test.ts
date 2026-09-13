@@ -139,6 +139,7 @@ describe("GET /api/profiles", () => {
       "created_at",
       "description",
       "id",
+      "location",
       "name",
       "provenance",
       "sector",
@@ -151,6 +152,7 @@ describe("GET /api/profiles", () => {
       sector: "enriched",
       stage: "jack",
       website: null,
+      location: null,
     });
   });
 

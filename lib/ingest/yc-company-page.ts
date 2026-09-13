@@ -158,6 +158,8 @@ export function parseCompanyPage(
         // Derived from headcount, not stated by the page. See above.
         stage: attribute(capture, "enriched"),
         website: input.data.website === undefined ? null : scraped,
+        // A YC company page carries no headquarters address at all.
+        location: null,
       },
     },
   };

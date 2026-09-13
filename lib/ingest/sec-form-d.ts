@@ -152,6 +152,22 @@ function titleCase(value: string): string {
 }
 
 /**
+ * The issuer's own address, human-readable: "San Francisco, CA" where the filing states a
+ * city, "CA" alone where it does not. Shared by `describeOffering`, which folds it into a
+ * sentence, and by the `location` Profile field, which carries the same fact on its own —
+ * this is the parsing docs/adr/0002 already required, now reaching the schema. See CLAUDE.md.
+ */
+function filingLocation(
+  address: FormD["primaryIssuer"]["issuerAddress"],
+): string {
+  const city = trimmed(address.city);
+
+  return city === undefined
+    ? address.stateOrCountry
+    : `${titleCase(city)}, ${address.stateOrCountry}`;
+}
+
+/**
  * A Form D states facts and writes no prose, so a Profile's `description` is composed from the
  * facts it does state: the industry, where the issuer is, how much it is raising, how much it
  * has sold and when the first sale was. Every ingredient is read off the filing, but the
@@ -160,12 +176,7 @@ function titleCase(value: string): string {
 function describeOffering(filing: FormD, sector: string): string {
   const address = filing.primaryIssuer.issuerAddress;
   const amounts = filing.offeringData.offeringSalesAmounts;
-  const city = trimmed(address.city);
-
-  const where =
-    city === undefined
-      ? address.stateOrCountry
-      : `${titleCase(city)}, ${address.stateOrCountry}`;
+  const where = filingLocation(address);
 
   const offering = formatAmount(amounts?.totalOfferingAmount);
   const sold = formatAmount(amounts?.totalAmountSold);
@@ -307,6 +318,9 @@ export function parseFormDFiling({
     stage: derived.stage,
     // A Form D carries a phone number and an address, and no website at all. The field is
     // optional, so it is left off rather than guessed at from the company's name.
+    // The issuer's own sworn address, the fact the California filter above is already
+    // applied against. See `filingLocation`.
+    location: filingLocation(filing.primaryIssuer.issuerAddress),
   });
 
   if (!input.success) {
@@ -328,6 +342,8 @@ export function parseFormDFiling({
         // proxy stood in for one. Both reach the same column, saying different things.
         stage: attribute(capture, derived.provenance),
         website: null,
+        // The filing's own sworn address, stated rather than derived.
+        location: scraped,
       },
     },
   };
