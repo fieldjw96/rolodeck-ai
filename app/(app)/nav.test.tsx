@@ -8,6 +8,8 @@ vi.mock("next/navigation", () => ({
 import { usePathname } from "next/navigation";
 import { Nav } from "./nav";
 
+const LINKS = ["Deck", "Watchlist", "News"] as const;
+
 beforeEach(() => {
   vi.mocked(usePathname).mockReset();
 });
@@ -16,17 +18,32 @@ afterEach(() => {
   cleanup();
 });
 
+/** Which of the nav's links carry `aria-current="page"`, by name. */
+function currentLinks(): string[] {
+  return LINKS.filter(
+    (name) =>
+      screen.getByRole("link", { name }).getAttribute("aria-current") ===
+      "page",
+  );
+}
+
 describe("Nav", () => {
+  it("links to the Deck, the Watchlist and News, in that order", () => {
+    vi.mocked(usePathname).mockReturnValue("/deck");
+
+    render(<Nav />);
+
+    expect(
+      screen.getAllByRole("link").map((link) => link.getAttribute("href")),
+    ).toEqual(["/deck", "/watchlist", "/news"]);
+  });
+
   it("marks the Deck link with aria-current when on the Deck", () => {
     vi.mocked(usePathname).mockReturnValue("/deck");
 
     render(<Nav />);
 
-    const deckLink = screen.getByRole("link", { name: "Deck" });
-    const watchlistLink = screen.getByRole("link", { name: "Watchlist" });
-
-    expect(deckLink).toHaveAttribute("aria-current", "page");
-    expect(watchlistLink).not.toHaveAttribute("aria-current");
+    expect(currentLinks()).toEqual(["Deck"]);
   });
 
   it("marks the Watchlist link with aria-current when on the Watchlist", () => {
@@ -34,22 +51,22 @@ describe("Nav", () => {
 
     render(<Nav />);
 
-    const deckLink = screen.getByRole("link", { name: "Deck" });
-    const watchlistLink = screen.getByRole("link", { name: "Watchlist" });
-
-    expect(watchlistLink).toHaveAttribute("aria-current", "page");
-    expect(deckLink).not.toHaveAttribute("aria-current");
+    expect(currentLinks()).toEqual(["Watchlist"]);
   });
 
-  it("does not mark either link when on a different route", () => {
+  it("marks the News link with aria-current when on News", () => {
+    vi.mocked(usePathname).mockReturnValue("/news");
+
+    render(<Nav />);
+
+    expect(currentLinks()).toEqual(["News"]);
+  });
+
+  it("does not mark any link when on a different route", () => {
     vi.mocked(usePathname).mockReturnValue("/other");
 
     render(<Nav />);
 
-    const deckLink = screen.getByRole("link", { name: "Deck" });
-    const watchlistLink = screen.getByRole("link", { name: "Watchlist" });
-
-    expect(deckLink).not.toHaveAttribute("aria-current");
-    expect(watchlistLink).not.toHaveAttribute("aria-current");
+    expect(currentLinks()).toEqual([]);
   });
 });

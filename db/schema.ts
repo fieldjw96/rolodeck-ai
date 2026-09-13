@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import {
   check,
+  doublePrecision,
   index,
   jsonb,
   pgPolicy,
@@ -203,3 +204,80 @@ export const swipes = pgTable(
 
 export type Swipe = typeof swipes.$inferSelect;
 export type NewSwipe = typeof swipes.$inferInsert;
+
+/**
+ * News: articles about a Kept Company Profile, one row per article per Company Profile.
+ *
+ * Every candidate the provider returned is a row, however unlikely it is to be about the right
+ * company, with the matcher's `confidence` beside it. Which of them the owner sees is decided
+ * when reading, against `NEWS_DISPLAY_THRESHOLD`, never when writing: the first threshold will
+ * be wrong, and a candidate dropped at fetch time is one that retuning cannot bring back
+ * without fetching it again. See docs/adr/0010.
+ */
+export const newsItems = pgTable(
+  "news_items",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    /** The Company Profile the matcher attributed this article to. */
+    profileId: uuid("profile_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    /**
+     * Carried on the row, rather than reached through `profiles`, so the RLS policy below is a
+     * plain equality like every other table's — the same reason `swipes` carries `user_id`.
+     */
+    ownerId: uuid("owner_id")
+      .notNull()
+      .references(() => authUsers.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    /** Stored although nothing displays it yet: it is half of what the matcher read, so a
+     * retuned rule can re-score what is already here. */
+    description: text("description"),
+    url: text("url").notNull(),
+    publishedAt: timestamp("published_at", { withTimezone: true }).notNull(),
+    /** The publication, as the provider names it: "TechCrunch", not `gnews`. */
+    sourceName: text("source_name").notNull(),
+    /** From `scoreNewsMatch` in `lib/news/match.ts`. Double precision rather than `real`, so
+     * a score of exactly 0.6 compares equal to a threshold of 0.6. */
+    confidence: doublePrecision("confidence").notNull(),
+    /** When this article was first stored. Not touched when a later run updates the row. */
+    fetchedAt: timestamp("fetched_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    check(
+      "news_items_confidence_is_a_proportion",
+      sql.raw("confidence >= 0 and confidence <= 1"),
+    ),
+    /**
+     * The page renders `url` as a link, and the service-role ingest path bypasses RLS but not a
+     * check constraint, so a `javascript:` URL cannot reach an `href` through it.
+     */
+    check("news_items_url_is_http", sql.raw("url ~ '^https?://'")),
+    /**
+     * The natural key News ingest is idempotent on: an article is stored once per Company
+     * Profile, however many runs return it. Per Company Profile rather than globally, because
+     * one article about two Kept companies is news about each. See docs/adr/0010.
+     */
+    uniqueIndex("news_items_profile_id_url_idx").on(table.profileId, table.url),
+    /** The News page reads one owner's items newest first. */
+    index("news_items_owner_id_published_at_idx").on(
+      table.ownerId,
+      table.publishedAt.desc(),
+    ),
+    /**
+     * Read-only to the app, and only to the owner. There is no insert or update policy: nothing
+     * in the app writes News, only the ingest script, which does so under the RLS-bypassing
+     * connection per CLAUDE.md.
+     */
+    pgPolicy("news_items_select_own", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`${authUid} = ${table.ownerId}`,
+    }),
+  ],
+);
+
+export type NewsItem = typeof newsItems.$inferSelect;
+export type NewNewsItem = typeof newsItems.$inferInsert;

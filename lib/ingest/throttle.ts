@@ -90,3 +90,20 @@ export const createEdgarThrottle = (
     windowMs: EDGAR_RATE_WINDOW_MS,
     ...options,
   });
+
+/**
+ * GNews's published ceiling on its free plan: one request a second, answered with a 429 past
+ * that. Paid plans allow ten, but the free plan is what News runs on (see docs/adr/0010), and a
+ * throttle set for a plan the key does not have is a run that fails halfway through.
+ */
+export const GNEWS_REQUESTS_PER_SECOND = 1;
+export const GNEWS_RATE_WINDOW_MS = 1_000;
+
+export const createGNewsThrottle = (
+  options: Pick<ThrottleOptions, "now" | "sleep"> = {},
+): Throttle =>
+  createThrottle({
+    limit: GNEWS_REQUESTS_PER_SECOND,
+    windowMs: GNEWS_RATE_WINDOW_MS,
+    ...options,
+  });
