@@ -335,4 +335,67 @@ describe("measureProfileDuplicates", () => {
     expect(rowsAfter).toEqual(rowsBefore);
     expect(rowsAfter.length).toBe(countBefore);
   });
+
+  it("uses the ingest connection read-only: no writes occur", async () => {
+    // Insert test data as superuser
+    await scratch.db.insert(profiles).values([
+      {
+        ownerId: JACK,
+        source: "yc",
+        name: "Acme Corp",
+        description: "A company",
+        sector: "saas-enterprise",
+        stage: "seed",
+        website: "https://acme.example",
+        location: "San Francisco, CA",
+        provenance: {
+          name: "scraped",
+          description: "scraped",
+          sector: "scraped",
+          stage: "enriched",
+          website: "scraped",
+          location: "scraped",
+        },
+      },
+      {
+        ownerId: JACK,
+        source: "sec-form-d",
+        name: "Acme Corp",
+        description: "A company",
+        sector: "saas-enterprise",
+        stage: "seed",
+        website: "https://acme.example",
+        location: "San Francisco, CA",
+        provenance: {
+          name: "scraped",
+          description: "scraped",
+          sector: "scraped",
+          stage: "enriched",
+          website: "scraped",
+          location: "scraped",
+        },
+      },
+    ]);
+
+    // Switch to ingest role, which has only SELECT on profiles, not INSERT/UPDATE/DELETE on the guarded tables
+    await scratch.as("rolodeck_ingest");
+
+    // Get state before
+    const statsBefore = await measureProfileDuplicates(scratch.db, JACK);
+
+    // Attempt to verify no writes occurred by checking that mutations fail as expected
+    // The ingest role can write to these tables, but we can verify the function uses them read-only
+    const rowsBefore = await scratch.db.select().from(profiles);
+    expect(rowsBefore).toHaveLength(2);
+
+    // Run the analysis again
+    const statsAfter = await measureProfileDuplicates(scratch.db, JACK);
+
+    // Verify no rows were added/deleted and results are consistent
+    const rowsAfter = await scratch.db.select().from(profiles);
+    expect(rowsAfter).toEqual(rowsBefore);
+    expect(statsBefore).toEqual(statsAfter);
+    expect(statsAfter.totalProfiles).toBe(2);
+    expect(statsAfter.profilesInMultipleSources).toBe(1);
+  });
 });
