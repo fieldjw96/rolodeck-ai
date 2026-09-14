@@ -97,7 +97,8 @@ and on nothing else, and stops at the first step that fails:
 4. Deploys with `vercel deploy --prod`.
 5. Runs `npm run smoke` against https://rolodeck-ai.vercel.app.
 
-A failed migration means no deploy. Any failure opens an issue titled
+A failed migration means no deploy. Any failure, or a cancelled run such as one that hits the
+job's 30-minute timeout, opens an issue titled
 `Deploy to production failed: <step>` linking the run; while that issue is open, a repeat
 failure comments on it rather than opening a second. See `docs/adr/0014` for why migrations run
 here, unattended, and not when the app boots.

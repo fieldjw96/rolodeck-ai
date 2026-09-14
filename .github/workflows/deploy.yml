@@ -5,8 +5,10 @@
 #
 # The ordering guarantee is plain step semantics: a failed step skips every step after it
 # unless that step says otherwise, and only the failure report does. A failed migration
-# therefore means no deploy. `scripts/deploy-workflow.test.ts` asserts that, and every other
-# property below that the ADR depends on, so a later edit that breaks one fails CI.
+# therefore means no deploy. A cancelled run, including one stopped by `timeout-minutes`, skips
+# them the same way, and is reported the same way. `scripts/deploy-workflow.test.ts` asserts
+# that, and every other property below that the ADR depends on, so a later edit that breaks one
+# fails CI.
 #
 # `main` only, three ways, any one of which is enough:
 #   1. the only trigger is a push to `main`;
@@ -218,24 +220,30 @@ jobs:
       #
       # A job GitHub never starts (the environment refusing it, say) reaches no step, so it
       # opens nothing; that shows only as a red run on the commit.
+      #
+      # `cancelled()` as well as `failure()`: the job's `timeout-minutes` cancels it rather
+      # than failing it, and `failure()` alone would then skip this step. A Vercel CLI call
+      # that hangs after the migration has applied is exactly the run that must not be
+      # silent. The step it stopped in has the outcome `cancelled`, hence both below.
       - id: report
         name: Open an issue for the failure
-        if: failure()
+        if: failure() || cancelled()
         env:
           GH_TOKEN: ${{ github.token }}
+          JOB_STATUS: ${{ job.status }}
           # Every step above appears here; the test checks that none is left out.
           FAILED_STEP: >-
             ${{
-            steps.checkout.outcome == 'failure' && 'Check out main' ||
-            steps.setup_node.outcome == 'failure' && 'Set up Node' ||
-            steps.install.outcome == 'failure' && 'Install dependencies' ||
-            steps.browsers.outcome == 'failure' && 'Install the smoke test browser' ||
-            steps.preflight.outcome == 'failure' && 'Check the production secrets' ||
-            steps.link.outcome == 'failure' && 'Link the Vercel project' ||
-            steps.migrate.outcome == 'failure' && 'Apply pending migrations' ||
-            steps.environment.outcome == 'failure' && 'Set the production environment variables' ||
-            steps.deploy.outcome == 'failure' && 'Deploy to Vercel production' ||
-            steps.smoke.outcome == 'failure' && 'Smoke test the deployment' ||
+            (steps.checkout.outcome == 'failure' || steps.checkout.outcome == 'cancelled') && 'Check out main' ||
+            (steps.setup_node.outcome == 'failure' || steps.setup_node.outcome == 'cancelled') && 'Set up Node' ||
+            (steps.install.outcome == 'failure' || steps.install.outcome == 'cancelled') && 'Install dependencies' ||
+            (steps.browsers.outcome == 'failure' || steps.browsers.outcome == 'cancelled') && 'Install the smoke test browser' ||
+            (steps.preflight.outcome == 'failure' || steps.preflight.outcome == 'cancelled') && 'Check the production secrets' ||
+            (steps.link.outcome == 'failure' || steps.link.outcome == 'cancelled') && 'Link the Vercel project' ||
+            (steps.migrate.outcome == 'failure' || steps.migrate.outcome == 'cancelled') && 'Apply pending migrations' ||
+            (steps.environment.outcome == 'failure' || steps.environment.outcome == 'cancelled') && 'Set the production environment variables' ||
+            (steps.deploy.outcome == 'failure' || steps.deploy.outcome == 'cancelled') && 'Deploy to Vercel production' ||
+            (steps.smoke.outcome == 'failure' || steps.smoke.outcome == 'cancelled') && 'Smoke test the deployment' ||
             'an unidentified step'
             }}
         run: |
@@ -244,8 +252,14 @@ jobs:
           run_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
           body="$RUNNER_TEMP/deploy-failure.md"
 
+          if [ "$JOB_STATUS" = "cancelled" ]; then
+            what="was cancelled, by the job's 30-minute timeout or by hand, while"
+          else
+            what="failed"
+          fi
+
           {
-            printf 'The **%s** step failed deploying `%s` from `main`.\n\n' "$FAILED_STEP" "$GITHUB_SHA"
+            printf 'The **%s** step %s deploying `%s` from `main`.\n\n' "$FAILED_STEP" "$what" "$GITHUB_SHA"
             printf 'Run: %s\n\n' "$run_url"
             printf '%s\n' \
               'Each step stops the ones after it. A failure up to and including *Apply pending' \

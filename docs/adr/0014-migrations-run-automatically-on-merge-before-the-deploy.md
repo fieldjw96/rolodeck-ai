@@ -63,7 +63,9 @@ already hold, and it should be dropped from both routes together.
 
 **Failure is loud.** A failed run opens a GitHub issue naming the step and linking the run, or
 comments on the one already open, so it arrives in the same queue as every other piece of
-work. After a successful deploy, `npm run smoke` signs in to production read-only. A deploy
+work. A cancelled run counts as a failed one, because the job's timeout cancels rather than
+fails it, and a Vercel call that hangs after the migration has applied is the run that most
+needs reporting. After a successful deploy, `npm run smoke` signs in to production read-only. A deploy
 that succeeds and serves a broken app therefore fails the job too.
 
 ## Rejected: running migrations when the app boots

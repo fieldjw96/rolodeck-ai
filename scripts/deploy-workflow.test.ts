@@ -109,7 +109,9 @@ describe("the production deploy workflow", () => {
   it("lets nothing run after a failed step except the failure report", () => {
     const last = job.steps.at(-1)!;
     expect(last.id).toBe("report");
-    expect(last.if).toBe("failure()");
+    // `cancelled()` too: `timeout-minutes` cancels the job rather than failing it, and a run
+    // that hangs after migrating is the one that most needs reporting.
+    expect(last.if).toBe("failure() || cancelled()");
 
     for (const s of job.steps.slice(0, -1)) {
       expect(s.if, `step "${s.id}" must not have an if:`).toBeUndefined();
@@ -123,8 +125,10 @@ describe("the production deploy workflow", () => {
   it("names every step in the failure report, so the issue says which one broke", () => {
     const failedStep = step("report").env?.FAILED_STEP ?? "";
     for (const s of job.steps.slice(0, -1)) {
-      expect(failedStep).toContain(`steps.${s.id}.outcome == 'failure'`);
-      expect(failedStep).toContain(`'${s.name}'`);
+      // A step stopped by a timeout has the outcome `cancelled`, not `failure`.
+      expect(failedStep).toContain(
+        `(steps.${s.id}.outcome == 'failure' || steps.${s.id}.outcome == 'cancelled') && '${s.name}'`,
+      );
     }
   });
 
