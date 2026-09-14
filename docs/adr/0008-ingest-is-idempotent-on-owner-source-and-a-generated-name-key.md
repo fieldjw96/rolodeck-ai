@@ -67,3 +67,11 @@ Postgres refuses to let a single `on conflict do update` affect the same row twi
 records in one batch can reduce to the same key. Batches are a page of Source results at a time,
 so the round trips are not the constraint; if that changes, the fix is to group by `name_key`
 first, not to drop the constraint.
+
+Ticket #136 narrowed what `do update` replaces. A field whose stored provenance is `jack` keeps
+its value and its provenance; every other field takes the incoming scrape's. That choice is a
+`case` per column and a per-field `jsonb_build_object` for `provenance`, inside the same
+statement, for the reason the rest of this ADR gives: reading the row first would let two
+ingest Runs both read `scraped` and race to overwrite a correction. A row whose every field is
+`jack` still counts as updated, since `do update` writes a new tuple whether or not a value
+changed.
