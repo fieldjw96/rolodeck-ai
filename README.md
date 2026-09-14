@@ -315,6 +315,34 @@ external_id)`, and it matches each attendee to Company Profiles on `name_key`.
 Sources. Run those first: an attendee only links to a Company Profile already in the Deck, and
 the links fill in on the next run once it is.
 
+### Scheduled runs
+
+The six Sources above are on a schedule in `.github/workflows/`, not run by hand. `ingest-sec-form-d.yml`,
+`ingest-accelerator-batches.yml` (South Park Commons and AngelPad) and `ingest-show-hn.yml` run
+weekly, Monday mornings UTC: company Sources change slowly, and EDGAR and Show HN are public
+services `lib/ingest/throttle.ts` already asks this project to be polite to. `ingest-events.yml`
+and `ingest-news.yml` run daily, since the Diary and News go stale by definition. All five are
+GitHub-hosted runners calling one shared workflow, `ingest-run.yml`, which runs the same `npm
+run <script>` documented above and authenticates with the `ROLODECK_INGEST_DATABASE_URL` Actions
+secret from "Ingest's credential" — never `SUPABASE_SECRET_KEY`. Each workflow's own
+`concurrency` group serialises its runs, so a slow weekly run cannot overlap the next.
+
+Trigger any of them by hand from the Actions tab — Actions → the workflow's name → **Run
+workflow** — or with `gh workflow run ingest-sec-form-d.yml`; every one of them also carries a
+`workflow_dispatch` trigger for exactly that, since the first thing anyone does with a broken
+schedule is run it themselves.
+
+A run's job summary reports what it inserted, updated and rejected, per Source, straight from
+each script's own console output. A run that writes zero rows is a failure everywhere except
+`ingest-news.yml`: every company-yielding Source and `ingest-events.yml` already exit non-zero
+on an empty run — a rotted selector returns nothing and exits clean, which reads as "nothing new
+today" at every layer above it unless the entry point itself refuses to call that success — but
+News's own `newsRunFailed` (`lib/news/run.ts`) only trips when GNews could not be searched for a
+company at all. A two-person startup can go a month unreported with no article to find, which is
+a quiet month and not a stale selector, so `ingest-news.yml` does not treat zero articles as a
+failure. A failed run opens or comments on a GitHub issue titled "Ingest failure: `<source>`", so
+a Source down for a week produces one issue to read rather than seven to ignore.
+
 ## News
 
 News is articles about the Company Profiles you Kept, read from the
