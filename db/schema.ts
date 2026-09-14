@@ -134,8 +134,9 @@ export const profiles = pgTable(
       table.nameKey,
     ),
     /**
-     * The Deck is paginated by keyset on exactly this order, so the index carries the whole
-     * `where` and `order by` of `readDeckPage` — see `db/deck.ts`.
+     * Narrows `readDeckPage` to one owner's rows, newest first. It no longer carries the whole
+     * `order by`: the Deck ranks by a score computed from the User Profile, which no index can
+     * hold, and sorting one owner's rows is cheap at single-player volume. See docs/adr/0011.
      */
     index("profiles_owner_id_created_at_id_idx").on(
       table.ownerId,
