@@ -1,0 +1,4084 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//techmeme.com//events//full
+METHOD:PUBLISH
+X-WR-CALNAME:Techmeme events
+BEGIN:VEVENT
+UID:RkEzvF9eGYFO0MuaeIxqhQ@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20250911T010000Z
+DTSTART;VALUE=DATE:20260912
+DTEND;VALUE=DATE:20260914
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:BlizzCon
+URL:https://www.techmeme.com/r2/blizzcon.com_en-us_-reQFn6oL.htm?c
+ al=1
+LOCATION:Anaheim, CA
+DESCRIPTION:BlizzCon https://www.techmeme.com/r2/blizzcon.com_en-u
+ s_-reQFn6oL.htm?cal=1\n\nFrom Techmeme's event calendar http://ww
+ w.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>BlizzCon</title></head><body><p><a href
+ ='https://www.techmeme.com/r2/blizzcon.com_en-us_-reQFn6oL.htm?ca
+ l=1'>BlizzCon</a></p><p>From <a href='http://www.techmeme.com/'>T
+ echmeme</a>'s <a href='http://www.techmeme.com/events'>event cale
+ ndar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:axCdJDCpIyz9RP8nVaDc3A@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20250912T010000Z
+DTSTART;VALUE=DATE:20260913
+DTEND;VALUE=DATE:20260916
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:The All-In Summit
+URL:https://www.techmeme.com/r2/theallinsummit.com_-113SQRjy.htm?c
+ al=1
+LOCATION:Los Angeles
+DESCRIPTION:The All-In Summit https://www.techmeme.com/r2/theallin
+ summit.com_-113SQRjy.htm?cal=1\n\nFrom Techmeme's event calendar 
+ http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>The All-In Summit</title></head><body><
+ p><a href='https://www.techmeme.com/r2/theallinsummit.com_-113SQR
+ jy.htm?cal=1'>The All-In Summit</a></p><p>From <a href='http://ww
+ w.techmeme.com/'>Techmeme</a>'s <a href='http://www.techmeme.com/
+ events'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:wmONktkslMCH2CSH60cCjsg@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20250912T010000Z
+DTSTART;VALUE=DATE:20260913
+DTEND;VALUE=DATE:20260916
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Infobip Shift
+URL:https://www.techmeme.com/r2/shift.infobip.com_-EYVV0MKd.htm?ca
+ l=1
+LOCATION:Zadar, Croatia
+DESCRIPTION:Infobip Shift https://www.techmeme.com/r2/shift.infobi
+ p.com_-EYVV0MKd.htm?cal=1\n\nFrom Techmeme's event calendar http:
+ //www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Infobip Shift</title></head><body><p><a
+  href='https://www.techmeme.com/r2/shift.infobip.com_-EYVV0MKd.ht
+ m?cal=1'>Infobip Shift</a></p><p>From <a href='http://www.techmem
+ e.com/'>Techmeme</a>'s <a href='http://www.techmeme.com/events'>e
+ vent calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:4V8IxYClrYtUVS6qye5fnQ@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20250913T010000Z
+DTSTART;VALUE=DATE:20260914
+DTEND;VALUE=DATE:20260916
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:WSJ CIO Network Technology Council Summit
+URL:https://www.techmeme.com/r2/leadershipinstitute.wsj.com_techno
+ logy_event_technology-council-summit-september-2026_-jjkMZfLB.htm
+ ?cal=1
+LOCATION:New York
+DESCRIPTION:WSJ CIO Network Technology Council Summit https://www.
+ techmeme.com/r2/leadershipinstitute.wsj.com_technology_event_tech
+ nology-council-summit-september-2026_-jjkMZfLB.htm?cal=1\n\nFrom 
+ Techmeme's event calendar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>WSJ CIO Network Technology Council Summ
+ it</title></head><body><p><a href='https://www.techmeme.com/r2/le
+ adershipinstitute.wsj.com_technology_event_technology-council-sum
+ mit-september-2026_-jjkMZfLB.htm?cal=1'>WSJ CIO Network Technolog
+ y Council Summit</a></p><p>From <a href='http://www.techmeme.com/
+ '>Techmeme</a>'s <a href='http://www.techmeme.com/events'>event c
+ alendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:6IT3rpQP0JkxHYc0Jyi3Tg@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20250913T010000Z
+DTSTART;VALUE=DATE:20260914
+DTEND;VALUE=DATE:20260918
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Fast Company Innovation Festival
+URL:https://www.techmeme.com/r2/events.fastcompany.com_innovationf
+ estival26-S2FmJErP.htm?cal=1
+LOCATION:New York
+DESCRIPTION:Fast Company Innovation Festival https://www.techmeme.
+ com/r2/events.fastcompany.com_innovationfestival26-S2FmJErP.htm?c
+ al=1\n\nFrom Techmeme's event calendar http://www.techmeme.com/ev
+ ents
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Fast Company Innovation Festival</title
+ ></head><body><p><a href='https://www.techmeme.com/r2/events.fast
+ company.com_innovationfestival26-S2FmJErP.htm?cal=1'>Fast Company
+  Innovation Festival</a></p><p>From <a href='http://www.techmeme.
+ com/'>Techmeme</a>'s <a href='http://www.techmeme.com/events'>eve
+ nt calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:b9544m08plZplpztws1DPCSA@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20250913T010000Z
+DTSTART;VALUE=DATE:20260914
+DTEND;VALUE=DATE:20260918
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Splunk .conf26
+URL:https://www.techmeme.com/r2/conf.splunk.com_-CFEizCNH.htm?cal=
+ 1
+LOCATION:Denver
+DESCRIPTION:Splunk .conf26 https://www.techmeme.com/r2/conf.splunk
+ .com_-CFEizCNH.htm?cal=1\n\nFrom Techmeme's event calendar http:/
+ /www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Splunk .conf26</title></head><body><p><
+ a href='https://www.techmeme.com/r2/conf.splunk.com_-CFEizCNH.htm
+ ?cal=1'>Splunk .conf26</a></p><p>From <a href='http://www.techmem
+ e.com/'>Techmeme</a>'s <a href='http://www.techmeme.com/events'>e
+ vent calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:hPslmOXILnCJBW2OplssIiXw@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20250913T010000Z
+DTSTART;VALUE=DATE:20260914
+DTEND;VALUE=DATE:20260919
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:NDC Oslo
+URL:https://www.techmeme.com/r2/ndcoslo.com_-ZqwPynS0.htm?cal=1
+LOCATION:Oslo
+DESCRIPTION:NDC Oslo https://www.techmeme.com/r2/ndcoslo.com_-ZqwP
+ ynS0.htm?cal=1\n\nFrom Techmeme's event calendar http://www.techm
+ eme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>NDC Oslo</title></head><body><p><a href
+ ='https://www.techmeme.com/r2/ndcoslo.com_-ZqwPynS0.htm?cal=1'>ND
+ C Oslo</a></p><p>From <a href='http://www.techmeme.com/'>Techmeme
+ </a>'s <a href='http://www.techmeme.com/events'>event calendar</a
+ ></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:JeZCiQdCoQf6aunFj0Ot7A@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20250914T010000Z
+DTSTART;VALUE=DATE:20260915
+DTEND;VALUE=DATE:20260917
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:LDX3 New York
+URL:https://www.techmeme.com/r2/leaddev.com_leaddev-new-york_-E56X
+ MF9e.htm?cal=1
+LOCATION:New York
+DESCRIPTION:LDX3 New York https://www.techmeme.com/r2/leaddev.com_
+ leaddev-new-york_-E56XMF9e.htm?cal=1\n\nFrom Techmeme's event cal
+ endar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>LDX3 New York</title></head><body><p><a
+  href='https://www.techmeme.com/r2/leaddev.com_leaddev-new-york_-
+ E56XMF9e.htm?cal=1'>LDX3 New York</a></p><p>From <a href='http://
+ www.techmeme.com/'>Techmeme</a>'s <a href='http://www.techmeme.co
+ m/events'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:nkHJplIGDWlslG9eaSfUE4Ng@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20250914T010000Z
+DTSTART;VALUE=DATE:20260915
+DTEND;VALUE=DATE:20260917
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:CONF3RENCE
+URL:https://www.techmeme.com/r2/www.conf3rence.com_-CyrgUu1o.htm?c
+ al=1
+LOCATION:Dortmund, Germany
+DESCRIPTION:CONF3RENCE https://www.techmeme.com/r2/www.conf3rence.
+ com_-CyrgUu1o.htm?cal=1\n\nFrom Techmeme's event calendar http://
+ www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>CONF3RENCE</title></head><body><p><a hr
+ ef='https://www.techmeme.com/r2/www.conf3rence.com_-CyrgUu1o.htm?
+ cal=1'>CONF3RENCE</a></p><p>From <a href='http://www.techmeme.com
+ /'>Techmeme</a>'s <a href='http://www.techmeme.com/events'>event 
+ calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:XQTHtrigQ6mApSP1sGXmbA@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20250914T010000Z
+DTSTART;VALUE=DATE:20260915
+DTEND;VALUE=DATE:20260918
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:HYBRID: Dreamforce
+URL:https://www.techmeme.com/r2/www.salesforce.com_dreamforce_-mzw
+ PrvCD.htm?cal=1
+LOCATION:San Francisco
+DESCRIPTION:HYBRID: Dreamforce https://www.techmeme.com/r2/www.sal
+ esforce.com_dreamforce_-mzwPrvCD.htm?cal=1\n\nFrom Techmeme's eve
+ nt calendar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>HYBRID: Dreamforce</title></head><body>
+ <p><a href='https://www.techmeme.com/r2/www.salesforce.com_dreamf
+ orce_-mzwPrvCD.htm?cal=1'>HYBRID: Dreamforce</a></p><p>From <a hr
+ ef='http://www.techmeme.com/'>Techmeme</a>'s <a href='http://www.
+ techmeme.com/events'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:QAmhaNvMQVrEnJ7rSIXh6w@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20250914T010000Z
+DTSTART;VALUE=DATE:20260915
+DTEND;VALUE=DATE:20260918
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:AI Infra Summit
+URL:https://www.techmeme.com/r2/www.ai-infra-summit.com_-FcVvdXE0.
+ htm?cal=1
+LOCATION:Santa Clara, CA
+DESCRIPTION:AI Infra Summit https://www.techmeme.com/r2/www.ai-inf
+ ra-summit.com_-FcVvdXE0.htm?cal=1\n\nFrom Techmeme's event calend
+ ar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>AI Infra Summit</title></head><body><p>
+ <a href='https://www.techmeme.com/r2/www.ai-infra-summit.com_-FcV
+ vdXE0.htm?cal=1'>AI Infra Summit</a></p><p>From <a href='http://w
+ ww.techmeme.com/'>Techmeme</a>'s <a href='http://www.techmeme.com
+ /events'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:IWOHozz9moAoG4F9zqd0zQ@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20250914T010000Z
+DTSTART;VALUE=DATE:20260915
+DTEND;VALUE=DATE:20260919
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:dbt Summit
+URL:https://www.techmeme.com/r2/www.getdbt.com_dbt-summit-9pltSWUB
+ .htm?cal=1
+LOCATION:Las Vegas
+DESCRIPTION:dbt Summit https://www.techmeme.com/r2/www.getdbt.com_
+ dbt-summit-9pltSWUB.htm?cal=1\n\nFrom Techmeme's event calendar h
+ ttp://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>dbt Summit</title></head><body><p><a hr
+ ef='https://www.techmeme.com/r2/www.getdbt.com_dbt-summit-9pltSWU
+ B.htm?cal=1'>dbt Summit</a></p><p>From <a href='http://www.techme
+ me.com/'>Techmeme</a>'s <a href='http://www.techmeme.com/events'>
+ event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:lqjrNIEpb2cEalrzXsB7TA@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20250915T010000Z
+DTSTART;VALUE=DATE:20260916
+DTEND;VALUE=DATE:20260917
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Snap "See for Yourself" SPECS Launch media event
+URL:https://www.techmeme.com/r2/newsroom.snap.com_specs-launch-dat
+ e-Y2Wo8aEe.htm?cal=1
+LOCATION:Los Angeles
+DESCRIPTION:Snap "See for Yourself" SPECS Launch media event https
+ ://www.techmeme.com/r2/newsroom.snap.com_specs-launch-date-Y2Wo8a
+ Ee.htm?cal=1\n\nFrom Techmeme's event calendar http://www.techmem
+ e.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Snap "See for Yourself" SPECS Launch me
+ dia event</title></head><body><p><a href='https://www.techmeme.co
+ m/r2/newsroom.snap.com_specs-launch-date-Y2Wo8aEe.htm?cal=1'>Snap
+  "See for Yourself" SPECS Launch media event</a></p><p>From <a hr
+ ef='http://www.techmeme.com/'>Techmeme</a>'s <a href='http://www.
+ techmeme.com/events'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:KqO9zKkplBpNsxKrP5hmNoQ@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20250915T010000Z
+DTSTART;VALUE=DATE:20260916
+DTEND;VALUE=DATE:20260918
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Avalanche Summit
+URL:https://www.techmeme.com/r2/www.avalanchesummit.com_-Wi8QZBeD.
+ htm?cal=1
+LOCATION:New York
+DESCRIPTION:Avalanche Summit https://www.techmeme.com/r2/www.avala
+ nchesummit.com_-Wi8QZBeD.htm?cal=1\n\nFrom Techmeme's event calen
+ dar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Avalanche Summit</title></head><body><p
+ ><a href='https://www.techmeme.com/r2/www.avalanchesummit.com_-Wi
+ 8QZBeD.htm?cal=1'>Avalanche Summit</a></p><p>From <a href='http:/
+ /www.techmeme.com/'>Techmeme</a>'s <a href='http://www.techmeme.c
+ om/events'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:kzGgCK2UedyzfNLGq8lr5A@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20250915T010000Z
+DTSTART;VALUE=DATE:20260916
+DTEND;VALUE=DATE:20260918
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:European Blockchain Convention
+URL:https://www.techmeme.com/r2/eblockchainconvention.com_european
+ -blockchain-convention-12__-pB8glq70.htm?cal=1
+LOCATION:Barcelona
+DESCRIPTION:European Blockchain Convention https://www.techmeme.co
+ m/r2/eblockchainconvention.com_european-blockchain-convention-12_
+ _-pB8glq70.htm?cal=1\n\nFrom Techmeme's event calendar http://www
+ .techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>European Blockchain Convention</title><
+ /head><body><p><a href='https://www.techmeme.com/r2/eblockchainco
+ nvention.com_european-blockchain-convention-12__-pB8glq70.htm?cal
+ =1'>European Blockchain Convention</a></p><p>From <a href='http:/
+ /www.techmeme.com/'>Techmeme</a>'s <a href='http://www.techmeme.c
+ om/events'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:9slVOWjYx5RZXR8y4IuU4xA@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20250915T010000Z
+DTSTART;VALUE=DATE:20260916
+DTEND;VALUE=DATE:20260919
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:GISEC Global
+URL:https://www.techmeme.com/r2/gisec.ae_-82slpZJU.htm?cal=1
+LOCATION:Dubai
+DESCRIPTION:GISEC Global https://www.techmeme.com/r2/gisec.ae_-82s
+ lpZJU.htm?cal=1\n\nFrom Techmeme's event calendar http://www.tech
+ meme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>GISEC Global</title></head><body><p><a 
+ href='https://www.techmeme.com/r2/gisec.ae_-82slpZJU.htm?cal=1'>G
+ ISEC Global</a></p><p>From <a href='http://www.techmeme.com/'>Tec
+ hmeme</a>'s <a href='http://www.techmeme.com/events'>event calend
+ ar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:GzIdSM07TAxo3Oqa0Ec3Rw@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20250916T010000Z
+DTSTART;VALUE=DATE:20260917
+DTEND;VALUE=DATE:20260922
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Tokyo Game Show
+URL:https://www.techmeme.com/r2/events.nikkeibp.co.jp_tgs_2026_en_
+ exhibitor_-8cA1Cc9l.htm?cal=1
+LOCATION:Tokyo
+DESCRIPTION:Tokyo Game Show https://www.techmeme.com/r2/events.nik
+ keibp.co.jp_tgs_2026_en_exhibitor_-8cA1Cc9l.htm?cal=1\n\nFrom Tec
+ hmeme's event calendar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Tokyo Game Show</title></head><body><p>
+ <a href='https://www.techmeme.com/r2/events.nikkeibp.co.jp_tgs_20
+ 26_en_exhibitor_-8cA1Cc9l.htm?cal=1'>Tokyo Game Show</a></p><p>Fr
+ om <a href='http://www.techmeme.com/'>Techmeme</a>'s <a href='htt
+ p://www.techmeme.com/events'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:19YYIzRQKAC7ce9MVFUxJg@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20250919T010000Z
+DTSTART;VALUE=DATE:20260920
+DTEND;VALUE=DATE:20260926
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:HYBRID: STARWEST
+URL:https://www.techmeme.com/r2/starwest.techwell.com_-3cS4CBvs.ht
+ m?cal=1
+LOCATION:Anaheim, CA
+DESCRIPTION:HYBRID: STARWEST https://www.techmeme.com/r2/starwest.
+ techwell.com_-3cS4CBvs.htm?cal=1\n\nFrom Techmeme's event calenda
+ r http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>HYBRID: STARWEST</title></head><body><p
+ ><a href='https://www.techmeme.com/r2/starwest.techwell.com_-3cS4
+ CBvs.htm?cal=1'>HYBRID: STARWEST</a></p><p>From <a href='http://w
+ ww.techmeme.com/'>Techmeme</a>'s <a href='http://www.techmeme.com
+ /events'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:gLQJsliuY0slOSnOdEUvlyAA@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20250921T010000Z
+DTSTART;VALUE=DATE:20260922
+DTEND;VALUE=DATE:20260924
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Turing Fest
+URL:https://www.techmeme.com/r2/turingfest.com_-xslpJ67P.htm?cal=1
+LOCATION:Edinburgh
+DESCRIPTION:Turing Fest https://www.techmeme.com/r2/turingfest.com
+ _-xslpJ67P.htm?cal=1\n\nFrom Techmeme's event calendar http://www
+ .techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Turing Fest</title></head><body><p><a h
+ ref='https://www.techmeme.com/r2/turingfest.com_-xslpJ67P.htm?cal
+ =1'>Turing Fest</a></p><p>From <a href='http://www.techmeme.com/'
+ >Techmeme</a>'s <a href='http://www.techmeme.com/events'>event ca
+ lendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:zFEnslplslR4XKDekXr2qplAplw@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20250921T010000Z
+DTSTART;VALUE=DATE:20260922
+DTEND;VALUE=DATE:20260924
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Product Operations Summit + Product-Led Summit
+URL:https://www.techmeme.com/r2/world.productledalliance.com_locat
+ ion_popssanfrancisco-Lndc1hL0.htm?cal=1
+LOCATION:San Francisco
+DESCRIPTION:Product Operations Summit + Product-Led Summit https:/
+ /www.techmeme.com/r2/world.productledalliance.com_location_popssa
+ nfrancisco-Lndc1hL0.htm?cal=1\n\nFrom Techmeme's event calendar h
+ ttp://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Product Operations Summit + Product-Led
+  Summit</title></head><body><p><a href='https://www.techmeme.com/
+ r2/world.productledalliance.com_location_popssanfrancisco-Lndc1hL
+ 0.htm?cal=1'>Product Operations Summit + Product-Led Summit</a></
+ p><p>From <a href='http://www.techmeme.com/'>Techmeme</a>'s <a hr
+ ef='http://www.techmeme.com/events'>event calendar</a></p></body>
+ </html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:1RwxPB2ZwT5Iypl2w6q8pl0w@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20250921T010000Z
+DTSTART;VALUE=DATE:20260922
+DTEND;VALUE=DATE:20260925
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Elevate Festival
+URL:https://www.techmeme.com/r2/elevatefestival.ca_-IC0sL9FD.htm?c
+ al=1
+LOCATION:Toronto
+DESCRIPTION:Elevate Festival https://www.techmeme.com/r2/elevatefe
+ stival.ca_-IC0sL9FD.htm?cal=1\n\nFrom Techmeme's event calendar h
+ ttp://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Elevate Festival</title></head><body><p
+ ><a href='https://www.techmeme.com/r2/elevatefestival.ca_-IC0sL9F
+ D.htm?cal=1'>Elevate Festival</a></p><p>From <a href='http://www.
+ techmeme.com/'>Techmeme</a>'s <a href='http://www.techmeme.com/ev
+ ents'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:RKbiEUslYfVGrRNo67Zd1UQ@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20250921T010000Z
+DTSTART;VALUE=DATE:20260922
+DTEND;VALUE=DATE:20260925
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Skift Global Forum
+URL:https://www.techmeme.com/r2/live.skift.com_skift-global-forum_
+ -goojP3Wi.htm?cal=1
+LOCATION:New York
+DESCRIPTION:Skift Global Forum https://www.techmeme.com/r2/live.sk
+ ift.com_skift-global-forum_-goojP3Wi.htm?cal=1\n\nFrom Techmeme's
+  event calendar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Skift Global Forum</title></head><body>
+ <p><a href='https://www.techmeme.com/r2/live.skift.com_skift-glob
+ al-forum_-goojP3Wi.htm?cal=1'>Skift Global Forum</a></p><p>From <
+ a href='http://www.techmeme.com/'>Techmeme</a>'s <a href='http://
+ www.techmeme.com/events'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:M65hJNOee7s0wDVERd7l9A@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20250921T010000Z
+DTSTART;VALUE=DATE:20260922
+DTEND;VALUE=DATE:20260925
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:NEW DATES: Seamless Middle East
+URL:https://www.techmeme.com/r2/www.terrapinn.com_exhibition_seaml
+ ess-middle-east_-qItfVESS.htm?cal=1
+LOCATION:Dubai
+DESCRIPTION:NEW DATES: Seamless Middle East https://www.techmeme.c
+ om/r2/www.terrapinn.com_exhibition_seamless-middle-east_-qItfVESS
+ .htm?cal=1\n\nFrom Techmeme's event calendar http://www.techmeme.
+ com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>NEW DATES: Seamless Middle East</title>
+ </head><body><p><a href='https://www.techmeme.com/r2/www.terrapin
+ n.com_exhibition_seamless-middle-east_-qItfVESS.htm?cal=1'>NEW DA
+ TES: Seamless Middle East</a></p><p>From <a href='http://www.tech
+ meme.com/'>Techmeme</a>'s <a href='http://www.techmeme.com/events
+ '>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:XmRmMxpy93AWcKAx354bpw@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20250921T010000Z
+DTSTART;VALUE=DATE:20260922
+DTEND;VALUE=DATE:20260925
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Qualcomm Snapdragon Summit + "When Two Changes the Game" m
+ edia event
+URL:https://www.techmeme.com/r2/www.qualcomm.com_company_events_sn
+ apdragon-summit-LL9fAEzN.htm?cal=1
+LOCATION:Maui
+DESCRIPTION:Qualcomm Snapdragon Summit + "When Two Changes the Gam
+ e" media event https://www.techmeme.com/r2/www.qualcomm.com_compa
+ ny_events_snapdragon-summit-LL9fAEzN.htm?cal=1\n\nFrom Techmeme's
+  event calendar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Qualcomm Snapdragon Summit + "When Two 
+ Changes the Game" media event</title></head><body><p><a href='htt
+ ps://www.techmeme.com/r2/www.qualcomm.com_company_events_snapdrag
+ on-summit-LL9fAEzN.htm?cal=1'>Qualcomm Snapdragon Summit + "When 
+ Two Changes the Game" media event</a></p><p>From <a href='http://
+ www.techmeme.com/'>Techmeme</a>'s <a href='http://www.techmeme.co
+ m/events'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:eTk1QfKplUDC2UKLCjFzIow@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20250921T010000Z
+DTSTART;VALUE=DATE:20260922
+DTEND;VALUE=DATE:20260925
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:National Cyber Summit
+URL:https://www.techmeme.com/r2/www.nationalcybersummit.com_Home-j
+ Ps1brDV.htm?cal=1
+LOCATION:Huntsville, AL
+DESCRIPTION:National Cyber Summit https://www.techmeme.com/r2/www.
+ nationalcybersummit.com_Home-jPs1brDV.htm?cal=1\n\nFrom Techmeme'
+ s event calendar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>National Cyber Summit</title></head><bo
+ dy><p><a href='https://www.techmeme.com/r2/www.nationalcybersummi
+ t.com_Home-jPs1brDV.htm?cal=1'>National Cyber Summit</a></p><p>Fr
+ om <a href='http://www.techmeme.com/'>Techmeme</a>'s <a href='htt
+ p://www.techmeme.com/events'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:o7Hb41hui0kb5Swzzr2MTw@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20250921T010000Z
+DTSTART;VALUE=DATE:20260922
+DTEND;VALUE=DATE:20260925
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Future Product Days
+URL:https://www.techmeme.com/r2/www.futureproductdays.com_-ca5pltc
+ m.htm?cal=1
+LOCATION:Copenhagen
+DESCRIPTION:Future Product Days https://www.techmeme.com/r2/www.fu
+ tureproductdays.com_-ca5pltcm.htm?cal=1\n\nFrom Techmeme's event 
+ calendar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Future Product Days</title></head><body
+ ><p><a href='https://www.techmeme.com/r2/www.futureproductdays.co
+ m_-ca5pltcm.htm?cal=1'>Future Product Days</a></p><p>From <a href
+ ='http://www.techmeme.com/'>Techmeme</a>'s <a href='http://www.te
+ chmeme.com/events'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:nF3bOqWucb6WslehfGcDLDA@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20250921T010000Z
+DTSTART;VALUE=DATE:20260922
+DTEND;VALUE=DATE:20260925
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Oktane
+URL:https://www.techmeme.com/r2/www.okta.com_oktane_-Wftxid4Z.htm?
+ cal=1
+LOCATION:Las Vegas
+DESCRIPTION:Oktane https://www.techmeme.com/r2/www.okta.com_oktane
+ _-Wftxid4Z.htm?cal=1\n\nFrom Techmeme's event calendar http://www
+ .techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Oktane</title></head><body><p><a href='
+ https://www.techmeme.com/r2/www.okta.com_oktane_-Wftxid4Z.htm?cal
+ =1'>Oktane</a></p><p>From <a href='http://www.techmeme.com/'>Tech
+ meme</a>'s <a href='http://www.techmeme.com/events'>event calenda
+ r</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:JdKW5lQfWslplHtI0oTp7plDQ@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20250921T010000Z
+DTSTART;VALUE=DATE:20260922
+DTEND;VALUE=DATE:20260926
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:UiPath Fusion
+URL:https://www.techmeme.com/r2/www.uipath.com_events_fusion_regis
+ ter-2C3lwH0b.htm?cal=1
+LOCATION:Las Vegas
+DESCRIPTION:UiPath Fusion https://www.techmeme.com/r2/www.uipath.c
+ om_events_fusion_register-2C3lwH0b.htm?cal=1\n\nFrom Techmeme's e
+ vent calendar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>UiPath Fusion</title></head><body><p><a
+  href='https://www.techmeme.com/r2/www.uipath.com_events_fusion_r
+ egister-2C3lwH0b.htm?cal=1'>UiPath Fusion</a></p><p>From <a href=
+ 'http://www.techmeme.com/'>Techmeme</a>'s <a href='http://www.tec
+ hmeme.com/events'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:J1RqTAw4zPR7zbRYLmslfSw@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20250922T010000Z
+DTSTART;VALUE=DATE:20260923
+DTEND;VALUE=DATE:20260924
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:The Information's AI Agenda Live SF
+URL:https://www.techmeme.com/r2/www.theinformation.com_events_ai-a
+ genda-live-2026-Y5KL8VrS.htm?cal=1
+LOCATION:San Francisco
+DESCRIPTION:The Information's AI Agenda Live SF https://www.techme
+ me.com/r2/www.theinformation.com_events_ai-agenda-live-2026-Y5KL8
+ VrS.htm?cal=1\n\nFrom Techmeme's event calendar http://www.techme
+ me.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>The Information's AI Agenda Live SF</ti
+ tle></head><body><p><a href='https://www.techmeme.com/r2/www.thei
+ nformation.com_events_ai-agenda-live-2026-Y5KL8VrS.htm?cal=1'>The
+  Information's AI Agenda Live SF</a></p><p>From <a href='http://w
+ ww.techmeme.com/'>Techmeme</a>'s <a href='http://www.techmeme.com
+ /events'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:1Vp4RplqBuSLDtkJg4te7bQ@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20250922T010000Z
+DTSTART;VALUE=DATE:20260923
+DTEND;VALUE=DATE:20260925
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Meta Connect
+URL:https://www.techmeme.com/r2/www.meta.com_connect_-VNNSSI8K.htm
+ ?cal=1
+LOCATION:Menlo Park, CA
+DESCRIPTION:Meta Connect https://www.techmeme.com/r2/www.meta.com_
+ connect_-VNNSSI8K.htm?cal=1\n\nFrom Techmeme's event calendar htt
+ p://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Meta Connect</title></head><body><p><a 
+ href='https://www.techmeme.com/r2/www.meta.com_connect_-VNNSSI8K.
+ htm?cal=1'>Meta Connect</a></p><p>From <a href='http://www.techme
+ me.com/'>Techmeme</a>'s <a href='http://www.techmeme.com/events'>
+ event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:pB2zhQxGKuMfWvslSUVqjBQ@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20250922T010000Z
+DTSTART;VALUE=DATE:20260923
+DTEND;VALUE=DATE:20260925
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:DMEXCO
+URL:https://www.techmeme.com/r2/dmexco.com_-UGhshFai.htm?cal=1
+LOCATION:Cologne
+DESCRIPTION:DMEXCO https://www.techmeme.com/r2/dmexco.com_-UGhshFa
+ i.htm?cal=1\n\nFrom Techmeme's event calendar http://www.techmeme
+ .com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>DMEXCO</title></head><body><p><a href='
+ https://www.techmeme.com/r2/dmexco.com_-UGhshFai.htm?cal=1'>DMEXC
+ O</a></p><p>From <a href='http://www.techmeme.com/'>Techmeme</a>'
+ s <a href='http://www.techmeme.com/events'>event calendar</a></p>
+ </body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:loenz53pgqgLq9fgIcuXug@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20250922T010000Z
+DTSTART;VALUE=DATE:20260923
+DTEND;VALUE=DATE:20260925
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:GoSec
+URL:https://www.techmeme.com/r2/gosec.net_-MiXCzPGe.htm?cal=1
+LOCATION:Montreal
+DESCRIPTION:GoSec https://www.techmeme.com/r2/gosec.net_-MiXCzPGe.
+ htm?cal=1\n\nFrom Techmeme's event calendar http://www.techmeme.c
+ om/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>GoSec</title></head><body><p><a href='h
+ ttps://www.techmeme.com/r2/gosec.net_-MiXCzPGe.htm?cal=1'>GoSec</
+ a></p><p>From <a href='http://www.techmeme.com/'>Techmeme</a>'s <
+ a href='http://www.techmeme.com/events'>event calendar</a></p></b
+ ody></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:nVHG0WeusmzMuukRSZDTPw@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20250922T010000Z
+DTSTART;VALUE=DATE:20260923
+DTEND;VALUE=DATE:20260925
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Big Data LDN
+URL:https://www.techmeme.com/r2/www.bigdataldn.com_en-gb.html-87XN
+ rLdn.htm?cal=1
+LOCATION:London
+DESCRIPTION:Big Data LDN https://www.techmeme.com/r2/www.bigdatald
+ n.com_en-gb.html-87XNrLdn.htm?cal=1\n\nFrom Techmeme's event cale
+ ndar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Big Data LDN</title></head><body><p><a 
+ href='https://www.techmeme.com/r2/www.bigdataldn.com_en-gb.html-8
+ 7XNrLdn.htm?cal=1'>Big Data LDN</a></p><p>From <a href='http://ww
+ w.techmeme.com/'>Techmeme</a>'s <a href='http://www.techmeme.com/
+ events'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:z6IM7nTQXzewB9wk8EvhCg@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20250922T010000Z
+DTSTART;VALUE=DATE:20260923
+DTEND;VALUE=DATE:20260925
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:eCommerce Expo
+URL:https://www.techmeme.com/r2/www.ecommerceexpo.co.uk_-qIAe5qcu.
+ htm?cal=1
+LOCATION:London
+DESCRIPTION:eCommerce Expo https://www.techmeme.com/r2/www.ecommer
+ ceexpo.co.uk_-qIAe5qcu.htm?cal=1\n\nFrom Techmeme's event calenda
+ r http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>eCommerce Expo</title></head><body><p><
+ a href='https://www.techmeme.com/r2/www.ecommerceexpo.co.uk_-qIAe
+ 5qcu.htm?cal=1'>eCommerce Expo</a></p><p>From <a href='http://www
+ .techmeme.com/'>Techmeme</a>'s <a href='http://www.techmeme.com/e
+ vents'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:BslVyUGyaSUB6tjPcNeW6MA@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20250922T010000Z
+DTSTART;VALUE=DATE:20260923
+DTEND;VALUE=DATE:20260926
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:WeAreDevelopers World Congress North America
+URL:https://www.techmeme.com/r2/www.wearedevelopers.com_world-cong
+ ress-north-america_-plNszwDD.htm?cal=1
+LOCATION:San Jose
+DESCRIPTION:WeAreDevelopers World Congress North America https://w
+ ww.techmeme.com/r2/www.wearedevelopers.com_world-congress-north-a
+ merica_-plNszwDD.htm?cal=1\n\nFrom Techmeme's event calendar http
+ ://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>WeAreDevelopers World Congress North Am
+ erica</title></head><body><p><a href='https://www.techmeme.com/r2
+ /www.wearedevelopers.com_world-congress-north-america_-plNszwDD.h
+ tm?cal=1'>WeAreDevelopers World Congress North America</a></p><p>
+ From <a href='http://www.techmeme.com/'>Techmeme</a>'s <a href='h
+ ttp://www.techmeme.com/events'>event calendar</a></p></body></htm
+ l>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:5M1frK9JpTh14CuuZT4pAg@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20250922T010000Z
+DTSTART;VALUE=DATE:20260923
+DTEND;VALUE=DATE:20260926
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Quantum World Congress
+URL:https://www.techmeme.com/r2/www.quantumworldcongress.com_-KXHF
+ YbBp.htm?cal=1
+LOCATION:College Park, MD
+DESCRIPTION:Quantum World Congress https://www.techmeme.com/r2/www
+ .quantumworldcongress.com_-KXHFYbBp.htm?cal=1\n\nFrom Techmeme's 
+ event calendar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Quantum World Congress</title></head><b
+ ody><p><a href='https://www.techmeme.com/r2/www.quantumworldcongr
+ ess.com_-KXHFYbBp.htm?cal=1'>Quantum World Congress</a></p><p>Fro
+ m <a href='http://www.techmeme.com/'>Techmeme</a>'s <a href='http
+ ://www.techmeme.com/events'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:C8X4rQplSlDH7oGgiSQxq6g@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20250923T010000Z
+DTSTART;VALUE=DATE:20260924
+DTEND;VALUE=DATE:20260926
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Reuters Momentum AI
+URL:https://www.techmeme.com/r2/events.reutersevents.com_momentum-
+ Qs00w1Np.htm?cal=1
+LOCATION:Austin, TX
+DESCRIPTION:Reuters Momentum AI https://www.techmeme.com/r2/events
+ .reutersevents.com_momentum-Qs00w1Np.htm?cal=1\n\nFrom Techmeme's
+  event calendar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Reuters Momentum AI</title></head><body
+ ><p><a href='https://www.techmeme.com/r2/events.reutersevents.com
+ _momentum-Qs00w1Np.htm?cal=1'>Reuters Momentum AI</a></p><p>From 
+ <a href='http://www.techmeme.com/'>Techmeme</a>'s <a href='http:/
+ /www.techmeme.com/events'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:Jepso9VFiKFEgW9ytnhJLg@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20250923T010000Z
+DTSTART;VALUE=DATE:20260924
+DTEND;VALUE=DATE:20260926
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:BSides Edmonton
+URL:https://www.techmeme.com/r2/www.bsidesedmonton.org_-hQETplsl.h
+ tm?cal=1
+LOCATION:Edmonton
+DESCRIPTION:BSides Edmonton https://www.techmeme.com/r2/www.bsides
+ edmonton.org_-hQETplsl.htm?cal=1\n\nFrom Techmeme's event calenda
+ r http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>BSides Edmonton</title></head><body><p>
+ <a href='https://www.techmeme.com/r2/www.bsidesedmonton.org_-hQET
+ plsl.htm?cal=1'>BSides Edmonton</a></p><p>From <a href='http://ww
+ w.techmeme.com/'>Techmeme</a>'s <a href='http://www.techmeme.com/
+ events'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:MF6dAslGBesJ6SKcgAEITeQ@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20250924T010000Z
+DTSTART;VALUE=DATE:20260925
+DTEND;VALUE=DATE:20260928
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:IT Arena
+URL:https://www.techmeme.com/r2/itarena.ua_-aGsXhaBl.htm?cal=1
+LOCATION:Lviv, Ukraine
+DESCRIPTION:IT Arena https://www.techmeme.com/r2/itarena.ua_-aGsXh
+ aBl.htm?cal=1\n\nFrom Techmeme's event calendar http://www.techme
+ me.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>IT Arena</title></head><body><p><a href
+ ='https://www.techmeme.com/r2/itarena.ua_-aGsXhaBl.htm?cal=1'>IT 
+ Arena</a></p><p>From <a href='http://www.techmeme.com/'>Techmeme<
+ /a>'s <a href='http://www.techmeme.com/events'>event calendar</a>
+ </p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:Hv6vbXQ3PjpltXF7FnCslJWQ@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20250927T010000Z
+DTSTART;VALUE=DATE:20260928
+DTEND;VALUE=DATE:20261001
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Bits & Pretzels Founders Festival
+URL:https://www.techmeme.com/r2/www.bitsandpretzels.com_-s8amRh63.
+ htm?cal=1
+LOCATION:Munich
+DESCRIPTION:Bits & Pretzels Founders Festival https://www.techmeme
+ .com/r2/www.bitsandpretzels.com_-s8amRh63.htm?cal=1\n\nFrom Techm
+ eme's event calendar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Bits & Pretzels Founders Festival</titl
+ e></head><body><p><a href='https://www.techmeme.com/r2/www.bitsan
+ dpretzels.com_-s8amRh63.htm?cal=1'>Bits & Pretzels Founders Festi
+ val</a></p><p>From <a href='http://www.techmeme.com/'>Techmeme</a
+ >'s <a href='http://www.techmeme.com/events'>event calendar</a></
+ p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:sS7wgCKbgYwXQA149gJxZw@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20250927T010000Z
+DTSTART;VALUE=DATE:20260928
+DTEND;VALUE=DATE:20261001
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:SNIA Developer Conference (SDC)
+URL:https://www.techmeme.com/r2/www.snia.org_sniadeveloper_SDCUS-D
+ zTsl2zN.htm?cal=1
+LOCATION:Santa Clara, CA
+DESCRIPTION:SNIA Developer Conference (SDC) https://www.techmeme.c
+ om/r2/www.snia.org_sniadeveloper_SDCUS-DzTsl2zN.htm?cal=1\n\nFrom
+  Techmeme's event calendar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>SNIA Developer Conference (SDC)</title>
+ </head><body><p><a href='https://www.techmeme.com/r2/www.snia.org
+ _sniadeveloper_SDCUS-DzTsl2zN.htm?cal=1'>SNIA Developer Conferenc
+ e (SDC)</a></p><p>From <a href='http://www.techmeme.com/'>Techmem
+ e</a>'s <a href='http://www.techmeme.com/events'>event calendar</
+ a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:HplEBi8FA46FU5oknSPsly0g@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20250927T010000Z
+DTSTART;VALUE=DATE:20260928
+DTEND;VALUE=DATE:20261002
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Sibos
+URL:https://www.techmeme.com/r2/www.sibos.com_-NKuhYHwd.htm?cal=1
+LOCATION:Miami Beach
+DESCRIPTION:Sibos https://www.techmeme.com/r2/www.sibos.com_-NKuhY
+ Hwd.htm?cal=1\n\nFrom Techmeme's event calendar http://www.techme
+ me.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Sibos</title></head><body><p><a href='h
+ ttps://www.techmeme.com/r2/www.sibos.com_-NKuhYHwd.htm?cal=1'>Sib
+ os</a></p><p>From <a href='http://www.techmeme.com/'>Techmeme</a>
+ 's <a href='http://www.techmeme.com/events'>event calendar</a></p
+ ></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:g99gjRhYkYkJRqzxM8iAzQ@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20250928T010000Z
+DTSTART;VALUE=DATE:20260929
+DTEND;VALUE=DATE:20260930
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Newcomer Machine Earning AI Summit
+URL:https://www.techmeme.com/r2/machine-earning.ai_-brA0dOQp.htm?c
+ al=1
+LOCATION:San Francisco
+DESCRIPTION:Newcomer Machine Earning AI Summit https://www.techmem
+ e.com/r2/machine-earning.ai_-brA0dOQp.htm?cal=1\n\nFrom Techmeme'
+ s event calendar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Newcomer Machine Earning AI Summit</tit
+ le></head><body><p><a href='https://www.techmeme.com/r2/machine-e
+ arning.ai_-brA0dOQp.htm?cal=1'>Newcomer Machine Earning AI Summit
+ </a></p><p>From <a href='http://www.techmeme.com/'>Techmeme</a>'s
+  <a href='http://www.techmeme.com/events'>event calendar</a></p><
+ /body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:zJWhcxiD1NBxplhYFIplLI3g@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20250928T010000Z
+DTSTART;VALUE=DATE:20260929
+DTEND;VALUE=DATE:20260930
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:FUSION '26 by Atomicwork: hear from Vinod Khosla, Aaron Le
+ vie and leaders from Okta, Meta, OpenAI
+URL:https://www.techmeme.com/r2/www.atomicwork.com_fusion_utm_sour
+ ce_techmeme-PqaRwh1N.htm?cal=1
+LOCATION:San Francisco
+DESCRIPTION:FUSION '26 by Atomicwork: hear from Vinod Khosla, Aaro
+ n Levie and leaders from Okta, Meta, OpenAI https://www.techmeme.
+ com/r2/www.atomicwork.com_fusion_utm_source_techmeme-PqaRwh1N.htm
+ ?cal=1\n\nFrom Techmeme's event calendar http://www.techmeme.com/
+ events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>FUSION '26 by Atomicwork: hear from Vin
+ od Khosla, Aaron Levie and leaders from Okta, Meta, OpenAI</title
+ ></head><body><p><a href='https://www.techmeme.com/r2/www.atomicw
+ ork.com_fusion_utm_source_techmeme-PqaRwh1N.htm?cal=1'>FUSION '26
+  by Atomicwork: hear from Vinod Khosla, Aaron Levie and leaders f
+ rom Okta, Meta, OpenAI</a></p><p>From <a href='http://www.techmem
+ e.com/'>Techmeme</a>'s <a href='http://www.techmeme.com/events'>e
+ vent calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:7jRyovYsl5PIfPHvV47Xq0A@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20250928T010000Z
+DTSTART;VALUE=DATE:20260929
+DTEND;VALUE=DATE:20260930
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:OpenAI DevDay
+URL:https://www.techmeme.com/r2/openai.com_index_devday-2026_-59SN
+ GKtP.htm?cal=1
+LOCATION:San Francisco
+DESCRIPTION:OpenAI DevDay https://www.techmeme.com/r2/openai.com_i
+ ndex_devday-2026_-59SNGKtP.htm?cal=1\n\nFrom Techmeme's event cal
+ endar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>OpenAI DevDay</title></head><body><p><a
+  href='https://www.techmeme.com/r2/openai.com_index_devday-2026_-
+ 59SNGKtP.htm?cal=1'>OpenAI DevDay</a></p><p>From <a href='http://
+ www.techmeme.com/'>Techmeme</a>'s <a href='http://www.techmeme.co
+ m/events'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:dfdYtmx4HcELeejvqVrDSw@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20250928T010000Z
+DTSTART;VALUE=DATE:20260929
+DTEND;VALUE=DATE:20261002
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:The AI Conference
+URL:https://www.techmeme.com/r2/aiconference.com_-AuFS2qHT.htm?cal
+ =1
+LOCATION:San Francisco
+DESCRIPTION:The AI Conference https://www.techmeme.com/r2/aiconfer
+ ence.com_-AuFS2qHT.htm?cal=1\n\nFrom Techmeme's event calendar ht
+ tp://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>The AI Conference</title></head><body><
+ p><a href='https://www.techmeme.com/r2/aiconference.com_-AuFS2qHT
+ .htm?cal=1'>The AI Conference</a></p><p>From <a href='http://www.
+ techmeme.com/'>Techmeme</a>'s <a href='http://www.techmeme.com/ev
+ ents'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:8JBTOM90jZK4pUhh9EJjfA@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20250928T010000Z
+DTSTART;VALUE=DATE:20260929
+DTEND;VALUE=DATE:20261002
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:HYBRID: EmTech Future
+URL:https://www.techmeme.com/r2/event.technologyreview.com_emtech-
+ future-2026-OtJslJ4g.htm?cal=1
+LOCATION:Cambridge, MA
+DESCRIPTION:HYBRID: EmTech Future https://www.techmeme.com/r2/even
+ t.technologyreview.com_emtech-future-2026-OtJslJ4g.htm?cal=1\n\nF
+ rom Techmeme's event calendar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>HYBRID: EmTech Future</title></head><bo
+ dy><p><a href='https://www.techmeme.com/r2/event.technologyreview
+ .com_emtech-future-2026-OtJslJ4g.htm?cal=1'>HYBRID: EmTech Future
+ </a></p><p>From <a href='http://www.techmeme.com/'>Techmeme</a>'s
+  <a href='http://www.techmeme.com/events'>event calendar</a></p><
+ /body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:pYvzxHxEQloU71AmslC0VUA@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20250928T010000Z
+DTSTART;VALUE=DATE:20260929
+DTEND;VALUE=DATE:20261002
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:ITC Vegas
+URL:https://www.techmeme.com/r2/vegas.insuretechconnect.com__itc_d
+ igital_global-V06aqCHU.htm?cal=1
+LOCATION:Las Vegas
+DESCRIPTION:ITC Vegas https://www.techmeme.com/r2/vegas.insuretech
+ connect.com__itc_digital_global-V06aqCHU.htm?cal=1\n\nFrom Techme
+ me's event calendar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>ITC Vegas</title></head><body><p><a hre
+ f='https://www.techmeme.com/r2/vegas.insuretechconnect.com__itc_d
+ igital_global-V06aqCHU.htm?cal=1'>ITC Vegas</a></p><p>From <a hre
+ f='http://www.techmeme.com/'>Techmeme</a>'s <a href='http://www.t
+ echmeme.com/events'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:FTHpijBYa3xkYB12vol6kQ@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20250929T010000Z
+DTSTART;VALUE=DATE:20260930
+DTEND;VALUE=DATE:20261001
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Runway SF AI Summit
+URL:https://www.techmeme.com/r2/summit.runwayml.com_-Wm96GhiJ.htm?
+ cal=1
+LOCATION:San Francisco
+DESCRIPTION:Runway SF AI Summit https://www.techmeme.com/r2/summit
+ .runwayml.com_-Wm96GhiJ.htm?cal=1\n\nFrom Techmeme's event calend
+ ar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Runway SF AI Summit</title></head><body
+ ><p><a href='https://www.techmeme.com/r2/summit.runwayml.com_-Wm9
+ 6GhiJ.htm?cal=1'>Runway SF AI Summit</a></p><p>From <a href='http
+ ://www.techmeme.com/'>Techmeme</a>'s <a href='http://www.techmeme
+ .com/events'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:aU12vbqr5uccplKtcpds8hg@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20250929T010000Z
+DTSTART;VALUE=DATE:20260930
+DTEND;VALUE=DATE:20261002
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Bloomberg Screentime
+URL:https://www.techmeme.com/r2/events.bloomberglive.com_event_blo
+ omberg-screentime-2026_summary-NLg7M1Ts.htm?cal=1
+LOCATION:San Francisco
+DESCRIPTION:Bloomberg Screentime https://www.techmeme.com/r2/event
+ s.bloomberglive.com_event_bloomberg-screentime-2026_summary-NLg7M
+ 1Ts.htm?cal=1\n\nFrom Techmeme's event calendar http://www.techme
+ me.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Bloomberg Screentime</title></head><bod
+ y><p><a href='https://www.techmeme.com/r2/events.bloomberglive.co
+ m_event_bloomberg-screentime-2026_summary-NLg7M1Ts.htm?cal=1'>Blo
+ omberg Screentime</a></p><p>From <a href='http://www.techmeme.com
+ /'>Techmeme</a>'s <a href='http://www.techmeme.com/events'>event 
+ calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:KL9zWnf59ooL1slQ8u0lIxA@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20250929T010000Z
+DTSTART;VALUE=DATE:20260930
+DTEND;VALUE=DATE:20261002
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Korea Blockchain Week
+URL:https://www.techmeme.com/r2/koreablockchainweek.com_-sjsFg4NS.
+ htm?cal=1
+LOCATION:Seoul
+DESCRIPTION:Korea Blockchain Week https://www.techmeme.com/r2/kore
+ ablockchainweek.com_-sjsFg4NS.htm?cal=1\n\nFrom Techmeme's event 
+ calendar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Korea Blockchain Week</title></head><bo
+ dy><p><a href='https://www.techmeme.com/r2/koreablockchainweek.co
+ m_-sjsFg4NS.htm?cal=1'>Korea Blockchain Week</a></p><p>From <a hr
+ ef='http://www.techmeme.com/'>Techmeme</a>'s <a href='http://www.
+ techmeme.com/events'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:07ix3xRmd0Pq1lehwtawmA@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20250929T010000Z
+DTSTART;VALUE=DATE:20260930
+DTEND;VALUE=DATE:20261002
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Sifted Summit
+URL:https://www.techmeme.com/r2/summit.sifted.eu_-mvqplOmC.htm?cal
+ =1
+LOCATION:London
+DESCRIPTION:Sifted Summit https://www.techmeme.com/r2/summit.sifte
+ d.eu_-mvqplOmC.htm?cal=1\n\nFrom Techmeme's event calendar http:/
+ /www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Sifted Summit</title></head><body><p><a
+  href='https://www.techmeme.com/r2/summit.sifted.eu_-mvqplOmC.htm
+ ?cal=1'>Sifted Summit</a></p><p>From <a href='http://www.techmeme
+ .com/'>Techmeme</a>'s <a href='http://www.techmeme.com/events'>ev
+ ent calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:29hGpDirxzj168MNXZ932A@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251001T010000Z
+DTSTART;VALUE=DATE:20261002
+DTEND;VALUE=DATE:20261003
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Supabase Select
+URL:https://www.techmeme.com/r2/select.supabase.com_-Pr4loOIA.htm?
+ cal=1
+LOCATION:San Francisco
+DESCRIPTION:Supabase Select https://www.techmeme.com/r2/select.sup
+ abase.com_-Pr4loOIA.htm?cal=1\n\nFrom Techmeme's event calendar h
+ ttp://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Supabase Select</title></head><body><p>
+ <a href='https://www.techmeme.com/r2/select.supabase.com_-Pr4loOI
+ A.htm?cal=1'>Supabase Select</a></p><p>From <a href='http://www.t
+ echmeme.com/'>Techmeme</a>'s <a href='http://www.techmeme.com/eve
+ nts'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:FJtRY7Pz5KhsLWQETekplEg@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251001T010000Z
+DTSTART;VALUE=DATE:20261002
+DTEND;VALUE=DATE:20261005
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:The Curve
+URL:https://www.techmeme.com/r2/thecurve.goldengateinstitute.org_-
+ NJ8i7dPi.htm?cal=1
+LOCATION:Berkeley, CA
+DESCRIPTION:The Curve https://www.techmeme.com/r2/thecurve.goldeng
+ ateinstitute.org_-NJ8i7dPi.htm?cal=1\n\nFrom Techmeme's event cal
+ endar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>The Curve</title></head><body><p><a hre
+ f='https://www.techmeme.com/r2/thecurve.goldengateinstitute.org_-
+ NJ8i7dPi.htm?cal=1'>The Curve</a></p><p>From <a href='http://www.
+ techmeme.com/'>Techmeme</a>'s <a href='http://www.techmeme.com/ev
+ ents'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:plUTHdSCpl9I3VFIepq4VrSA@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251004T010000Z
+DTSTART;VALUE=DATE:20261005
+DTEND;VALUE=DATE:20261012
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:SF Tech Week
+URL:https://www.techmeme.com/r2/www.tech-week.com_-uhGXsgo2.htm?ca
+ l=1
+LOCATION:San Francisco
+DESCRIPTION:SF Tech Week https://www.techmeme.com/r2/www.tech-week
+ .com_-uhGXsgo2.htm?cal=1\n\nFrom Techmeme's event calendar http:/
+ /www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>SF Tech Week</title></head><body><p><a 
+ href='https://www.techmeme.com/r2/www.tech-week.com_-uhGXsgo2.htm
+ ?cal=1'>SF Tech Week</a></p><p>From <a href='http://www.techmeme.
+ com/'>Techmeme</a>'s <a href='http://www.techmeme.com/events'>eve
+ nt calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:91z0Hdzd3v0NC1ouPZaslHA@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251005T010000Z
+DTSTART;VALUE=DATE:20261006
+DTEND;VALUE=DATE:20261009
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Atlassian Team '26 Europe
+URL:https://www.techmeme.com/r2/events.atlassian.com_teameurope_ho
+ me-plJPxdGP.htm?cal=1
+LOCATION:Amsterdam
+DESCRIPTION:Atlassian Team '26 Europe https://www.techmeme.com/r2/
+ events.atlassian.com_teameurope_home-plJPxdGP.htm?cal=1\n\nFrom T
+ echmeme's event calendar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Atlassian Team '26 Europe</title></head
+ ><body><p><a href='https://www.techmeme.com/r2/events.atlassian.c
+ om_teameurope_home-plJPxdGP.htm?cal=1'>Atlassian Team '26 Europe<
+ /a></p><p>From <a href='http://www.techmeme.com/'>Techmeme</a>'s 
+ <a href='http://www.techmeme.com/events'>event calendar</a></p></
+ body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:j34oNi0MbiWQPNQ9giqJOg@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251005T010000Z
+DTSTART;VALUE=DATE:20261006
+DTEND;VALUE=DATE:20261009
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:ICS Cybersecurity Conference
+URL:https://www.techmeme.com/r2/www.icscybersecurityconference.com
+ _-lKvGoWms.htm?cal=1
+LOCATION:Nashville
+DESCRIPTION:ICS Cybersecurity Conference https://www.techmeme.com/
+ r2/www.icscybersecurityconference.com_-lKvGoWms.htm?cal=1\n\nFrom
+  Techmeme's event calendar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>ICS Cybersecurity Conference</title></h
+ ead><body><p><a href='https://www.techmeme.com/r2/www.icscybersec
+ urityconference.com_-lKvGoWms.htm?cal=1'>ICS Cybersecurity Confer
+ ence</a></p><p>From <a href='http://www.techmeme.com/'>Techmeme</
+ a>'s <a href='http://www.techmeme.com/events'>event calendar</a><
+ /p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:n8qtJthKnkfkO0tlccbslcQ@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251006T010000Z
+DTSTART;VALUE=DATE:20261007
+DTEND;VALUE=DATE:20261008
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Agentic AI North America
+URL:https://www.techmeme.com/r2/www.modev.com_agentic-ai_north-ame
+ rica-486zvBP1.htm?cal=1
+LOCATION:Reston, VA
+DESCRIPTION:Agentic AI North America https://www.techmeme.com/r2/w
+ ww.modev.com_agentic-ai_north-america-486zvBP1.htm?cal=1\n\nFrom 
+ Techmeme's event calendar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Agentic AI North America</title></head>
+ <body><p><a href='https://www.techmeme.com/r2/www.modev.com_agent
+ ic-ai_north-america-486zvBP1.htm?cal=1'>Agentic AI North America<
+ /a></p><p>From <a href='http://www.techmeme.com/'>Techmeme</a>'s 
+ <a href='http://www.techmeme.com/events'>event calendar</a></p></
+ body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:7UYGdSLzJTrPpl0bO7XXsvg@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251006T010000Z
+DTSTART;VALUE=DATE:20261007
+DTEND;VALUE=DATE:20261009
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:TOKEN2049 Singapore
+URL:https://www.techmeme.com/r2/token2049.com_singapore-gTPPa8vi.h
+ tm?cal=1
+LOCATION:Singapore
+DESCRIPTION:TOKEN2049 Singapore https://www.techmeme.com/r2/token2
+ 049.com_singapore-gTPPa8vi.htm?cal=1\n\nFrom Techmeme's event cal
+ endar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>TOKEN2049 Singapore</title></head><body
+ ><p><a href='https://www.techmeme.com/r2/token2049.com_singapore-
+ gTPPa8vi.htm?cal=1'>TOKEN2049 Singapore</a></p><p>From <a href='h
+ ttp://www.techmeme.com/'>Techmeme</a>'s <a href='http://www.techm
+ eme.com/events'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:ybbYo4mLsxbYZTXmvyQ5lQ@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251006T010000Z
+DTSTART;VALUE=DATE:20261007
+DTEND;VALUE=DATE:20261009
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:World Summit AI
+URL:https://www.techmeme.com/r2/worldsummit.ai_-eh1w06nH.htm?cal=1
+LOCATION:Amsterdam
+DESCRIPTION:World Summit AI https://www.techmeme.com/r2/worldsummi
+ t.ai_-eh1w06nH.htm?cal=1\n\nFrom Techmeme's event calendar http:/
+ /www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>World Summit AI</title></head><body><p>
+ <a href='https://www.techmeme.com/r2/worldsummit.ai_-eh1w06nH.htm
+ ?cal=1'>World Summit AI</a></p><p>From <a href='http://www.techme
+ me.com/'>Techmeme</a>'s <a href='http://www.techmeme.com/events'>
+ event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:NfV0EGT1vkireiED52k7hQ@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251006T010000Z
+DTSTART;VALUE=DATE:20261007
+DTEND;VALUE=DATE:20261010
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Wave by Vento
+URL:https://www.techmeme.com/r2/wavebyvento.com_-bTh17dm4.htm?cal=
+ 1
+LOCATION:Turin, Italy
+DESCRIPTION:Wave by Vento https://www.techmeme.com/r2/wavebyvento.
+ com_-bTh17dm4.htm?cal=1\n\nFrom Techmeme's event calendar http://
+ www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Wave by Vento</title></head><body><p><a
+  href='https://www.techmeme.com/r2/wavebyvento.com_-bTh17dm4.htm?
+ cal=1'>Wave by Vento</a></p><p>From <a href='http://www.techmeme.
+ com/'>Techmeme</a>'s <a href='http://www.techmeme.com/events'>eve
+ nt calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:Hsla3g6e8BWJfEQ9dDmTQOQ@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251006T010000Z
+DTSTART;VALUE=DATE:20261007
+DTEND;VALUE=DATE:20261010
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Linux Open Source Summit Europe + Embedded Linux Conferenc
+ e Europe
+URL:https://www.techmeme.com/r2/events.linuxfoundation.org_open-so
+ urce-summit-europe_-M6XTGtrs.htm?cal=1
+LOCATION:Prague
+DESCRIPTION:Linux Open Source Summit Europe + Embedded Linux Confe
+ rence Europe https://www.techmeme.com/r2/events.linuxfoundation.o
+ rg_open-source-summit-europe_-M6XTGtrs.htm?cal=1\n\nFrom Techmeme
+ 's event calendar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Linux Open Source Summit Europe + Embed
+ ded Linux Conference Europe</title></head><body><p><a href='https
+ ://www.techmeme.com/r2/events.linuxfoundation.org_open-source-sum
+ mit-europe_-M6XTGtrs.htm?cal=1'>Linux Open Source Summit Europe +
+  Embedded Linux Conference Europe</a></p><p>From <a href='http://
+ www.techmeme.com/'>Techmeme</a>'s <a href='http://www.techmeme.co
+ m/events'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:s6yeyO8fnC3Qtwkny2UALQ@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251007T010000Z
+DTSTART;VALUE=DATE:20261008
+DTEND;VALUE=DATE:20261009
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Zeta Live
+URL:https://www.techmeme.com/r2/www.zetaliveconference.com_home-qq
+ u0mz0s.htm?cal=1
+LOCATION:New York
+DESCRIPTION:Zeta Live https://www.techmeme.com/r2/www.zetaliveconf
+ erence.com_home-qqu0mz0s.htm?cal=1\n\nFrom Techmeme's event calen
+ dar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Zeta Live</title></head><body><p><a hre
+ f='https://www.techmeme.com/r2/www.zetaliveconference.com_home-qq
+ u0mz0s.htm?cal=1'>Zeta Live</a></p><p>From <a href='http://www.te
+ chmeme.com/'>Techmeme</a>'s <a href='http://www.techmeme.com/even
+ ts'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:gG9slE7j1bKapFUssDMOi2w@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251009T010000Z
+DTSTART;VALUE=DATE:20261010
+DTEND;VALUE=DATE:20261012
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Alignment | Valley 101 Annual Tech Summit
+URL:https://www.techmeme.com/r2/luma.com_alignment2026-jrY6fMXz.ht
+ m?cal=1
+LOCATION:Sunnyvale, CA
+DESCRIPTION:Alignment | Valley 101 Annual Tech Summit https://www.
+ techmeme.com/r2/luma.com_alignment2026-jrY6fMXz.htm?cal=1\n\nFrom
+  Techmeme's event calendar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Alignment | Valley 101 Annual Tech Summ
+ it</title></head><body><p><a href='https://www.techmeme.com/r2/lu
+ ma.com_alignment2026-jrY6fMXz.htm?cal=1'>Alignment | Valley 101 A
+ nnual Tech Summit</a></p><p>From <a href='http://www.techmeme.com
+ /'>Techmeme</a>'s <a href='http://www.techmeme.com/events'>event 
+ calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:HANDrYVKPnmo0FZwWS3Biw@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251010T010000Z
+DTSTART;VALUE=DATE:20261011
+DTEND;VALUE=DATE:20261016
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Infosec World
+URL:https://www.techmeme.com/r2/www.infosecworldusa.com_-6VBt726w.
+ htm?cal=1
+LOCATION:Orlando
+DESCRIPTION:Infosec World https://www.techmeme.com/r2/www.infosecw
+ orldusa.com_-6VBt726w.htm?cal=1\n\nFrom Techmeme's event calendar
+  http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Infosec World</title></head><body><p><a
+  href='https://www.techmeme.com/r2/www.infosecworldusa.com_-6VBt7
+ 26w.htm?cal=1'>Infosec World</a></p><p>From <a href='http://www.t
+ echmeme.com/'>Techmeme</a>'s <a href='http://www.techmeme.com/eve
+ nts'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:qkVplJ9yyCoxFcpl0ieh64ZQ@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251011T010000Z
+DTSTART;VALUE=DATE:20261012
+DTEND;VALUE=DATE:20261015
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Fortune Most Powerful Women
+URL:https://www.techmeme.com/r2/conferences.fortune.com_event_fort
+ une-mpw-2026_HOME-Qheaz1pl.htm?cal=1
+LOCATION:Santa Barbara, CA
+DESCRIPTION:Fortune Most Powerful Women https://www.techmeme.com/r
+ 2/conferences.fortune.com_event_fortune-mpw-2026_HOME-Qheaz1pl.ht
+ m?cal=1\n\nFrom Techmeme's event calendar http://www.techmeme.com
+ /events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Fortune Most Powerful Women</title></he
+ ad><body><p><a href='https://www.techmeme.com/r2/conferences.fort
+ une.com_event_fortune-mpw-2026_HOME-Qheaz1pl.htm?cal=1'>Fortune M
+ ost Powerful Women</a></p><p>From <a href='http://www.techmeme.co
+ m/'>Techmeme</a>'s <a href='http://www.techmeme.com/events'>event
+  calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:RXEAclKbdwmTCmfJidrFvA@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251011T010000Z
+DTSTART;VALUE=DATE:20261012
+DTEND;VALUE=DATE:20261016
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:HYBRID: Workday Rising
+URL:https://www.techmeme.com/r2/rising.workday.com_us.html-gt4kMc0
+ x.htm?cal=1
+LOCATION:Las Vegas
+DESCRIPTION:HYBRID: Workday Rising https://www.techmeme.com/r2/ris
+ ing.workday.com_us.html-gt4kMc0x.htm?cal=1\n\nFrom Techmeme's eve
+ nt calendar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>HYBRID: Workday Rising</title></head><b
+ ody><p><a href='https://www.techmeme.com/r2/rising.workday.com_us
+ .html-gt4kMc0x.htm?cal=1'>HYBRID: Workday Rising</a></p><p>From <
+ a href='http://www.techmeme.com/'>Techmeme</a>'s <a href='http://
+ www.techmeme.com/events'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:E7m3Bpls3plLTJgTHuU60btA@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251011T010000Z
+DTSTART;VALUE=DATE:20261012
+DTEND;VALUE=DATE:20261016
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Capacity Europe
+URL:https://www.techmeme.com/r2/www.capacityeurope.com_-gpl4VqD3.h
+ tm?cal=1
+LOCATION:London
+DESCRIPTION:Capacity Europe https://www.techmeme.com/r2/www.capaci
+ tyeurope.com_-gpl4VqD3.htm?cal=1\n\nFrom Techmeme's event calenda
+ r http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Capacity Europe</title></head><body><p>
+ <a href='https://www.techmeme.com/r2/www.capacityeurope.com_-gpl4
+ VqD3.htm?cal=1'>Capacity Europe</a></p><p>From <a href='http://ww
+ w.techmeme.com/'>Techmeme</a>'s <a href='http://www.techmeme.com/
+ events'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:tFxamRECVYR3GaKxog19rg@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251011T010000Z
+DTSTART;VALUE=DATE:20261012
+DTEND;VALUE=DATE:20261019
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:LA Tech Week
+URL:https://www.techmeme.com/r2/www.tech-week.com_-uhGXsgo2.htm?ca
+ l=1
+LOCATION:Los Angeles
+DESCRIPTION:LA Tech Week https://www.techmeme.com/r2/www.tech-week
+ .com_-uhGXsgo2.htm?cal=1\n\nFrom Techmeme's event calendar http:/
+ /www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>LA Tech Week</title></head><body><p><a 
+ href='https://www.techmeme.com/r2/www.tech-week.com_-uhGXsgo2.htm
+ ?cal=1'>LA Tech Week</a></p><p>From <a href='http://www.techmeme.
+ com/'>Techmeme</a>'s <a href='http://www.techmeme.com/events'>eve
+ nt calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:YqsEJX2RD8KR02AAtWrkbA@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251012T010000Z
+DTSTART;VALUE=DATE:20261013
+DTEND;VALUE=DATE:20261016
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:TechCrunch Disrupt
+URL:https://www.techmeme.com/r2/techcrunch.com_events_techcrunch-d
+ isrupt_-P3HewbZ3.htm?cal=1
+LOCATION:San Francisco
+DESCRIPTION:TechCrunch Disrupt https://www.techmeme.com/r2/techcru
+ nch.com_events_techcrunch-disrupt_-P3HewbZ3.htm?cal=1\n\nFrom Tec
+ hmeme's event calendar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>TechCrunch Disrupt</title></head><body>
+ <p><a href='https://www.techmeme.com/r2/techcrunch.com_events_tec
+ hcrunch-disrupt_-P3HewbZ3.htm?cal=1'>TechCrunch Disrupt</a></p><p
+ >From <a href='http://www.techmeme.com/'>Techmeme</a>'s <a href='
+ http://www.techmeme.com/events'>event calendar</a></p></body></ht
+ ml>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:YdJ1jJVtiqH5MFIVC6AzRg@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251012T010000Z
+DTSTART;VALUE=DATE:20261013
+DTEND;VALUE=DATE:20261016
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:SEMICON West
+URL:https://www.techmeme.com/r2/www.semiconwest.org_-LGiQj9j6.htm?
+ cal=1
+LOCATION:San Francisco
+DESCRIPTION:SEMICON West https://www.techmeme.com/r2/www.semiconwe
+ st.org_-LGiQj9j6.htm?cal=1\n\nFrom Techmeme's event calendar http
+ ://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>SEMICON West</title></head><body><p><a 
+ href='https://www.techmeme.com/r2/www.semiconwest.org_-LGiQj9j6.h
+ tm?cal=1'>SEMICON West</a></p><p>From <a href='http://www.techmem
+ e.com/'>Techmeme</a>'s <a href='http://www.techmeme.com/events'>e
+ vent calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:aNZJCxgIu5qY88JPdcDslSQ@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251013T010000Z
+DTSTART;VALUE=DATE:20261014
+DTEND;VALUE=DATE:20261017
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:MWC Las Vegas
+URL:https://www.techmeme.com/r2/www.expostandservice.us_mwc-las-ve
+ gas_-9A6zqEcr.htm?cal=1
+LOCATION:Las Vegas
+DESCRIPTION:MWC Las Vegas https://www.techmeme.com/r2/www.expostan
+ dservice.us_mwc-las-vegas_-9A6zqEcr.htm?cal=1\n\nFrom Techmeme's 
+ event calendar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>MWC Las Vegas</title></head><body><p><a
+  href='https://www.techmeme.com/r2/www.expostandservice.us_mwc-la
+ s-vegas_-9A6zqEcr.htm?cal=1'>MWC Las Vegas</a></p><p>From <a href
+ ='http://www.techmeme.com/'>Techmeme</a>'s <a href='http://www.te
+ chmeme.com/events'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:bHrZ6AAqxwKj0hob5SafJw@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251016T010000Z
+DTSTART;VALUE=DATE:20261017
+DTEND;VALUE=DATE:20261018
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:MIT AI Conference
+URL:https://www.techmeme.com/r2/www.mitaiconference.org_-vurmHQvm.
+ htm?cal=1
+LOCATION:Mountain View, CA
+DESCRIPTION:MIT AI Conference https://www.techmeme.com/r2/www.mita
+ iconference.org_-vurmHQvm.htm?cal=1\n\nFrom Techmeme's event cale
+ ndar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>MIT AI Conference</title></head><body><
+ p><a href='https://www.techmeme.com/r2/www.mitaiconference.org_-v
+ urmHQvm.htm?cal=1'>MIT AI Conference</a></p><p>From <a href='http
+ ://www.techmeme.com/'>Techmeme</a>'s <a href='http://www.techmeme
+ .com/events'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:xrLCsllrAm4JOsRCVWajzZQ@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251017T010000Z
+DTSTART;VALUE=DATE:20261018
+DTEND;VALUE=DATE:20261022
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Money20/20 USA
+URL:https://www.techmeme.com/r2/us.money2020.com_-Pz7uc4gf.htm?cal
+ =1
+LOCATION:Las Vegas
+DESCRIPTION:Money20/20 USA https://www.techmeme.com/r2/us.money202
+ 0.com_-Pz7uc4gf.htm?cal=1\n\nFrom Techmeme's event calendar http:
+ //www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Money20/20 USA</title></head><body><p><
+ a href='https://www.techmeme.com/r2/us.money2020.com_-Pz7uc4gf.ht
+ m?cal=1'>Money20/20 USA</a></p><p>From <a href='http://www.techme
+ me.com/'>Techmeme</a>'s <a href='http://www.techmeme.com/events'>
+ event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:zTw85R8Tw5nmCr3ofURdGQ@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251018T010000Z
+DTSTART;VALUE=DATE:20261019
+DTEND;VALUE=DATE:20261021
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:All Things Open
+URL:https://www.techmeme.com/r2/2026.allthingsopen.org_-l6vfDFnD.h
+ tm?cal=1
+LOCATION:Raleigh, NC
+DESCRIPTION:All Things Open https://www.techmeme.com/r2/2026.allth
+ ingsopen.org_-l6vfDFnD.htm?cal=1\n\nFrom Techmeme's event calenda
+ r http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>All Things Open</title></head><body><p>
+ <a href='https://www.techmeme.com/r2/2026.allthingsopen.org_-l6vf
+ DFnD.htm?cal=1'>All Things Open</a></p><p>From <a href='http://ww
+ w.techmeme.com/'>Techmeme</a>'s <a href='http://www.techmeme.com/
+ events'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:FmXd94xRP7UbyyrzBPhxSg@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251018T010000Z
+DTSTART;VALUE=DATE:20261019
+DTEND;VALUE=DATE:20261022
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Cloudflare Connect 2026: The Agentic Conference
+URL:https://www.techmeme.com/r2/www.techmeme.com_cfc26e.htm-RfNBqp
+ YW.htm?cal=1
+LOCATION:San Francisco
+DESCRIPTION:Cloudflare Connect 2026: The Agentic Conference https:
+ //www.techmeme.com/r2/www.techmeme.com_cfc26e.htm-RfNBqpYW.htm?ca
+ l=1\n\nFrom Techmeme's event calendar http://www.techmeme.com/eve
+ nts
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Cloudflare Connect 2026: The Agentic Co
+ nference</title></head><body><p><a href='https://www.techmeme.com
+ /r2/www.techmeme.com_cfc26e.htm-RfNBqpYW.htm?cal=1'>Cloudflare Co
+ nnect 2026: The Agentic Conference</a></p><p>From <a href='http:/
+ /www.techmeme.com/'>Techmeme</a>'s <a href='http://www.techmeme.c
+ om/events'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:NFngJzroBZQJRGks2oopMw@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251018T010000Z
+DTSTART;VALUE=DATE:20261019
+DTEND;VALUE=DATE:20261022
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Authenticate U.S.
+URL:https://www.techmeme.com/r2/authenticatecon.com_event_authenti
+ cate-u-s-2026_-5Z4GMeKL.htm?cal=1
+LOCATION:Carlsbad, CA
+DESCRIPTION:Authenticate U.S. https://www.techmeme.com/r2/authenti
+ catecon.com_event_authenticate-u-s-2026_-5Z4GMeKL.htm?cal=1\n\nFr
+ om Techmeme's event calendar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Authenticate U.S.</title></head><body><
+ p><a href='https://www.techmeme.com/r2/authenticatecon.com_event_
+ authenticate-u-s-2026_-5Z4GMeKL.htm?cal=1'>Authenticate U.S.</a><
+ /p><p>From <a href='http://www.techmeme.com/'>Techmeme</a>'s <a h
+ ref='http://www.techmeme.com/events'>event calendar</a></p></body
+ ></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:7eqQBXoCqLMPz1Wko7VJSw@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251018T010000Z
+DTSTART;VALUE=DATE:20261019
+DTEND;VALUE=DATE:20261023
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Gartner IT Symposium/Xpo
+URL:https://www.techmeme.com/r2/www.gartner.com_en_conferences_na_
+ symposium-us-edpGAmzi.htm?cal=1
+LOCATION:Orlando
+DESCRIPTION:Gartner IT Symposium/Xpo https://www.techmeme.com/r2/w
+ ww.gartner.com_en_conferences_na_symposium-us-edpGAmzi.htm?cal=1\
+ n\nFrom Techmeme's event calendar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Gartner IT Symposium/Xpo</title></head>
+ <body><p><a href='https://www.techmeme.com/r2/www.gartner.com_en_
+ conferences_na_symposium-us-edpGAmzi.htm?cal=1'>Gartner IT Sympos
+ ium/Xpo</a></p><p>From <a href='http://www.techmeme.com/'>Techmem
+ e</a>'s <a href='http://www.techmeme.com/events'>event calendar</
+ a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:5roczDGplpl7vjmaBHItQuJg@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251019T010000Z
+DTSTART;VALUE=DATE:20261020
+DTEND;VALUE=DATE:20261021
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:VIRTUAL: Zoomtopia
+URL:https://www.techmeme.com/r2/zoomtopia.com_-kXDorP8g.htm?cal=1
+DESCRIPTION:VIRTUAL: Zoomtopia https://www.techmeme.com/r2/zoomtop
+ ia.com_-kXDorP8g.htm?cal=1\n\nFrom Techmeme's event calendar http
+ ://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>VIRTUAL: Zoomtopia</title></head><body>
+ <p><a href='https://www.techmeme.com/r2/zoomtopia.com_-kXDorP8g.h
+ tm?cal=1'>VIRTUAL: Zoomtopia</a></p><p>From <a href='http://www.t
+ echmeme.com/'>Techmeme</a>'s <a href='http://www.techmeme.com/eve
+ nts'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:iEzvYWa6YGjnz8me7hGshw@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251019T010000Z
+DTSTART;VALUE=DATE:20261020
+DTEND;VALUE=DATE:20261022
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:PyTorch Conference North America
+URL:https://www.techmeme.com/r2/events.linuxfoundation.org_pytorch
+ -conference-north-america_-OxGXIJaT.htm?cal=1
+LOCATION:San Jose
+DESCRIPTION:PyTorch Conference North America https://www.techmeme.
+ com/r2/events.linuxfoundation.org_pytorch-conference-north-americ
+ a_-OxGXIJaT.htm?cal=1\n\nFrom Techmeme's event calendar http://ww
+ w.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>PyTorch Conference North America</title
+ ></head><body><p><a href='https://www.techmeme.com/r2/events.linu
+ xfoundation.org_pytorch-conference-north-america_-OxGXIJaT.htm?ca
+ l=1'>PyTorch Conference North America</a></p><p>From <a href='htt
+ p://www.techmeme.com/'>Techmeme</a>'s <a href='http://www.techmem
+ e.com/events'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:BYrwC7xQf2WWOTGkiSFMfw@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251019T010000Z
+DTSTART;VALUE=DATE:20261020
+DTEND;VALUE=DATE:20261023
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Nvidia GTC Berlin
+URL:https://www.techmeme.com/r2/www.nvidia.com_en-eu_gtc__regcode_
+ no-ncid_amp_ncid_no-ncid-VfnFplvW.htm?cal=1
+LOCATION:Berlin
+DESCRIPTION:Nvidia GTC Berlin https://www.techmeme.com/r2/www.nvid
+ ia.com_en-eu_gtc__regcode_no-ncid_amp_ncid_no-ncid-VfnFplvW.htm?c
+ al=1\n\nFrom Techmeme's event calendar http://www.techmeme.com/ev
+ ents
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Nvidia GTC Berlin</title></head><body><
+ p><a href='https://www.techmeme.com/r2/www.nvidia.com_en-eu_gtc__
+ regcode_no-ncid_amp_ncid_no-ncid-VfnFplvW.htm?cal=1'>Nvidia GTC B
+ erlin</a></p><p>From <a href='http://www.techmeme.com/'>Techmeme<
+ /a>'s <a href='http://www.techmeme.com/events'>event calendar</a>
+ </p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:E2TpsHtcKg2qWSJTWxivHA@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251019T010000Z
+DTSTART;VALUE=DATE:20261020
+DTEND;VALUE=DATE:20261023
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Masters of Scale Summit
+URL:https://www.techmeme.com/r2/www.summit.mastersofscale.com_-ekp
+ xrnsj.htm?cal=1
+LOCATION:San Francisco
+DESCRIPTION:Masters of Scale Summit https://www.techmeme.com/r2/ww
+ w.summit.mastersofscale.com_-ekpxrnsj.htm?cal=1\n\nFrom Techmeme'
+ s event calendar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Masters of Scale Summit</title></head><
+ body><p><a href='https://www.techmeme.com/r2/www.summit.mastersof
+ scale.com_-ekpxrnsj.htm?cal=1'>Masters of Scale Summit</a></p><p>
+ From <a href='http://www.techmeme.com/'>Techmeme</a>'s <a href='h
+ ttp://www.techmeme.com/events'>event calendar</a></p></body></htm
+ l>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:WHoxwPp20jjRZXz4D5I2pQ@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251020T010000Z
+DTSTART;VALUE=DATE:20261021
+DTEND;VALUE=DATE:20261023
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Valencia Digital Summit
+URL:https://www.techmeme.com/r2/vds.tech_-hWERjLEl.htm?cal=1
+LOCATION:Valencia, Spain
+DESCRIPTION:Valencia Digital Summit https://www.techmeme.com/r2/vd
+ s.tech_-hWERjLEl.htm?cal=1\n\nFrom Techmeme's event calendar http
+ ://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Valencia Digital Summit</title></head><
+ body><p><a href='https://www.techmeme.com/r2/vds.tech_-hWERjLEl.h
+ tm?cal=1'>Valencia Digital Summit</a></p><p>From <a href='http://
+ www.techmeme.com/'>Techmeme</a>'s <a href='http://www.techmeme.co
+ m/events'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:esTQidlNijutCPEtLIfqplA@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251020T010000Z
+DTSTART;VALUE=DATE:20261021
+DTEND;VALUE=DATE:20261023
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:VIRTUAL: P99 CONF
+URL:https://www.techmeme.com/r2/p99conf.io_-BGjvidto.htm?cal=1
+DESCRIPTION:VIRTUAL: P99 CONF https://www.techmeme.com/r2/p99conf.
+ io_-BGjvidto.htm?cal=1\n\nFrom Techmeme's event calendar http://w
+ ww.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>VIRTUAL: P99 CONF</title></head><body><
+ p><a href='https://www.techmeme.com/r2/p99conf.io_-BGjvidto.htm?c
+ al=1'>VIRTUAL: P99 CONF</a></p><p>From <a href='http://www.techme
+ me.com/'>Techmeme</a>'s <a href='http://www.techmeme.com/events'>
+ event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:VIYcSUa4HgavuocIHamzpA@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251021T010000Z
+DTSTART;VALUE=DATE:20261022
+DTEND;VALUE=DATE:20261023
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Visual Intelligence Summit by Roboflow
+URL:https://www.techmeme.com/r2/summit.roboflow.com__utm_source_te
+ chmeme_amp_utm_medium_social_amp_utm_campaign_techmemesummit-1YjA
+ blV8.htm?cal=1
+LOCATION:San Francisco
+DESCRIPTION:Visual Intelligence Summit by Roboflow https://www.tec
+ hmeme.com/r2/summit.roboflow.com__utm_source_techmeme_amp_utm_med
+ ium_social_amp_utm_campaign_techmemesummit-1YjAblV8.htm?cal=1\n\n
+ From Techmeme's event calendar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Visual Intelligence Summit by Roboflow<
+ /title></head><body><p><a href='https://www.techmeme.com/r2/summi
+ t.roboflow.com__utm_source_techmeme_amp_utm_medium_social_amp_utm
+ _campaign_techmemesummit-1YjAblV8.htm?cal=1'>Visual Intelligence 
+ Summit by Roboflow</a></p><p>From <a href='http://www.techmeme.co
+ m/'>Techmeme</a>'s <a href='http://www.techmeme.com/events'>event
+  calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:RREKyBS2slyHwo16n0WplZWw@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251021T010000Z
+DTSTART;VALUE=DATE:20261022
+DTEND;VALUE=DATE:20261024
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:AGNTCon + MCPCon North America
+URL:https://www.techmeme.com/r2/events.linuxfoundation.org_agntcon
+ -mcpcon-north-america_-BAMyVWpi.htm?cal=1
+LOCATION:San Jose
+DESCRIPTION:AGNTCon + MCPCon North America https://www.techmeme.co
+ m/r2/events.linuxfoundation.org_agntcon-mcpcon-north-america_-BAM
+ yVWpi.htm?cal=1\n\nFrom Techmeme's event calendar http://www.tech
+ meme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>AGNTCon + MCPCon North America</title><
+ /head><body><p><a href='https://www.techmeme.com/r2/events.linuxf
+ oundation.org_agntcon-mcpcon-north-america_-BAMyVWpi.htm?cal=1'>A
+ GNTCon + MCPCon North America</a></p><p>From <a href='http://www.
+ techmeme.com/'>Techmeme</a>'s <a href='http://www.techmeme.com/ev
+ ents'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:jMwl95vW8LN9FhuUjXz4VA@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251024T010000Z
+DTSTART;VALUE=DATE:20261025
+DTEND;VALUE=DATE:20261029
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Oracle AIWorld
+URL:https://www.techmeme.com/r2/www.oracle.com_ai-world_-plRA26ws.
+ htm?cal=1
+LOCATION:Las Vegas
+DESCRIPTION:Oracle AIWorld https://www.techmeme.com/r2/www.oracle.
+ com_ai-world_-plRA26ws.htm?cal=1\n\nFrom Techmeme's event calenda
+ r http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Oracle AIWorld</title></head><body><p><
+ a href='https://www.techmeme.com/r2/www.oracle.com_ai-world_-plRA
+ 26ws.htm?cal=1'>Oracle AIWorld</a></p><p>From <a href='http://www
+ .techmeme.com/'>Techmeme</a>'s <a href='http://www.techmeme.com/e
+ vents'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:k0bYmOc8WKqPBfhFdeR2sw@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251025T010000Z
+DTSTART;VALUE=DATE:20261026
+DTEND;VALUE=DATE:20261029
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Intuit Connect
+URL:https://www.techmeme.com/r2/www.intuit.com_intuitconnect_-mdrt
+ LSt0.htm?cal=1
+LOCATION:Las Vegas
+DESCRIPTION:Intuit Connect https://www.techmeme.com/r2/www.intuit.
+ com_intuitconnect_-mdrtLSt0.htm?cal=1\n\nFrom Techmeme's event ca
+ lendar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Intuit Connect</title></head><body><p><
+ a href='https://www.techmeme.com/r2/www.intuit.com_intuitconnect_
+ -mdrtLSt0.htm?cal=1'>Intuit Connect</a></p><p>From <a href='http:
+ //www.techmeme.com/'>Techmeme</a>'s <a href='http://www.techmeme.
+ com/events'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:OHXRvac9t0vn1wvgFamrXw@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251026T010000Z
+DTSTART;VALUE=DATE:20261027
+DTEND;VALUE=DATE:20261030
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:SAP TechEd Berlin
+URL:https://www.techmeme.com/r2/www.sap.com_events_teched_berlin.h
+ tml-YUx7oKHg.htm?cal=1
+LOCATION:Berlin
+DESCRIPTION:SAP TechEd Berlin https://www.techmeme.com/r2/www.sap.
+ com_events_teched_berlin.html-YUx7oKHg.htm?cal=1\n\nFrom Techmeme
+ 's event calendar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>SAP TechEd Berlin</title></head><body><
+ p><a href='https://www.techmeme.com/r2/www.sap.com_events_teched_
+ berlin.html-YUx7oKHg.htm?cal=1'>SAP TechEd Berlin</a></p><p>From 
+ <a href='http://www.techmeme.com/'>Techmeme</a>'s <a href='http:/
+ /www.techmeme.com/events'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:oOGhjai0hplXjlvKIaKnVpw@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251026T010000Z
+DTSTART;VALUE=DATE:20261027
+DTEND;VALUE=DATE:20261030
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:ODSC AI West
+URL:https://www.techmeme.com/r2/odsc.ai_west_-KfWLhXuG.htm?cal=1
+LOCATION:Burlingame, CA
+DESCRIPTION:ODSC AI West https://www.techmeme.com/r2/odsc.ai_west_
+ -KfWLhXuG.htm?cal=1\n\nFrom Techmeme's event calendar http://www.
+ techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>ODSC AI West</title></head><body><p><a 
+ href='https://www.techmeme.com/r2/odsc.ai_west_-KfWLhXuG.htm?cal=
+ 1'>ODSC AI West</a></p><p>From <a href='http://www.techmeme.com/'
+ >Techmeme</a>'s <a href='http://www.techmeme.com/events'>event ca
+ lendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:plTcwcV9mHHWvslZ9OlIWXhQ@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251026T010000Z
+DTSTART;VALUE=DATE:20261027
+DTEND;VALUE=DATE:20261031
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Grace Hopper Celebration
+URL:https://www.techmeme.com/r2/ghc.anitab.org_-DbtP2Mue.htm?cal=1
+LOCATION:Anaheim, CA
+DESCRIPTION:Grace Hopper Celebration https://www.techmeme.com/r2/g
+ hc.anitab.org_-DbtP2Mue.htm?cal=1\n\nFrom Techmeme's event calend
+ ar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Grace Hopper Celebration</title></head>
+ <body><p><a href='https://www.techmeme.com/r2/ghc.anitab.org_-Dbt
+ P2Mue.htm?cal=1'>Grace Hopper Celebration</a></p><p>From <a href=
+ 'http://www.techmeme.com/'>Techmeme</a>'s <a href='http://www.tec
+ hmeme.com/events'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:gkv5JCJgAPLh3svplaiPzDA@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251027T010000Z
+DTSTART;VALUE=DATE:20261028
+DTEND;VALUE=DATE:20261030
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:ONUG AI Networking Summit Fall
+URL:https://www.techmeme.com/r2/onug.net_ai-networking-summit-nyc-
+ fall-2026_-QLRvjqfp.htm?cal=1
+LOCATION:New York
+DESCRIPTION:ONUG AI Networking Summit Fall https://www.techmeme.co
+ m/r2/onug.net_ai-networking-summit-nyc-fall-2026_-QLRvjqfp.htm?ca
+ l=1\n\nFrom Techmeme's event calendar http://www.techmeme.com/eve
+ nts
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>ONUG AI Networking Summit Fall</title><
+ /head><body><p><a href='https://www.techmeme.com/r2/onug.net_ai-n
+ etworking-summit-nyc-fall-2026_-QLRvjqfp.htm?cal=1'>ONUG AI Netwo
+ rking Summit Fall</a></p><p>From <a href='http://www.techmeme.com
+ /'>Techmeme</a>'s <a href='http://www.techmeme.com/events'>event 
+ calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:JL8KShFGslsqWjkBplhcTplMQ@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251027T010000Z
+DTSTART;VALUE=DATE:20261028
+DTEND;VALUE=DATE:20261030
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:HYBRID: GitHub Universe
+URL:https://www.techmeme.com/r2/githubuniverse.com_-vMV5FSeA.htm?c
+ al=1
+LOCATION:San Francisco
+DESCRIPTION:HYBRID: GitHub Universe https://www.techmeme.com/r2/gi
+ thubuniverse.com_-vMV5FSeA.htm?cal=1\n\nFrom Techmeme's event cal
+ endar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>HYBRID: GitHub Universe</title></head><
+ body><p><a href='https://www.techmeme.com/r2/githubuniverse.com_-
+ vMV5FSeA.htm?cal=1'>HYBRID: GitHub Universe</a></p><p>From <a hre
+ f='http://www.techmeme.com/'>Techmeme</a>'s <a href='http://www.t
+ echmeme.com/events'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:wmimwMEfGl7Hhwie2FJwiA@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251027T010000Z
+DTSTART;VALUE=DATE:20261028
+DTEND;VALUE=DATE:20261031
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:TEDAI
+URL:https://www.techmeme.com/r2/tedai-vienna.ted.com_-7XXqJ5Ue.htm
+ ?cal=1
+LOCATION:Vienna
+DESCRIPTION:TEDAI https://www.techmeme.com/r2/tedai-vienna.ted.com
+ _-7XXqJ5Ue.htm?cal=1\n\nFrom Techmeme's event calendar http://www
+ .techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>TEDAI</title></head><body><p><a href='h
+ ttps://www.techmeme.com/r2/tedai-vienna.ted.com_-7XXqJ5Ue.htm?cal
+ =1'>TEDAI</a></p><p>From <a href='http://www.techmeme.com/'>Techm
+ eme</a>'s <a href='http://www.techmeme.com/events'>event calendar
+ </a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:RUfFJZrQJxkpW3X0JRlsWQ@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251028T010000Z
+DTSTART;VALUE=DATE:20261029
+DTEND;VALUE=DATE:20261030
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Generative AI Summit Boston
+URL:https://www.techmeme.com/r2/world.aiacceleratorinstitute.com_l
+ ocation_boston-6jplHfWt.htm?cal=1
+LOCATION:Boston
+DESCRIPTION:Generative AI Summit Boston https://www.techmeme.com/r
+ 2/world.aiacceleratorinstitute.com_location_boston-6jplHfWt.htm?c
+ al=1\n\nFrom Techmeme's event calendar http://www.techmeme.com/ev
+ ents
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Generative AI Summit Boston</title></he
+ ad><body><p><a href='https://www.techmeme.com/r2/world.aiaccelera
+ torinstitute.com_location_boston-6jplHfWt.htm?cal=1'>Generative A
+ I Summit Boston</a></p><p>From <a href='http://www.techmeme.com/'
+ >Techmeme</a>'s <a href='http://www.techmeme.com/events'>event ca
+ lendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:MpJplslHquS2kDNf89nD8yVQ@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251028T010000Z
+DTSTART;VALUE=DATE:20261029
+DTEND;VALUE=DATE:20261031
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:J On the Beach
+URL:https://www.techmeme.com/r2/jonthebeach.com_-5CyJgavB.htm?cal=
+ 1
+LOCATION:Malaga, Spain
+DESCRIPTION:J On the Beach https://www.techmeme.com/r2/jonthebeach
+ .com_-5CyJgavB.htm?cal=1\n\nFrom Techmeme's event calendar http:/
+ /www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>J On the Beach</title></head><body><p><
+ a href='https://www.techmeme.com/r2/jonthebeach.com_-5CyJgavB.htm
+ ?cal=1'>J On the Beach</a></p><p>From <a href='http://www.techmem
+ e.com/'>Techmeme</a>'s <a href='http://www.techmeme.com/events'>e
+ vent calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:WqZzplp93R56jjheKcPliwA@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251031T010000Z
+DTSTART;VALUE=DATE:20261101
+DTEND;VALUE=DATE:20261102
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:AI Expo Europe
+URL:https://www.techmeme.com/r2/www.aiexpoeurope.com_-slgSgRBA.htm
+ ?cal=1
+LOCATION:Bucharest, Romania
+DESCRIPTION:AI Expo Europe https://www.techmeme.com/r2/www.aiexpoe
+ urope.com_-slgSgRBA.htm?cal=1\n\nFrom Techmeme's event calendar h
+ ttp://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>AI Expo Europe</title></head><body><p><
+ a href='https://www.techmeme.com/r2/www.aiexpoeurope.com_-slgSgRB
+ A.htm?cal=1'>AI Expo Europe</a></p><p>From <a href='http://www.te
+ chmeme.com/'>Techmeme</a>'s <a href='http://www.techmeme.com/even
+ ts'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:2KBViinT1vu7M2pqGw882w@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251101T010000Z
+DTSTART;VALUE=DATE:20261101
+DTEND;VALUE=DATE:20261103
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:GamesBeat NEXT
+URL:https://www.techmeme.com/r2/events.gamesbeat.com_next26_-vVErV
+ gXH.htm?cal=1
+LOCATION:San Francisco
+DESCRIPTION:GamesBeat NEXT https://www.techmeme.com/r2/events.game
+ sbeat.com_next26_-vVErVgXH.htm?cal=1\n\nFrom Techmeme's event cal
+ endar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>GamesBeat NEXT</title></head><body><p><
+ a href='https://www.techmeme.com/r2/events.gamesbeat.com_next26_-
+ vVErVgXH.htm?cal=1'>GamesBeat NEXT</a></p><p>From <a href='http:/
+ /www.techmeme.com/'>Techmeme</a>'s <a href='http://www.techmeme.c
+ om/events'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:lVJMkAyKBtvXXBTeIYMy4Q@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251101T010000Z
+DTSTART;VALUE=DATE:20261101
+DTEND;VALUE=DATE:20261103
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:NEW DATES: Dubai FinTech Summit
+URL:https://www.techmeme.com/r2/dubaifintechsummit.com_-0lh2LPAg.h
+ tm?cal=1
+LOCATION:Dubai
+DESCRIPTION:NEW DATES: Dubai FinTech Summit https://www.techmeme.c
+ om/r2/dubaifintechsummit.com_-0lh2LPAg.htm?cal=1\n\nFrom Techmeme
+ 's event calendar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>NEW DATES: Dubai FinTech Summit</title>
+ </head><body><p><a href='https://www.techmeme.com/r2/dubaifintech
+ summit.com_-0lh2LPAg.htm?cal=1'>NEW DATES: Dubai FinTech Summit</
+ a></p><p>From <a href='http://www.techmeme.com/'>Techmeme</a>'s <
+ a href='http://www.techmeme.com/events'>event calendar</a></p></b
+ ody></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:xBEhknrV5LZr8x8FA6H5hA@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251101T010000Z
+DTSTART;VALUE=DATE:20261101
+DTEND;VALUE=DATE:20261103
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Bloomberg Technology Summit London
+URL:https://www.techmeme.com/r2/events.bloomberglive.com_event_Tec
+ hLondon2026_summary_RefId_Blive-Web-Tile-W1Hwr8yZ.htm?cal=1
+LOCATION:London
+DESCRIPTION:Bloomberg Technology Summit London https://www.techmem
+ e.com/r2/events.bloomberglive.com_event_TechLondon2026_summary_Re
+ fId_Blive-Web-Tile-W1Hwr8yZ.htm?cal=1\n\nFrom Techmeme's event ca
+ lendar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Bloomberg Technology Summit London</tit
+ le></head><body><p><a href='https://www.techmeme.com/r2/events.bl
+ oomberglive.com_event_TechLondon2026_summary_RefId_Blive-Web-Tile
+ -W1Hwr8yZ.htm?cal=1'>Bloomberg Technology Summit London</a></p><p
+ >From <a href='http://www.techmeme.com/'>Techmeme</a>'s <a href='
+ http://www.techmeme.com/events'>event calendar</a></p></body></ht
+ ml>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:ofTG2i0AKovZttpNZrJgUQ@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251101T010000Z
+DTSTART;VALUE=DATE:20261101
+DTEND;VALUE=DATE:20261106
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:AfroTech
+URL:https://www.techmeme.com/r2/afrotechconference.com_-TcbKFz5F.h
+ tm?cal=1
+LOCATION:Houston
+DESCRIPTION:AfroTech https://www.techmeme.com/r2/afrotechconferenc
+ e.com_-TcbKFz5F.htm?cal=1\n\nFrom Techmeme's event calendar http:
+ //www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>AfroTech</title></head><body><p><a href
+ ='https://www.techmeme.com/r2/afrotechconference.com_-TcbKFz5F.ht
+ m?cal=1'>AfroTech</a></p><p>From <a href='http://www.techmeme.com
+ /'>Techmeme</a>'s <a href='http://www.techmeme.com/events'>event 
+ calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:xHm6fWyKDkOyIUdFHAbOxQ@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251102T010000Z
+DTSTART;VALUE=DATE:20261102
+DTEND;VALUE=DATE:20261104
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:WSJ Tech: California
+URL:https://www.techmeme.com/r2/techlive.wsj.com_event_california-
+ 2026_-lXGr3MIV.htm?cal=1
+LOCATION:Napa Valley, CA
+DESCRIPTION:WSJ Tech: California https://www.techmeme.com/r2/techl
+ ive.wsj.com_event_california-2026_-lXGr3MIV.htm?cal=1\n\nFrom Tec
+ hmeme's event calendar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>WSJ Tech: California</title></head><bod
+ y><p><a href='https://www.techmeme.com/r2/techlive.wsj.com_event_
+ california-2026_-lXGr3MIV.htm?cal=1'>WSJ Tech: California</a></p>
+ <p>From <a href='http://www.techmeme.com/'>Techmeme</a>'s <a href
+ ='http://www.techmeme.com/events'>event calendar</a></p></body></
+ html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:w3ht5gtRslZRnvcPWnxslX5g@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251102T010000Z
+DTSTART;VALUE=DATE:20261103
+DTEND;VALUE=DATE:20261105
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Open Source in Finance Forum
+URL:https://www.techmeme.com/r2/events.linuxfoundation.org_open-so
+ urce-finance-forum-new-york_-ksDokM8J.htm?cal=1
+LOCATION:New York
+DESCRIPTION:Open Source in Finance Forum https://www.techmeme.com/
+ r2/events.linuxfoundation.org_open-source-finance-forum-new-york_
+ -ksDokM8J.htm?cal=1\n\nFrom Techmeme's event calendar http://www.
+ techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Open Source in Finance Forum</title></h
+ ead><body><p><a href='https://www.techmeme.com/r2/events.linuxfou
+ ndation.org_open-source-finance-forum-new-york_-ksDokM8J.htm?cal=
+ 1'>Open Source in Finance Forum</a></p><p>From <a href='http://ww
+ w.techmeme.com/'>Techmeme</a>'s <a href='http://www.techmeme.com/
+ events'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:rKGu4Vqr4ZS4ByoGB0nOslg@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251102T010000Z
+DTSTART;VALUE=DATE:20261103
+DTEND;VALUE=DATE:20261105
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:HYBRID: FT Future of AI
+URL:https://www.techmeme.com/r2/ai.live.ft.com_-NyqyCFLa.htm?cal=1
+LOCATION:London
+DESCRIPTION:HYBRID: FT Future of AI https://www.techmeme.com/r2/ai
+ .live.ft.com_-NyqyCFLa.htm?cal=1\n\nFrom Techmeme's event calenda
+ r http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>HYBRID: FT Future of AI</title></head><
+ body><p><a href='https://www.techmeme.com/r2/ai.live.ft.com_-Nyqy
+ CFLa.htm?cal=1'>HYBRID: FT Future of AI</a></p><p>From <a href='h
+ ttp://www.techmeme.com/'>Techmeme</a>'s <a href='http://www.techm
+ eme.com/events'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:foWlgAFV2gGlTslLDSrXuRA@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251102T010000Z
+DTSTART;VALUE=DATE:20261103
+DTEND;VALUE=DATE:20261105
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Current
+URL:https://www.techmeme.com/r2/current.confluent.io_san-francisco
+ -kqzwLPBs.htm?cal=1
+LOCATION:San Francisco
+DESCRIPTION:Current https://www.techmeme.com/r2/current.confluent.
+ io_san-francisco-kqzwLPBs.htm?cal=1\n\nFrom Techmeme's event cale
+ ndar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Current</title></head><body><p><a href=
+ 'https://www.techmeme.com/r2/current.confluent.io_san-francisco-k
+ qzwLPBs.htm?cal=1'>Current</a></p><p>From <a href='http://www.tec
+ hmeme.com/'>Techmeme</a>'s <a href='http://www.techmeme.com/event
+ s'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:Gjcam6FkwgqLKHjwXd2VCg@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251102T010000Z
+DTSTART;VALUE=DATE:20261103
+DTEND;VALUE=DATE:20261105
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Devoxx Morocco
+URL:https://www.techmeme.com/r2/devoxx.ma_-rY36FRhN.htm?cal=1
+LOCATION:Casablanca
+DESCRIPTION:Devoxx Morocco https://www.techmeme.com/r2/devoxx.ma_-
+ rY36FRhN.htm?cal=1\n\nFrom Techmeme's event calendar http://www.t
+ echmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Devoxx Morocco</title></head><body><p><
+ a href='https://www.techmeme.com/r2/devoxx.ma_-rY36FRhN.htm?cal=1
+ '>Devoxx Morocco</a></p><p>From <a href='http://www.techmeme.com/
+ '>Techmeme</a>'s <a href='http://www.techmeme.com/events'>event c
+ alendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:9aRl4P7u0gUDs23cPjVtvA@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251102T010000Z
+DTSTART;VALUE=DATE:20261103
+DTEND;VALUE=DATE:20261106
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:IT Nation Connect Global
+URL:https://www.techmeme.com/r2/connectwise.cventevents.com_event_
+ 8ca179c4-f932-45d9-842e-1906b3ff96ef_summary_RefId_pricingweb-Plm
+ PjLdD.htm?cal=1
+LOCATION:Orlando
+DESCRIPTION:IT Nation Connect Global https://www.techmeme.com/r2/c
+ onnectwise.cventevents.com_event_8ca179c4-f932-45d9-842e-1906b3ff
+ 96ef_summary_RefId_pricingweb-PlmPjLdD.htm?cal=1\n\nFrom Techmeme
+ 's event calendar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>IT Nation Connect Global</title></head>
+ <body><p><a href='https://www.techmeme.com/r2/connectwise.cventev
+ ents.com_event_8ca179c4-f932-45d9-842e-1906b3ff96ef_summary_RefId
+ _pricingweb-PlmPjLdD.htm?cal=1'>IT Nation Connect Global</a></p><
+ p>From <a href='http://www.techmeme.com/'>Techmeme</a>'s <a href=
+ 'http://www.techmeme.com/events'>event calendar</a></p></body></h
+ tml>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:UCLB1ctHx6NtWJnIF4Nplrw@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251103T010000Z
+DTSTART;VALUE=DATE:20261104
+DTEND;VALUE=DATE:20261106
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Bitcoin Amsterdam
+URL:https://www.techmeme.com/r2/www.bitcoin.amsterdam_-891fpldU.ht
+ m?cal=1
+LOCATION:Amstercam
+DESCRIPTION:Bitcoin Amsterdam https://www.techmeme.com/r2/www.bitc
+ oin.amsterdam_-891fpldU.htm?cal=1\n\nFrom Techmeme's event calend
+ ar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Bitcoin Amsterdam</title></head><body><
+ p><a href='https://www.techmeme.com/r2/www.bitcoin.amsterdam_-891
+ fpldU.htm?cal=1'>Bitcoin Amsterdam</a></p><p>From <a href='http:/
+ /www.techmeme.com/'>Techmeme</a>'s <a href='http://www.techmeme.c
+ om/events'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:3nhOsgIAXplh9lYhl1Di5tA@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251107T010000Z
+DTSTART;VALUE=DATE:20261108
+DTEND;VALUE=DATE:20261110
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:FTT Fintech Festival
+URL:https://www.techmeme.com/r2/www.fintechtalents.com_events_euro
+ pe_festival-london_-YWNhKYFR.htm?cal=1
+LOCATION:London
+DESCRIPTION:FTT Fintech Festival https://www.techmeme.com/r2/www.f
+ intechtalents.com_events_europe_festival-london_-YWNhKYFR.htm?cal
+ =1\n\nFrom Techmeme's event calendar http://www.techmeme.com/even
+ ts
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>FTT Fintech Festival</title></head><bod
+ y><p><a href='https://www.techmeme.com/r2/www.fintechtalents.com_
+ events_europe_festival-london_-YWNhKYFR.htm?cal=1'>FTT Fintech Fe
+ stival</a></p><p>From <a href='http://www.techmeme.com/'>Techmeme
+ </a>'s <a href='http://www.techmeme.com/events'>event calendar</a
+ ></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:csYckOjzBMRCMlCXDzunYw@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251107T010000Z
+DTSTART;VALUE=DATE:20261108
+DTEND;VALUE=DATE:20261111
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:PASS Data Community Summit West
+URL:https://www.techmeme.com/r2/passdatacommunitysummit.com_west_-
+ Y10ru8lk.htm?cal=1
+LOCATION:Seattle
+DESCRIPTION:PASS Data Community Summit West https://www.techmeme.c
+ om/r2/passdatacommunitysummit.com_west_-Y10ru8lk.htm?cal=1\n\nFro
+ m Techmeme's event calendar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>PASS Data Community Summit West</title>
+ </head><body><p><a href='https://www.techmeme.com/r2/passdatacomm
+ unitysummit.com_west_-Y10ru8lk.htm?cal=1'>PASS Data Community Sum
+ mit West</a></p><p>From <a href='http://www.techmeme.com/'>Techme
+ me</a>'s <a href='http://www.techmeme.com/events'>event calendar<
+ /a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:0AGkGU2fWnlZYAOTmQE7FQ@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251107T010000Z
+DTSTART;VALUE=DATE:20261108
+DTEND;VALUE=DATE:20261112
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Web Summit
+URL:https://www.techmeme.com/r2/websummit.com_-awzxRwUO.htm?cal=1
+LOCATION:Lisbon
+DESCRIPTION:Web Summit https://www.techmeme.com/r2/websummit.com_-
+ awzxRwUO.htm?cal=1\n\nFrom Techmeme's event calendar http://www.t
+ echmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Web Summit</title></head><body><p><a hr
+ ef='https://www.techmeme.com/r2/websummit.com_-awzxRwUO.htm?cal=1
+ '>Web Summit</a></p><p>From <a href='http://www.techmeme.com/'>Te
+ chmeme</a>'s <a href='http://www.techmeme.com/events'>event calen
+ dar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:L44HrR5z1VY3EDPdOTGHBA@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251107T010000Z
+DTSTART;VALUE=DATE:20261108
+DTEND;VALUE=DATE:20261112
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:KubeCon + CloudNativeCon North America + Cloud Native + Ku
+ bernetes AI Day North America
+URL:https://www.techmeme.com/r2/events.linuxfoundation.org_kubecon
+ -cloudnativecon-north-america_-XN4LsR9B.htm?cal=1
+LOCATION:Salt Lake City
+DESCRIPTION:KubeCon + CloudNativeCon North America + Cloud Native 
+ + Kubernetes AI Day North America https://www.techmeme.com/r2/eve
+ nts.linuxfoundation.org_kubecon-cloudnativecon-north-america_-XN4
+ LsR9B.htm?cal=1\n\nFrom Techmeme's event calendar http://www.tech
+ meme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>KubeCon + CloudNativeCon North America 
+ + Cloud Native + Kubernetes AI Day North America</title></head><b
+ ody><p><a href='https://www.techmeme.com/r2/events.linuxfoundatio
+ n.org_kubecon-cloudnativecon-north-america_-XN4LsR9B.htm?cal=1'>K
+ ubeCon + CloudNativeCon North America + Cloud Native + Kubernetes
+  AI Day North America</a></p><p>From <a href='http://www.techmeme
+ .com/'>Techmeme</a>'s <a href='http://www.techmeme.com/events'>ev
+ ent calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:B7pl15c9OQ3NAKkZN0q7lQg@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251108T010000Z
+DTSTART;VALUE=DATE:20261109
+DTEND;VALUE=DATE:20261112
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:HYBRID: Adobe MAX
+URL:https://www.techmeme.com/r2/www.adobe.com_max.html-IZEhdslD.ht
+ m?cal=1
+LOCATION:Miami Beach
+DESCRIPTION:HYBRID: Adobe MAX https://www.techmeme.com/r2/www.adob
+ e.com_max.html-IZEhdslD.htm?cal=1\n\nFrom Techmeme's event calend
+ ar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>HYBRID: Adobe MAX</title></head><body><
+ p><a href='https://www.techmeme.com/r2/www.adobe.com_max.html-IZE
+ hdslD.htm?cal=1'>HYBRID: Adobe MAX</a></p><p>From <a href='http:/
+ /www.techmeme.com/'>Techmeme</a>'s <a href='http://www.techmeme.c
+ om/events'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:1tAlTixJDCpvbSV8DljhMQ@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251108T010000Z
+DTSTART;VALUE=DATE:20261109
+DTEND;VALUE=DATE:20261113
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:electronica
+URL:https://www.techmeme.com/r2/electronica.de_en_-TbrS3rCL.htm?ca
+ l=1
+LOCATION:Munich
+DESCRIPTION:electronica https://www.techmeme.com/r2/electronica.de
+ _en_-TbrS3rCL.htm?cal=1\n\nFrom Techmeme's event calendar http://
+ www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>electronica</title></head><body><p><a h
+ ref='https://www.techmeme.com/r2/electronica.de_en_-TbrS3rCL.htm?
+ cal=1'>electronica</a></p><p>From <a href='http://www.techmeme.co
+ m/'>Techmeme</a>'s <a href='http://www.techmeme.com/events'>event
+  calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:McXVFdxClRSBhrSGuj4s5g@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251110T010000Z
+DTSTART;VALUE=DATE:20261111
+DTEND;VALUE=DATE:20261112
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Cerebral Valley AI Summit
+URL:https://www.techmeme.com/r2/www.cerebralvalley.com_-rMEuyzsl.h
+ tm?cal=1
+LOCATION:San Francisco
+DESCRIPTION:Cerebral Valley AI Summit https://www.techmeme.com/r2/
+ www.cerebralvalley.com_-rMEuyzsl.htm?cal=1\n\nFrom Techmeme's eve
+ nt calendar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Cerebral Valley AI Summit</title></head
+ ><body><p><a href='https://www.techmeme.com/r2/www.cerebralvalley
+ .com_-rMEuyzsl.htm?cal=1'>Cerebral Valley AI Summit</a></p><p>Fro
+ m <a href='http://www.techmeme.com/'>Techmeme</a>'s <a href='http
+ ://www.techmeme.com/events'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:DyszfCftmrBJqcNZwR3yLQ@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251111T010000Z
+DTSTART;VALUE=DATE:20261112
+DTEND;VALUE=DATE:20261115
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:TwitchCon
+URL:https://www.techmeme.com/r2/www.twitchcon.com_san-diego-2026_-
+ TY8Hwziv.htm?cal=1
+LOCATION:San Diego
+DESCRIPTION:TwitchCon https://www.techmeme.com/r2/www.twitchcon.co
+ m_san-diego-2026_-TY8Hwziv.htm?cal=1\n\nFrom Techmeme's event cal
+ endar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>TwitchCon</title></head><body><p><a hre
+ f='https://www.techmeme.com/r2/www.twitchcon.com_san-diego-2026_-
+ TY8Hwziv.htm?cal=1'>TwitchCon</a></p><p>From <a href='http://www.
+ techmeme.com/'>Techmeme</a>'s <a href='http://www.techmeme.com/ev
+ ents'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:qkcV2ODmlnMmw6gnGHYbNg@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251113T010000Z
+DTSTART;VALUE=DATE:20261114
+DTEND;VALUE=DATE:20261117
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Solana Breakpoint
+URL:https://www.techmeme.com/r2/solana.com_breakpoint-MIlihtat.htm
+ ?cal=1
+LOCATION:London
+DESCRIPTION:Solana Breakpoint https://www.techmeme.com/r2/solana.c
+ om_breakpoint-MIlihtat.htm?cal=1\n\nFrom Techmeme's event calenda
+ r http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Solana Breakpoint</title></head><body><
+ p><a href='https://www.techmeme.com/r2/solana.com_breakpoint-MIli
+ htat.htm?cal=1'>Solana Breakpoint</a></p><p>From <a href='http://
+ www.techmeme.com/'>Techmeme</a>'s <a href='http://www.techmeme.co
+ m/events'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:ghMpl2eAz27Zb0qBGwJIppA@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251113T010000Z
+DTSTART;VALUE=DATE:20261114
+DTEND;VALUE=DATE:20261118
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:HLTH USA
+URL:https://www.techmeme.com/r2/hlth.com_events_usa-DkCAmcAf.htm?c
+ al=1
+LOCATION:Las Vegas
+DESCRIPTION:HLTH USA https://www.techmeme.com/r2/hlth.com_events_u
+ sa-DkCAmcAf.htm?cal=1\n\nFrom Techmeme's event calendar http://ww
+ w.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>HLTH USA</title></head><body><p><a href
+ ='https://www.techmeme.com/r2/hlth.com_events_usa-DkCAmcAf.htm?ca
+ l=1'>HLTH USA</a></p><p>From <a href='http://www.techmeme.com/'>T
+ echmeme</a>'s <a href='http://www.techmeme.com/events'>event cale
+ ndar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:ol6pAplplRi3vPplh7Ci9rpJA@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251114T010000Z
+DTSTART;VALUE=DATE:20261115
+DTEND;VALUE=DATE:20261116
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:HYBRID: JSNation US
+URL:https://www.techmeme.com/r2/jsnation.us_-rHFPKNwp.htm?cal=1
+LOCATION:New York
+DESCRIPTION:HYBRID: JSNation US https://www.techmeme.com/r2/jsnati
+ on.us_-rHFPKNwp.htm?cal=1\n\nFrom Techmeme's event calendar http:
+ //www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>HYBRID: JSNation US</title></head><body
+ ><p><a href='https://www.techmeme.com/r2/jsnation.us_-rHFPKNwp.ht
+ m?cal=1'>HYBRID: JSNation US</a></p><p>From <a href='http://www.t
+ echmeme.com/'>Techmeme</a>'s <a href='http://www.techmeme.com/eve
+ nts'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:VripNwRM9RnbpplZfqANslGQ@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251114T010000Z
+DTSTART;VALUE=DATE:20261115
+DTEND;VALUE=DATE:20261117
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Fortune 500 Innovation Forum
+URL:https://www.techmeme.com/r2/conferences.fortune.com_event_fort
+ une-500-innovation-forum-2026_HOME-PJslnQpl.htm?cal=1
+LOCATION:Detroit
+DESCRIPTION:Fortune 500 Innovation Forum https://www.techmeme.com/
+ r2/conferences.fortune.com_event_fortune-500-innovation-forum-202
+ 6_HOME-PJslnQpl.htm?cal=1\n\nFrom Techmeme's event calendar http:
+ //www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Fortune 500 Innovation Forum</title></h
+ ead><body><p><a href='https://www.techmeme.com/r2/conferences.for
+ tune.com_event_fortune-500-innovation-forum-2026_HOME-PJslnQpl.ht
+ m?cal=1'>Fortune 500 Innovation Forum</a></p><p>From <a href='htt
+ p://www.techmeme.com/'>Techmeme</a>'s <a href='http://www.techmem
+ e.com/events'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:8InXYiX5sjbgJxogbTNuYg@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251114T010000Z
+DTSTART;VALUE=DATE:20261115
+DTEND;VALUE=DATE:20261120
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:QCon San Francisco
+URL:https://www.techmeme.com/r2/qconsf.com_-FLutnH5m.htm?cal=1
+LOCATION:San Francisco
+DESCRIPTION:QCon San Francisco https://www.techmeme.com/r2/qconsf.
+ com_-FLutnH5m.htm?cal=1\n\nFrom Techmeme's event calendar http://
+ www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>QCon San Francisco</title></head><body>
+ <p><a href='https://www.techmeme.com/r2/qconsf.com_-FLutnH5m.htm?
+ cal=1'>QCon San Francisco</a></p><p>From <a href='http://www.tech
+ meme.com/'>Techmeme</a>'s <a href='http://www.techmeme.com/events
+ '>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:6QPQ5TElhha5KD0egyqeMQ@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251115T010000Z
+DTSTART;VALUE=DATE:20261116
+DTEND;VALUE=DATE:20261118
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:TomorrowX Summit
+URL:https://www.techmeme.com/r2/tomorrowxsummit.com_-JheZQLIX.htm?
+ cal=1
+LOCATION:Austin, TX
+DESCRIPTION:TomorrowX Summit https://www.techmeme.com/r2/tomorrowx
+ summit.com_-JheZQLIX.htm?cal=1\n\nFrom Techmeme's event calendar 
+ http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>TomorrowX Summit</title></head><body><p
+ ><a href='https://www.techmeme.com/r2/tomorrowxsummit.com_-JheZQL
+ IX.htm?cal=1'>TomorrowX Summit</a></p><p>From <a href='http://www
+ .techmeme.com/'>Techmeme</a>'s <a href='http://www.techmeme.com/e
+ vents'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:ZBvEprTIwkUYPQRDNJh5Dg@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251115T010000Z
+DTSTART;VALUE=DATE:20261116
+DTEND;VALUE=DATE:20261120
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Microsoft Ignite
+URL:https://www.techmeme.com/r2/ignite.microsoft.com_en-US_home-sl
+ tGiIKe.htm?cal=1
+LOCATION:San Francisco
+DESCRIPTION:Microsoft Ignite https://www.techmeme.com/r2/ignite.mi
+ crosoft.com_en-US_home-sltGiIKe.htm?cal=1\n\nFrom Techmeme's even
+ t calendar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Microsoft Ignite</title></head><body><p
+ ><a href='https://www.techmeme.com/r2/ignite.microsoft.com_en-US_
+ home-sltGiIKe.htm?cal=1'>Microsoft Ignite</a></p><p>From <a href=
+ 'http://www.techmeme.com/'>Techmeme</a>'s <a href='http://www.tec
+ hmeme.com/events'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:ojPMJVYWO3vjVO5s62cnGQ@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251116T010000Z
+DTSTART;VALUE=DATE:20261117
+DTEND;VALUE=DATE:20261118
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:New York Times DealBook Summit
+URL:https://www.techmeme.com/r2/www.nytimes.com_events_dealbook_ov
+ erview-lx9PCPCe.htm?cal=1
+LOCATION:New York
+DESCRIPTION:New York Times DealBook Summit https://www.techmeme.co
+ m/r2/www.nytimes.com_events_dealbook_overview-lx9PCPCe.htm?cal=1\
+ n\nFrom Techmeme's event calendar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>New York Times DealBook Summit</title><
+ /head><body><p><a href='https://www.techmeme.com/r2/www.nytimes.c
+ om_events_dealbook_overview-lx9PCPCe.htm?cal=1'>New York Times De
+ alBook Summit</a></p><p>From <a href='http://www.techmeme.com/'>T
+ echmeme</a>'s <a href='http://www.techmeme.com/events'>event cale
+ ndar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:pl93p2WqRh78pgqwFzAsl0ZA@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251116T010000Z
+DTSTART;VALUE=DATE:20261117
+DTEND;VALUE=DATE:20261119
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:SLUSH
+URL:https://www.techmeme.com/r2/slush.org_-K6CpWG7I.htm?cal=1
+LOCATION:Helsinki
+DESCRIPTION:SLUSH https://www.techmeme.com/r2/slush.org_-K6CpWG7I.
+ htm?cal=1\n\nFrom Techmeme's event calendar http://www.techmeme.c
+ om/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>SLUSH</title></head><body><p><a href='h
+ ttps://www.techmeme.com/r2/slush.org_-K6CpWG7I.htm?cal=1'>SLUSH</
+ a></p><p>From <a href='http://www.techmeme.com/'>Techmeme</a>'s <
+ a href='http://www.techmeme.com/events'>event calendar</a></p></b
+ ody></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:QkiuNyFCsl4I8Cyh82pWplDQ@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251116T010000Z
+DTSTART;VALUE=DATE:20261117
+DTEND;VALUE=DATE:20261120
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Singapore Fintech Festival
+URL:https://www.techmeme.com/r2/www.fintechfestival.sg_-Cm9n7E6y.h
+ tm?cal=1
+LOCATION:Singapore
+DESCRIPTION:Singapore Fintech Festival https://www.techmeme.com/r2
+ /www.fintechfestival.sg_-Cm9n7E6y.htm?cal=1\n\nFrom Techmeme's ev
+ ent calendar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Singapore Fintech Festival</title></hea
+ d><body><p><a href='https://www.techmeme.com/r2/www.fintechfestiv
+ al.sg_-Cm9n7E6y.htm?cal=1'>Singapore Fintech Festival</a></p><p>F
+ rom <a href='http://www.techmeme.com/'>Techmeme</a>'s <a href='ht
+ tp://www.techmeme.com/events'>event calendar</a></p></body></html
+ >
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:L3LI8qTqvdjD3dlIuCfoLw@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251117T010000Z
+DTSTART;VALUE=DATE:20261118
+DTEND;VALUE=DATE:20261120
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Fintech Nerdcon
+URL:https://www.techmeme.com/r2/www.fintechnerdcon.com_-zLquqlHX.h
+ tm?cal=1
+LOCATION:San Diego
+DESCRIPTION:Fintech Nerdcon https://www.techmeme.com/r2/www.fintec
+ hnerdcon.com_-zLquqlHX.htm?cal=1\n\nFrom Techmeme's event calenda
+ r http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Fintech Nerdcon</title></head><body><p>
+ <a href='https://www.techmeme.com/r2/www.fintechnerdcon.com_-zLqu
+ qlHX.htm?cal=1'>Fintech Nerdcon</a></p><p>From <a href='http://ww
+ w.techmeme.com/'>Techmeme</a>'s <a href='http://www.techmeme.com/
+ events'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:9Yh1x1ANuhJ22tFLzrscxA@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251125T010000Z
+DTSTART;VALUE=DATE:20261126
+DTEND;VALUE=DATE:20261129
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:DreamHack Stockholm
+URL:https://www.techmeme.com/r2/dreamhack.com_stockholm_-prEgYOZZ.
+ htm?cal=1
+LOCATION:Stockholm
+DESCRIPTION:DreamHack Stockholm https://www.techmeme.com/r2/dreamh
+ ack.com_stockholm_-prEgYOZZ.htm?cal=1\n\nFrom Techmeme's event ca
+ lendar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>DreamHack Stockholm</title></head><body
+ ><p><a href='https://www.techmeme.com/r2/dreamhack.com_stockholm_
+ -prEgYOZZ.htm?cal=1'>DreamHack Stockholm</a></p><p>From <a href='
+ http://www.techmeme.com/'>Techmeme</a>'s <a href='http://www.tech
+ meme.com/events'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:JoTQXhnHZAslEKc4pL9h9Ug@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251126T010000Z
+DTSTART;VALUE=DATE:20261127
+DTEND;VALUE=DATE:20261129
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Binance Blockchain Week
+URL:https://www.techmeme.com/r2/www.binanceblockchainweek.com_even
+ t_Bangkok2026_Home-u3bW3VLV.htm?cal=1
+LOCATION:Bangkok
+DESCRIPTION:Binance Blockchain Week https://www.techmeme.com/r2/ww
+ w.binanceblockchainweek.com_event_Bangkok2026_Home-u3bW3VLV.htm?c
+ al=1\n\nFrom Techmeme's event calendar http://www.techmeme.com/ev
+ ents
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Binance Blockchain Week</title></head><
+ body><p><a href='https://www.techmeme.com/r2/www.binanceblockchai
+ nweek.com_event_Bangkok2026_Home-u3bW3VLV.htm?cal=1'>Binance Bloc
+ kchain Week</a></p><p>From <a href='http://www.techmeme.com/'>Tec
+ hmeme</a>'s <a href='http://www.techmeme.com/events'>event calend
+ ar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:4iTAvCJ9Ams4qIks4leirw@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251128T010000Z
+DTSTART;VALUE=DATE:20261129
+DTEND;VALUE=DATE:20261204
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:AWS re:Invent
+URL:https://www.techmeme.com/r2/aws.amazon.com_events_reinvent_-Fc
+ Ydezk8.htm?cal=1
+LOCATION:Las Vegas
+DESCRIPTION:AWS re:Invent https://www.techmeme.com/r2/aws.amazon.c
+ om_events_reinvent_-FcYdezk8.htm?cal=1\n\nFrom Techmeme's event c
+ alendar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>AWS re:Invent</title></head><body><p><a
+  href='https://www.techmeme.com/r2/aws.amazon.com_events_reinvent
+ _-FcYdezk8.htm?cal=1'>AWS re:Invent</a></p><p>From <a href='http:
+ //www.techmeme.com/'>Techmeme</a>'s <a href='http://www.techmeme.
+ com/events'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:DPBzDCOtKb6OdVz9yMoUng@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251129T010000Z
+DTSTART;VALUE=DATE:20261130
+DTEND;VALUE=DATE:20261202
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:FinTech Connect
+URL:https://www.techmeme.com/r2/www.fintechconnect.com_-UD9XXPr2.h
+ tm?cal=1
+LOCATION:London
+DESCRIPTION:FinTech Connect https://www.techmeme.com/r2/www.fintec
+ hconnect.com_-UD9XXPr2.htm?cal=1\n\nFrom Techmeme's event calenda
+ r http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>FinTech Connect</title></head><body><p>
+ <a href='https://www.techmeme.com/r2/www.fintechconnect.com_-UD9X
+ XPr2.htm?cal=1'>FinTech Connect</a></p><p>From <a href='http://ww
+ w.techmeme.com/'>Techmeme</a>'s <a href='http://www.techmeme.com/
+ events'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:slckWDNMCfJgslHXuCx0Fsl5A@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251130T010000Z
+DTSTART;VALUE=DATE:20261201
+DTEND;VALUE=DATE:20261202
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:YC Fall 2026 Demo Day
+URL:https://www.techmeme.com/r2/www.ycombinator.com_blog_2026-demo
+ -days-PjrnG723.htm?cal=1
+LOCATION:San Francisco
+DESCRIPTION:YC Fall 2026 Demo Day https://www.techmeme.com/r2/www.
+ ycombinator.com_blog_2026-demo-days-PjrnG723.htm?cal=1\n\nFrom Te
+ chmeme's event calendar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>YC Fall 2026 Demo Day</title></head><bo
+ dy><p><a href='https://www.techmeme.com/r2/www.ycombinator.com_bl
+ og_2026-demo-days-PjrnG723.htm?cal=1'>YC Fall 2026 Demo Day</a></
+ p><p>From <a href='http://www.techmeme.com/'>Techmeme</a>'s <a hr
+ ef='http://www.techmeme.com/events'>event calendar</a></p></body>
+ </html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:h0xgKSAplQFeHslBSoqgsslCw@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251204T010000Z
+DTSTART;VALUE=DATE:20261205
+DTEND;VALUE=DATE:20261212
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:NeurIPS
+URL:https://www.techmeme.com/r2/nips.cc_-ftxT7ya0.htm?cal=1
+LOCATION:Sydney
+DESCRIPTION:NeurIPS https://www.techmeme.com/r2/nips.cc_-ftxT7ya0.
+ htm?cal=1\n\nFrom Techmeme's event calendar http://www.techmeme.c
+ om/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>NeurIPS</title></head><body><p><a href=
+ 'https://www.techmeme.com/r2/nips.cc_-ftxT7ya0.htm?cal=1'>NeurIPS
+ </a></p><p>From <a href='http://www.techmeme.com/'>Techmeme</a>'s
+  <a href='http://www.techmeme.com/events'>event calendar</a></p><
+ /body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:ktCdEzhAzirB9RtLOlHoyA@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251205T010000Z
+DTSTART;VALUE=DATE:20261206
+DTEND;VALUE=DATE:20261208
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Fortune Brainstorm AI
+URL:https://www.techmeme.com/r2/conferences.fortune.com_event_brai
+ nstorm-ai-2026_HOME-1P4XqWfu.htm?cal=1
+LOCATION:San Francisco
+DESCRIPTION:Fortune Brainstorm AI https://www.techmeme.com/r2/conf
+ erences.fortune.com_event_brainstorm-ai-2026_HOME-1P4XqWfu.htm?ca
+ l=1\n\nFrom Techmeme's event calendar http://www.techmeme.com/eve
+ nts
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Fortune Brainstorm AI</title></head><bo
+ dy><p><a href='https://www.techmeme.com/r2/conferences.fortune.co
+ m_event_brainstorm-ai-2026_HOME-1P4XqWfu.htm?cal=1'>Fortune Brain
+ storm AI</a></p><p>From <a href='http://www.techmeme.com/'>Techme
+ me</a>'s <a href='http://www.techmeme.com/events'>event calendar<
+ /a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:fNTap5B88DdfF7v709qMfQ@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251205T010000Z
+DTSTART;VALUE=DATE:20261206
+DTEND;VALUE=DATE:20261208
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:WSJ CEO Council Summit
+URL:https://www.techmeme.com/r2/leadershipinstitute.wsj.com_ceo_ev
+ ent_ceo-council-summit-december-2026_-heguPEqn.htm?cal=1
+LOCATION:San Francisco
+DESCRIPTION:WSJ CEO Council Summit https://www.techmeme.com/r2/lea
+ dershipinstitute.wsj.com_ceo_event_ceo-council-summit-december-20
+ 26_-heguPEqn.htm?cal=1\n\nFrom Techmeme's event calendar http://w
+ ww.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>WSJ CEO Council Summit</title></head><b
+ ody><p><a href='https://www.techmeme.com/r2/leadershipinstitute.w
+ sj.com_ceo_event_ceo-council-summit-december-2026_-heguPEqn.htm?c
+ al=1'>WSJ CEO Council Summit</a></p><p>From <a href='http://www.t
+ echmeme.com/'>Techmeme</a>'s <a href='http://www.techmeme.com/eve
+ nts'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:mQuMgQbQo4D7zm2bVPyqbQ@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251205T010000Z
+DTSTART;VALUE=DATE:20261206
+DTEND;VALUE=DATE:20261210
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Gartner Identity & Access Management Summit + IT, Infrastr
+ ucture, Operations & Cloud Strategy Conference
+URL:https://www.techmeme.com/r2/www.gartner.com_en_conferences_na_
+ identity-access-management-us-XkrCh2xr.htm?cal=1
+LOCATION:Las Vegas
+DESCRIPTION:Gartner Identity & Access Management Summit + IT, Infr
+ astructure, Operations & Cloud Strategy Conference https://www.te
+ chmeme.com/r2/www.gartner.com_en_conferences_na_identity-access-m
+ anagement-us-XkrCh2xr.htm?cal=1\n\nFrom Techmeme's event calendar
+  http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Gartner Identity & Access Management Su
+ mmit + IT, Infrastructure, Operations & Cloud Strategy Conference
+ </title></head><body><p><a href='https://www.techmeme.com/r2/www.
+ gartner.com_en_conferences_na_identity-access-management-us-XkrCh
+ 2xr.htm?cal=1'>Gartner Identity & Access Management Summit + IT, 
+ Infrastructure, Operations & Cloud Strategy Conference</a></p><p>
+ From <a href='http://www.techmeme.com/'>Techmeme</a>'s <a href='h
+ ttp://www.techmeme.com/events'>event calendar</a></p></body></htm
+ l>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:DMKPeL57gOuOOuputz7igA@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251205T010000Z
+DTSTART;VALUE=DATE:20261206
+DTEND;VALUE=DATE:20261211
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:GITEX Global
+URL:https://www.techmeme.com/r2/www.gitex.com_home-Nx1NzFqq.htm?ca
+ l=1
+LOCATION:Dubai
+DESCRIPTION:GITEX Global https://www.techmeme.com/r2/www.gitex.com
+ _home-Nx1NzFqq.htm?cal=1\n\nFrom Techmeme's event calendar http:/
+ /www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>GITEX Global</title></head><body><p><a 
+ href='https://www.techmeme.com/r2/www.gitex.com_home-Nx1NzFqq.htm
+ ?cal=1'>GITEX Global</a></p><p>From <a href='http://www.techmeme.
+ com/'>Techmeme</a>'s <a href='http://www.techmeme.com/events'>eve
+ nt calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:5ZtmAmMoQIyDjGquzthkxg@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251207T010000Z
+DTSTART;VALUE=DATE:20261208
+DTEND;VALUE=DATE:20261210
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:The AI Summit New York
+URL:https://www.techmeme.com/r2/newyork.theaisummit.com_-au9GkSgW.
+ htm?cal=1
+LOCATION:New York
+DESCRIPTION:The AI Summit New York https://www.techmeme.com/r2/new
+ york.theaisummit.com_-au9GkSgW.htm?cal=1\n\nFrom Techmeme's event
+  calendar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>The AI Summit New York</title></head><b
+ ody><p><a href='https://www.techmeme.com/r2/newyork.theaisummit.c
+ om_-au9GkSgW.htm?cal=1'>The AI Summit New York</a></p><p>From <a 
+ href='http://www.techmeme.com/'>Techmeme</a>'s <a href='http://ww
+ w.techmeme.com/events'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:fGQ0gNtJgc3aotftb1plvdQ@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251208T010000Z
+DTSTART;VALUE=DATE:20261209
+DTEND;VALUE=DATE:20261210
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:The Game Awards
+URL:https://www.techmeme.com/r2/thegameawards.com_-MxlFyk0h.htm?ca
+ l=1
+LOCATION:Los Angeles
+DESCRIPTION:The Game Awards https://www.techmeme.com/r2/thegameawa
+ rds.com_-MxlFyk0h.htm?cal=1\n\nFrom Techmeme's event calendar htt
+ p://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>The Game Awards</title></head><body><p>
+ <a href='https://www.techmeme.com/r2/thegameawards.com_-MxlFyk0h.
+ htm?cal=1'>The Game Awards</a></p><p>From <a href='http://www.tec
+ hmeme.com/'>Techmeme</a>'s <a href='http://www.techmeme.com/event
+ s'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:MUpkqC2ePp8Ds5oG7bslSnQ@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251208T010000Z
+DTSTART;VALUE=DATE:20261209
+DTEND;VALUE=DATE:20261211
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Droidcon London
+URL:https://www.techmeme.com/r2/london.droidcon.com_-8VFXvzms.htm?
+ cal=1
+LOCATION:London
+DESCRIPTION:Droidcon London https://www.techmeme.com/r2/london.dro
+ idcon.com_-8VFXvzms.htm?cal=1\n\nFrom Techmeme's event calendar h
+ ttp://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Droidcon London</title></head><body><p>
+ <a href='https://www.techmeme.com/r2/london.droidcon.com_-8VFXvzm
+ s.htm?cal=1'>Droidcon London</a></p><p>From <a href='http://www.t
+ echmeme.com/'>Techmeme</a>'s <a href='http://www.techmeme.com/eve
+ nts'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:mSlxGUchwYa3AIaOWNw6Ww@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20251225T010000Z
+DTSTART;VALUE=DATE:20261226
+DTEND;VALUE=DATE:20261230
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Chaos Communication Congress (40C3)
+URL:https://www.techmeme.com/r2/events.ccc.de_category_40c3_-plHzK
+ hDa.htm?cal=1
+LOCATION:Hamburg
+DESCRIPTION:Chaos Communication Congress (40C3) https://www.techme
+ me.com/r2/events.ccc.de_category_40c3_-plHzKhDa.htm?cal=1\n\nFrom
+  Techmeme's event calendar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Chaos Communication Congress (40C3)</ti
+ tle></head><body><p><a href='https://www.techmeme.com/r2/events.c
+ cc.de_category_40c3_-plHzKhDa.htm?cal=1'>Chaos Communication Cong
+ ress (40C3)</a></p><p>From <a href='http://www.techmeme.com/'>Tec
+ hmeme</a>'s <a href='http://www.techmeme.com/events'>event calend
+ ar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:hmQ0BKIMLBfRx8vA6gpld1w@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20260104T010000Z
+DTSTART;VALUE=DATE:20270105
+DTEND;VALUE=DATE:20270109
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:CES
+URL:https://www.techmeme.com/r2/www.ces.tech_-Whslh1AN.htm?cal=1
+LOCATION:Las Vegas
+DESCRIPTION:CES https://www.techmeme.com/r2/www.ces.tech_-Whslh1AN
+ .htm?cal=1\n\nFrom Techmeme's event calendar http://www.techmeme.
+ com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>CES</title></head><body><p><a href='htt
+ ps://www.techmeme.com/r2/www.ces.tech_-Whslh1AN.htm?cal=1'>CES</a
+ ></p><p>From <a href='http://www.techmeme.com/'>Techmeme</a>'s <a
+  href='http://www.techmeme.com/events'>event calendar</a></p></bo
+ dy></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:hJoRkpyz7kMNAUJzWhTREw@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20260106T010000Z
+DTSTART;VALUE=DATE:20270107
+DTEND;VALUE=DATE:20270111
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:IEEE International Conference on Consumer Electronics
+URL:https://www.techmeme.com/r2/icce.org_2027_-jPGTAMSU.htm?cal=1
+LOCATION:Las Vegas
+DESCRIPTION:IEEE International Conference on Consumer Electronics 
+ https://www.techmeme.com/r2/icce.org_2027_-jPGTAMSU.htm?cal=1\n\n
+ From Techmeme's event calendar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>IEEE International Conference on Consum
+ er Electronics</title></head><body><p><a href='https://www.techme
+ me.com/r2/icce.org_2027_-jPGTAMSU.htm?cal=1'>IEEE International C
+ onference on Consumer Electronics</a></p><p>From <a href='http://
+ www.techmeme.com/'>Techmeme</a>'s <a href='http://www.techmeme.co
+ m/events'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:XhftKavZTa6pl9eGuMue9oQ@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20260108T010000Z
+DTSTART;VALUE=DATE:20270109
+DTEND;VALUE=DATE:20270112
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:NRF
+URL:https://www.techmeme.com/r2/nrfbigshow.nrf.com_-9yALZlod.htm?c
+ al=1
+LOCATION:New York
+DESCRIPTION:NRF https://www.techmeme.com/r2/nrfbigshow.nrf.com_-9y
+ ALZlod.htm?cal=1\n\nFrom Techmeme's event calendar http://www.tec
+ hmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>NRF</title></head><body><p><a href='htt
+ ps://www.techmeme.com/r2/nrfbigshow.nrf.com_-9yALZlod.htm?cal=1'>
+ NRF</a></p><p>From <a href='http://www.techmeme.com/'>Techmeme</a
+ >'s <a href='http://www.techmeme.com/events'>event calendar</a></
+ p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:vEONpZWDqMpAITaKs4Ytug@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20260116T010000Z
+DTSTART;VALUE=DATE:20270117
+DTEND;VALUE=DATE:20270122
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:World Economic Forum
+URL:https://www.techmeme.com/r2/www.weforum.org_-mz15XpbA.htm?cal=
+ 1
+LOCATION:Davos
+DESCRIPTION:World Economic Forum https://www.techmeme.com/r2/www.w
+ eforum.org_-mz15XpbA.htm?cal=1\n\nFrom Techmeme's event calendar 
+ http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>World Economic Forum</title></head><bod
+ y><p><a href='https://www.techmeme.com/r2/www.weforum.org_-mz15Xp
+ bA.htm?cal=1'>World Economic Forum</a></p><p>From <a href='http:/
+ /www.techmeme.com/'>Techmeme</a>'s <a href='http://www.techmeme.c
+ om/events'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:YB9XvQCRmsl7TslinAUji3Hw@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20260129T010000Z
+DTSTART;VALUE=DATE:20270130
+DTEND;VALUE=DATE:20270203
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Web Summit Qatar
+URL:https://www.techmeme.com/r2/qatar.websummit.com_-UNOMbtAs.htm?
+ cal=1
+LOCATION:Doha, Qatar
+DESCRIPTION:Web Summit Qatar https://www.techmeme.com/r2/qatar.web
+ summit.com_-UNOMbtAs.htm?cal=1\n\nFrom Techmeme's event calendar 
+ http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Web Summit Qatar</title></head><body><p
+ ><a href='https://www.techmeme.com/r2/qatar.websummit.com_-UNOMbt
+ As.htm?cal=1'>Web Summit Qatar</a></p><p>From <a href='http://www
+ .techmeme.com/'>Techmeme</a>'s <a href='http://www.techmeme.com/e
+ vents'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:ZGlFw9bHLdmoUxxWaape8Q@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20260131T010000Z
+DTSTART;VALUE=DATE:20270201
+DTEND;VALUE=DATE:20270205
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:Integrated Systems Europe
+URL:https://www.techmeme.com/r2/www.iseurope.org_-w2rfqQwr.htm?cal
+ =1
+LOCATION:Barcelona
+DESCRIPTION:Integrated Systems Europe https://www.techmeme.com/r2/
+ www.iseurope.org_-w2rfqQwr.htm?cal=1\n\nFrom Techmeme's event cal
+ endar http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>Integrated Systems Europe</title></head
+ ><body><p><a href='https://www.techmeme.com/r2/www.iseurope.org_-
+ w2rfqQwr.htm?cal=1'>Integrated Systems Europe</a></p><p>From <a h
+ ref='http://www.techmeme.com/'>Techmeme</a>'s <a href='http://www
+ .techmeme.com/events'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+BEGIN:VEVENT
+UID:ZAmH6oaPD6Gplcg2hM5rVkQ@techmeme.com
+DTSTAMP;VALUE=DATE-TIME:20260201T010000Z
+DTSTART;VALUE=DATE:20270202
+DTEND;VALUE=DATE:20270204
+X-FUNAMBOL-ALLDAY:1
+X-MICROSOFT-CDO-ALLDAYEVENT:TRUE
+CLASS:PUBLIC
+SUMMARY:TechEx Global
+URL:https://www.techmeme.com/r2/techexevent.com_global_-uBchu8Js.h
+ tm?cal=1
+LOCATION:London
+DESCRIPTION:TechEx Global https://www.techmeme.com/r2/techexevent.
+ com_global_-uBchu8Js.htm?cal=1\n\nFrom Techmeme's event calendar 
+ http://www.techmeme.com/events
+X-ALT-DESC;FMTTYPE=text/html:<!DOCTYPE html PUBLIC "-//W3C//DTD XH
+ TML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-stric
+ t.dtd"><html><head><title>TechEx Global</title></head><body><p><a
+  href='https://www.techmeme.com/r2/techexevent.com_global_-uBchu8
+ Js.htm?cal=1'>TechEx Global</a></p><p>From <a href='http://www.te
+ chmeme.com/'>Techmeme</a>'s <a href='http://www.techmeme.com/even
+ ts'>event calendar</a></p></body></html>
+X-MICROSOFT-CDO-BUSYSTATUS:FREE
+STATUS:CONFIRMED
+PRIORITY:5
+SEQUENCE:3313699
+END:VEVENT
+END:VCALENDAR

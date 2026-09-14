@@ -68,3 +68,9 @@ _Avoid_: calendar, agenda
 A startup event with a name, date, location and link. Exists independently of any company;
 companies may attend it.
 _Avoid_: meetup, conference
+
+**Attendance**:
+A Source's own statement that a Company Profile takes part in an Event — hosting it, presenting
+at it. Never inferred. An Event one of the owner's Kept Company Profiles attends is marked
+important in the Diary; an Event with no known Attendance is still shown.
+_Avoid_: participant, guest, RSVP

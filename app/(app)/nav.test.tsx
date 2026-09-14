@@ -8,7 +8,13 @@ vi.mock("next/navigation", () => ({
 import { usePathname } from "next/navigation";
 import { Nav } from "./nav";
 
-const LINKS = ["Deck", "Watchlist", "News", "Settings"] as const;
+const LINKS = [
+  ["Deck", "/deck"],
+  ["Watchlist", "/watchlist"],
+  ["News", "/news"],
+  ["Diary", "/diary"],
+  ["Settings", "/settings"],
+] as const;
 
 beforeEach(() => {
   vi.mocked(usePathname).mockReset();
@@ -20,7 +26,7 @@ afterEach(() => {
 
 /** Which of the nav's links carry `aria-current="page"`, by name. */
 function currentLinks(): string[] {
-  return LINKS.filter(
+  return LINKS.map(([name]) => name).filter(
     (name) =>
       screen.getByRole("link", { name }).getAttribute("aria-current") ===
       "page",
@@ -28,38 +34,35 @@ function currentLinks(): string[] {
 }
 
 describe("Nav", () => {
-  it("links to the Deck, the Watchlist, News and Settings, in that order", () => {
+  it("links to the Deck, the Watchlist, News, the Diary and Settings, in that order", () => {
     vi.mocked(usePathname).mockReturnValue("/deck");
 
     render(<Nav />);
 
     expect(
       screen.getAllByRole("link").map((link) => link.getAttribute("href")),
-    ).toEqual(["/deck", "/watchlist", "/news", "/settings"]);
+    ).toEqual(LINKS.map(([, path]) => path));
   });
 
-  it("marks the Deck link with aria-current when on the Deck", () => {
+  it.each(LINKS)(
+    "marks only the %s link with aria-current when on %s",
+    (current, path) => {
+      vi.mocked(usePathname).mockReturnValue(path);
+
+      render(<Nav />);
+
+      expect(currentLinks()).toEqual([current]);
+    },
+  );
+
+  it("links each entry to its own route", () => {
     vi.mocked(usePathname).mockReturnValue("/deck");
 
     render(<Nav />);
 
-    expect(currentLinks()).toEqual(["Deck"]);
-  });
-
-  it("marks the Watchlist link with aria-current when on the Watchlist", () => {
-    vi.mocked(usePathname).mockReturnValue("/watchlist");
-
-    render(<Nav />);
-
-    expect(currentLinks()).toEqual(["Watchlist"]);
-  });
-
-  it("marks the News link with aria-current when on News", () => {
-    vi.mocked(usePathname).mockReturnValue("/news");
-
-    render(<Nav />);
-
-    expect(currentLinks()).toEqual(["News"]);
+    for (const [name, path] of LINKS) {
+      expect(screen.getByRole("link", { name })).toHaveAttribute("href", path);
+    }
   });
 
   it("marks the Settings link with aria-current when on Settings", () => {

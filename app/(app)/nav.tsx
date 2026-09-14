@@ -35,6 +35,13 @@ export function Nav() {
       </Link>
       <Link
         className={styles.navLink}
+        href="/diary"
+        aria-current={isCurrentRoute("/diary") ? "page" : undefined}
+      >
+        Diary
+      </Link>
+      <Link
+        className={styles.navLink}
         href="/settings"
         aria-current={isCurrentRoute("/settings") ? "page" : undefined}
       >
