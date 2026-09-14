@@ -55,5 +55,5 @@ Three paths are the exception and always need Jack's own approval, listed in
 because reverting a commit does not unmake a schema change; and CODEOWNERS, because a rule
 must not be editable by what it constrains.
 
-See ADR 0010, which supersedes ADR 0001. The `agent-harness` ADRs that ADR 0001 referred to
+See ADR 0012, which supersedes ADR 0001. The `agent-harness` ADRs that ADR 0001 referred to
 are archived along with that repo; `foreman` replaced it.

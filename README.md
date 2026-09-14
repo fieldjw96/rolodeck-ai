@@ -7,7 +7,7 @@ now the product; every line of it is written by Runs.
 The supervisor is [`foreman`](https://github.com/fieldjw96/foreman), which replaced
 `agent-harness` on 2026-09-10. Most pull requests here merge themselves once the checks are
 green, the review Gate has approved, and the branch is current; the exceptions are in
-`.github/CODEOWNERS` and the reasoning is in ADR 0010.
+`.github/CODEOWNERS` and the reasoning is in ADR 0012.
 
 See `CLAUDE.md` for the rules an agent works under here, `CONTEXT.md` for vocabulary, and
 `docs/adr/` for why the merge and data-sourcing decisions were made this way.
