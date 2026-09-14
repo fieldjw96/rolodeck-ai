@@ -254,9 +254,18 @@ jobs:
             contradictions of an accepted ADR. Style, naming, simplification and
             efficiency suggestions belong in inline comments and must not by themselves
             hold up a pull request.
+          # 40 was not enough. A large diff exhausts it before the reviewer writes its
+          # verdict, and the job then fails with no verdict at all, which posts a red
+          # `review` check on a pull request the Gate had already approved: #132 was
+          # APPROVED and BLOCKED at the same time, by a reviewer that ran out of budget
+          # rather than by anything wrong with the code. #117 died the same way.
+          #
+          # A review that reads 37 files needs room to read them. The cost of a higher cap
+          # is a slower review; the cost of too low a cap is a pull request that cannot
+          # merge and a Run sent to fix code that was never broken.
           claude_args: |
             --model claude-sonnet-5
-            --max-turns 40
+            --max-turns 120
             --allowedTools "Read,Grep,Glob,Write,Bash(cat:*),Bash(git diff:*),Bash(git log:*),Bash(git show:*),mcp__github_inline_comment__create_inline_comment"
 
       # continue-on-error above means a crashing agent step no longer costs the job its
