@@ -83,21 +83,74 @@ This is a standard Next.js App Router project. `vercel.json` pins the install co
 build command (`npm run build`) and the output directory (`.next`); `package.json`'s
 `engines.node` pins the Node version, so Vercel builds with the same one CI does.
 
-Deploying is: create a Vercel project pointed at this repository, set every variable from
-`.env.example` in the Vercel project's Environment Variables with real values from the
-Supabase dashboard (never the placeholders), and deploy. Only the `NEXT_PUBLIC_`-prefixed
-ones are safe to also expose to Preview or Development environments; the rest —
-`SUPABASE_SECRET_KEY`, `DATABASE_URL`, `SUPABASE_DB_URL`, `GNEWS_API_KEY` — are server-only per
-`CLAUDE.md` and belong in Production alone. `GNEWS_API_KEY` is only read by
-`npm run ingest:news` on the server laptop; the deployed app never needs it, so it can be left
-out of Vercel entirely. `ROLODECK_OWNER_ID` comes from running
-`npm run account:provision` once, against the real project, before the first deploy matters.
+**Merging to `main` is deploying.** `.github/workflows/deploy.yml` runs on every push to `main`
+and on nothing else, and stops at the first step that fails:
 
-The `build-with-documented-env` job in CI is what keeps this list honest: it builds with only
+1. Installs dependencies and the smoke test's browser, checks every secret below is present
+   and that both database URLs are Supabase pooler URLs, and links the Vercel project. Nothing
+   in production has changed yet, so a missing secret costs nothing.
+2. Applies pending migrations with `npm run db:migrate`. Production is a real Supabase
+   project, so `db/testing/supabase-shim.sql` is never applied to it.
+3. Sets the four variables the app reads in Vercel's Production environment, and checks the two
+   browser-visible ones round-trip exactly.
+4. Deploys with `vercel deploy --prod`.
+5. Runs `npm run smoke` against https://rolodeck-ai.vercel.app.
+
+A failed migration means no deploy. Any failure opens an issue titled
+`Deploy to production failed: <step>` linking the run; while that issue is open, a repeat
+failure comments on it rather than opening a second. See `docs/adr/0014` for why migrations run
+here, unattended, and not when the app boots.
+
+Vercel's own Git integration is not connected, and must stay that way: it deploys the moment a
+commit lands, which would race the migration. `vercel.json` sets `git.deploymentEnabled` to
+`false` so that reconnecting it by mistake still would not deploy on push.
+`scripts/deploy-workflow.test.ts` asserts that, the trigger, the step order and the variables
+below.
+
+### The workflow's secrets
+
+Set these by hand as secrets of a GitHub environment named `production` (Settings →
+Environments), with its deployment branches limited to `main`. That restriction is what keeps
+them from a job on any other branch, including a workflow a pull request adds of its own;
+repository-level secrets would not be withheld from it.
+
+| Secret                                 | What it is                                                                                                                                |
+| -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `MIGRATION_DATABASE_URL`               | The privileged `postgres` connection migrations run as, through the session-mode pooler (`pooler.supabase.com`, port 5432). Not ingest's. |
+| `SUPABASE_POOLER_URL`                  | The pooler URL the deployed app connects with; set in Vercel as both `DATABASE_URL` and `SUPABASE_DB_URL`.                                |
+| `NEXT_PUBLIC_SUPABASE_URL`             | The project URL, as in `.env.example`.                                                                                                    |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | The publishable key, as in `.env.example`.                                                                                                |
+| `VERCEL_TOKEN`                         | A Vercel access token for the account that owns the `rolodeck-ai` project.                                                                |
+| `ROLODECK_SMOKE_EMAIL`                 | The account `npm run smoke` signs in as.                                                                                                  |
+| `ROLODECK_SMOKE_PASSWORD`              | Its password.                                                                                                                             |
+
+Both database URLs must be pooler URLs, and the workflow refuses anything else before it
+touches production. Supabase's direct host `db.<ref>.supabase.co` is IPv6-only, and neither
+GitHub's runners nor Vercel's functions have IPv6 outbound.
+
+`SUPABASE_SECRET_KEY` is deliberately not among them, and neither is `GNEWS_API_KEY`: the
+running app reads neither. Both stay on the server laptop, for `npm run account:provision` and
+ingest. `ROLODECK_OWNER_ID` comes from running `npm run account:provision` once, against the
+real project.
+
+The `build-with-documented-env` job in CI keeps `.env.example` honest: it builds with only
 `.env.example`'s variables set, in a job with nothing else in its environment, so a variable
-the app secretly needed but nobody documented fails there instead of on a fresh Vercel
-project. Actually creating the Vercel project and connecting it to Jack's account is a manual
-step outside any Ticket's scope.
+the app secretly needed but nobody documented fails there instead of in production.
+
+### Break glass: deploying by hand
+
+`C:\agent-runs\deploy-rolodeck.ps1` on the server laptop deploys the current `origin/main`
+from there, reading `C:\agent-secrets\rolodeck-ai.env`. Use it when GitHub Actions is down, or
+when the workflow itself is what broke:
+
+```
+powershell -ExecutionPolicy Bypass -File C:\agent-runs\deploy-rolodeck.ps1
+```
+
+It sets the same four variables and deploys, but it does **not** apply migrations. If `main`
+has any production lacks, run `npm run db:migrate` against production first. Its comments
+record the two failures the workflow is built not to repeat: a UTF-8 BOM that PowerShell
+prepends to a piped value, and the IPv6-only direct database host.
 
 ## The Profiles API
 

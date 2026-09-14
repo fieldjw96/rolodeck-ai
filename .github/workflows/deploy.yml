@@ -1,0 +1,272 @@
+# Ticket #137: merging to `main` applies pending migrations to production and then deploys,
+# in that order, as separate steps. Nothing else deploys this repo automatically. Vercel's own
+# Git integration is disconnected, and `vercel.json` turns its push deploys off as well,
+# because a push-triggered build would race the migration. See docs/adr/0014.
+#
+# The ordering guarantee is plain step semantics: a failed step skips every step after it
+# unless that step says otherwise, and only the failure report does. A failed migration
+# therefore means no deploy. `scripts/deploy-workflow.test.ts` asserts that, and every other
+# property below that the ADR depends on, so a later edit that breaks one fails CI.
+#
+# `main` only, three ways, any one of which is enough:
+#   1. the only trigger is a push to `main`;
+#   2. the job's `if:` repeats that exactly, so a trigger added later still runs nothing;
+#   3. the job runs in the `production` environment. Its secrets live there, and that
+#      environment's deployment branches are restricted to `main`, so GitHub will not hand
+#      them to a job from any other ref. That includes a workflow a pull request adds of its
+#      own, which neither 1 nor 2 can stop, since it would not be this file.
+
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+# Two merges close together must not interleave: the second run's migration landing while the
+# first is mid-deploy. A run in progress is never cancelled, because a cancelled run can stop
+# between migrating and deploying. GitHub does drop a queued run when a newer one arrives,
+# which is harmless: the newer commit contains the older one.
+concurrency:
+  group: production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 30
+    env:
+      PRODUCTION_URL: https://rolodeck-ai.vercel.app
+      # Pinned, so the CLI flags below are the ones checked when this was written.
+      VERCEL_CLI: vercel@59.17.0
+    # Secrets are handed to the steps that need them, by name, and never at job level:
+    # `npm ci` runs dependencies' install scripts, and those have no business seeing them.
+    steps:
+      - id: checkout
+        name: Check out main
+        uses: actions/checkout@v6
+
+      - id: setup_node
+        name: Set up Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - id: install
+        name: Install dependencies
+        run: npm ci
+
+      # Before the migration rather than just before the smoke test: everything that can fail
+      # without touching production fails first, so a flaky download cannot leave production
+      # migrated and undeployed.
+      - id: browsers
+        name: Install the smoke test browser
+        run: npx playwright install --with-deps chromium
+
+      - id: preflight
+        name: Check the production secrets
+        env:
+          MIGRATION_DATABASE_URL: ${{ secrets.MIGRATION_DATABASE_URL }}
+          SUPABASE_POOLER_URL: ${{ secrets.SUPABASE_POOLER_URL }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          ROLODECK_SMOKE_EMAIL: ${{ secrets.ROLODECK_SMOKE_EMAIL }}
+          ROLODECK_SMOKE_PASSWORD: ${{ secrets.ROLODECK_SMOKE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          missing=""
+          for name in MIGRATION_DATABASE_URL SUPABASE_POOLER_URL NEXT_PUBLIC_SUPABASE_URL \
+                      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY VERCEL_TOKEN \
+                      ROLODECK_SMOKE_EMAIL ROLODECK_SMOKE_PASSWORD; do
+            [ -n "${!name}" ] || missing="$missing $name"
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::Missing secrets in the production environment:$missing"
+            exit 1
+          fi
+
+          # Supabase's direct host, db.<ref>.supabase.co, is IPv6-only, and neither GitHub's
+          # runners nor Vercel's functions have IPv6 outbound. A direct URL does not fail here:
+          # it fails later, as "getaddrinfo ENOTFOUND", after the step that needed it has
+          # already started. deploy-rolodeck.ps1 records the Vercel half of this.
+          for name in MIGRATION_DATABASE_URL SUPABASE_POOLER_URL; do
+            case "${!name}" in
+              *pooler.supabase.com*) ;;
+              *)
+                echo "::error::$name is not a Supabase pooler URL. The direct host is IPv6-only and unreachable from here and from Vercel."
+                exit 1
+                ;;
+            esac
+          done
+
+          # 6543 is the transaction-mode pooler, which hands each statement whatever backend
+          # is free. Migrations want one session start to finish: use port 5432.
+          case "$MIGRATION_DATABASE_URL" in
+            *pooler.supabase.com:6543*)
+              echo "::error::MIGRATION_DATABASE_URL uses the transaction-mode pooler (6543). Migrations need the session-mode pooler on 5432."
+              exit 1
+              ;;
+          esac
+          echo "Every production secret is present, and both database URLs use the pooler."
+
+      - id: link
+        name: Link the Vercel project
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          set -euo pipefail
+          # The CLI reads VERCEL_TOKEN from the environment, so the token never appears on a
+          # command line. Assigned rather than echoed inline, so a bad token fails here, by name.
+          who=$(npx --yes "$VERCEL_CLI" whoami)
+          echo "Deploying as $(printf '%s' "$who" | tail -n 1)"
+          npx --yes "$VERCEL_CLI" link --yes --project rolodeck-ai > /dev/null
+          # `vercel link` can write a live OIDC token into .env.local. Nothing reads it here.
+          rm -f .env.local
+
+      # Production is a real Supabase project, so db/testing/supabase-shim.sql is never applied
+      # here: it exists for scratch Postgres that lacks Supabase's roles and auth schema.
+      #
+      # drizzle-kit exits non-zero when a migration fails, which is all the ordering needs, but
+      # its progress spinner swallows the Postgres error itself. A red step here with no reason
+      # in the log is expected: reproduce with `npm run db:migrate` against a copy.
+      - id: migrate
+        name: Apply pending migrations
+        env:
+          DATABASE_URL: ${{ secrets.MIGRATION_DATABASE_URL }}
+        run: npm run db:migrate
+
+      # The same four variables deploy-rolodeck.ps1 sets, and no more: the running app reads
+      # nothing else, and a key it does not read has no business on a public host. Both
+      # database variables are the pooler URL, for the IPv6 reason above.
+      - id: environment
+        name: Set the production environment variables
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+          DATABASE_URL: ${{ secrets.SUPABASE_POOLER_URL }}
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_POOLER_URL }}
+        run: |
+          set -euo pipefail
+
+          # Through stdin, never --value, which would put a live credential on a command line.
+          # printf '%s' rather than echo, so no trailing newline becomes part of the value. The
+          # manual script's first deploy stored a BOM as the first character of
+          # NEXT_PUBLIC_SUPABASE_URL, and every sign-in failed against a URL that looked right.
+          set_var() {
+            printf '%s' "${!1}" \
+              | npx --yes "$VERCEL_CLI" env add "$1" production --force --type "$2" --yes > /dev/null
+            echo "set $1 ($2)"
+          }
+          set_var NEXT_PUBLIC_SUPABASE_URL config
+          set_var NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY config
+          set_var DATABASE_URL secret
+          set_var SUPABASE_DB_URL secret
+
+          # Verify rather than trust: a wrong value deploys perfectly and fails only at sign-in.
+          # Secret-typed values cannot be pulled back, so only the config ones can be checked.
+          pulled="$RUNNER_TEMP/vercel-verify.env"
+          trap 'rm -f "$pulled"' EXIT
+          npx --yes "$VERCEL_CLI" env pull "$pulled" --environment production --yes > /dev/null
+          for name in NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY; do
+            stored=$(grep -m1 "^${name}=" "$pulled" | cut -d= -f2- || true)
+            stored=${stored#\"}
+            stored=${stored%\"}
+            sent=${!name}
+            if [ "$stored" != "$sent" ]; then
+              echo "::error::$name did not round-trip: sent ${#sent} characters, stored ${#stored}."
+              exit 1
+            fi
+            echo "verified $name round-trips exactly"
+          done
+
+      # `--prod` waits for the build and for the production domain to be moved onto the new
+      # deployment before it exits, so the smoke test below reaches this deployment and not
+      # the previous one.
+      - id: deploy
+        name: Deploy to Vercel production
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          set -euo pipefail
+          url=$(npx --yes "$VERCEL_CLI" deploy --prod --yes)
+          echo "Deployed $url, now serving $PRODUCTION_URL"
+
+      # Against the production domain rather than the deployment's own URL: Vercel's standard
+      # deployment protection puts a Vercel login in front of the latter, which would fail
+      # every run for a reason that has nothing to do with the app. Read-only, so safe to
+      # run on every merge; see scripts/smoke.ts.
+      - id: smoke
+        name: Smoke test the deployment
+        env:
+          ROLODECK_SMOKE_EMAIL: ${{ secrets.ROLODECK_SMOKE_EMAIL }}
+          ROLODECK_SMOKE_PASSWORD: ${{ secrets.ROLODECK_SMOKE_PASSWORD }}
+        run: npm run smoke -- "$PRODUCTION_URL"
+
+      # A broken deploy arrives in the same queue as everything else, not as silence. While an
+      # issue from an earlier failure is still open, a repeat failure comments on it instead
+      # of opening another.
+      #
+      # A job GitHub never starts (the environment refusing it, say) reaches no step, so it
+      # opens nothing; that shows only as a red run on the commit.
+      - id: report
+        name: Open an issue for the failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          # Every step above appears here; the test checks that none is left out.
+          FAILED_STEP: >-
+            ${{
+            steps.checkout.outcome == 'failure' && 'Check out main' ||
+            steps.setup_node.outcome == 'failure' && 'Set up Node' ||
+            steps.install.outcome == 'failure' && 'Install dependencies' ||
+            steps.browsers.outcome == 'failure' && 'Install the smoke test browser' ||
+            steps.preflight.outcome == 'failure' && 'Check the production secrets' ||
+            steps.link.outcome == 'failure' && 'Link the Vercel project' ||
+            steps.migrate.outcome == 'failure' && 'Apply pending migrations' ||
+            steps.environment.outcome == 'failure' && 'Set the production environment variables' ||
+            steps.deploy.outcome == 'failure' && 'Deploy to Vercel production' ||
+            steps.smoke.outcome == 'failure' && 'Smoke test the deployment' ||
+            'an unidentified step'
+            }}
+        run: |
+          set -euo pipefail
+          prefix="Deploy to production failed"
+          run_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          body="$RUNNER_TEMP/deploy-failure.md"
+
+          {
+            printf 'The **%s** step failed deploying `%s` from `main`.\n\n' "$FAILED_STEP" "$GITHUB_SHA"
+            printf 'Run: %s\n\n' "$run_url"
+            printf '%s\n' \
+              'Each step stops the ones after it. A failure up to and including *Apply pending' \
+              'migrations* deployed nothing, and production still serves the previous deployment.' \
+              'Drizzle applies every pending migration in one transaction, so a failed migration' \
+              'also left the schema exactly as it was.' \
+              'A failure after it leaves the schema ahead of the running code. A failed *Smoke' \
+              'test the deployment* means the new deployment is live and broken; promoting the' \
+              'previous one in the Vercel dashboard is the rollback.' \
+              '' \
+              'A failed migration shows no Postgres error in the log, because drizzle-kit hides' \
+              'it: reproduce with `npm run db:migrate` against a copy of production.'
+          } > "$body"
+
+          existing=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --limit 200 \
+                       --json number,title \
+                     | jq -r --arg prefix "$prefix" \
+                         '[.[] | select(.title | startswith($prefix))][0].number // empty')
+
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --repo "$GITHUB_REPOSITORY" --body-file "$body"
+            echo "Commented on the open issue #$existing rather than opening a second."
+          else
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$prefix: $FAILED_STEP" \
+              --body-file "$body"
+          fi
