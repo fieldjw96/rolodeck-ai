@@ -20,7 +20,8 @@ The owner's stated preferences, which rank the Deck: sectors, stages, area, excl
 _Avoid_: settings, preferences, brief
 
 **Deck**:
-The ordered set of Company Profiles a session works through.
+The ordered set of Company Profiles a session works through, ranked by the User Profile. Every
+Company Profile not yet swiped appears except those in an excluded Sector. See `docs/adr/0011`.
 _Avoid_: feed, list, queue
 
 **Keep** / **Pass**:
@@ -52,6 +53,12 @@ _Avoid_: feed, provider, site
 **News**:
 Articles about a Kept Company Profile.
 _Avoid_: dispatch, feed, updates
+
+**Confidence**:
+How sure News is that an article is about the Kept Company Profile it is attributed to, from 0
+to 1. Stored for every candidate article; only those at or above the display threshold are
+shown. See `docs/adr/0010`.
+_Avoid_: relevance, score, match quality
 
 **Diary**:
 The calendar of Events.

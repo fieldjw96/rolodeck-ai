@@ -21,6 +21,7 @@ type Profile = {
   description: string;
   sector: string;
   stage: string;
+  location: string | null;
 };
 
 const acme: Profile = {
@@ -29,6 +30,7 @@ const acme: Profile = {
   description: "Widgets, but faster.",
   sector: "Hardware",
   stage: "Seed",
+  location: "San Francisco, CA",
 };
 
 const globex: Profile = {
@@ -37,6 +39,7 @@ const globex: Profile = {
   description: "Logistics for the last mile.",
   sector: "Logistics",
   stage: "Series A",
+  location: null,
 };
 
 function jsonResponse(body: unknown): Response {
@@ -103,6 +106,19 @@ describe("the Deck", () => {
     expect(screen.getByText("Widgets, but faster.")).toBeInTheDocument();
     expect(screen.getByText("Hardware")).toBeInTheDocument();
     expect(screen.getByText("Seed")).toBeInTheDocument();
+    expect(screen.getByText("San Francisco, CA")).toBeInTheDocument();
+  });
+
+  it("renders no Location field for a Profile whose location is unknown", async () => {
+    stubFetch({
+      "GET /api/profiles": { profiles: [globex], next_cursor: null },
+    });
+
+    render(<Deck />);
+
+    await screen.findByRole("heading", { name: "Globex" });
+
+    expect(screen.queryByText("Location")).not.toBeInTheDocument();
   });
 
   it("shows a designed loading state while the first page is in flight, rather than nothing at all", async () => {

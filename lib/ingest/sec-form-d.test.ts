@@ -117,6 +117,19 @@ describe("parseFormDFiling, against captured filings", () => {
     );
   });
 
+  it("carries the filing's stated city and state as a scraped location", () => {
+    const result = parseFormDFiling(fixture("sec-form-d-elder-swamp-club"));
+
+    expect(result.outcome).toBe("profile");
+    if (result.outcome !== "profile") return;
+
+    expect(result.profile.input.location).toBe("San Francisco, CA");
+    expect(result.profile.attribution.location).toEqual({
+      ...fixture("sec-form-d-elder-swamp-club").capture,
+      provenance: "scraped",
+    });
+  });
+
   it("carries no website, because a Form D states none", () => {
     const result = parseFormDFiling(fixture("sec-form-d-sporty-and-rich"));
 
@@ -212,6 +225,7 @@ describe("where `stage` comes from, and what it is attributed", () => {
       sector: "scraped",
       stage: "scraped",
       website: null,
+      location: "scraped",
     });
     expect(toProfileProvenance(inferred.profile.attribution).stage).toBe(
       "enriched",

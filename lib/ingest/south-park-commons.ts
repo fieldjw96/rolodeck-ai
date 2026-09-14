@@ -97,6 +97,8 @@ function parseCompany(
         // Derived from the fact of appearing on this page, not read off it. See above.
         stage: attribute(capture, "enriched"),
         website: null,
+        // Never stated by South Park Commons's own page.
+        location: null,
       },
     },
   };

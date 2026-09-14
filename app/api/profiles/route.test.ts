@@ -139,6 +139,7 @@ describe("GET /api/profiles", () => {
       "created_at",
       "description",
       "id",
+      "location",
       "name",
       "provenance",
       "sector",
@@ -151,6 +152,7 @@ describe("GET /api/profiles", () => {
       sector: "enriched",
       stage: "jack",
       website: null,
+      location: null,
     });
   });
 
@@ -226,7 +228,7 @@ describe("GET /api/profiles with input it will not accept", () => {
     ["an empty cursor", "?cursor="],
     [
       "a cursor with the timestamp tampered with",
-      `?cursor=${Buffer.from("yesterday 3f0d2f4e-1f6a-4a5c-9f42-6f1e0c7d2b31").toString("base64url")}`,
+      `?cursor=${Buffer.from("0 yesterday 3f0d2f4e-1f6a-4a5c-9f42-6f1e0c7d2b31").toString("base64url")}`,
     ],
   ])("answers 422 naming cursor for %s", async (_description, query) => {
     const response = await deal(query);

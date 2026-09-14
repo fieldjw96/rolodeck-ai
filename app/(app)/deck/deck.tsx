@@ -12,6 +12,7 @@ type Profile = {
   description: string;
   sector: string;
   stage: string;
+  location: string | null;
 };
 
 type ProfilesPage = {
@@ -255,6 +256,7 @@ export function Deck() {
         description={profile.description}
         sector={profile.sector}
         stage={profile.stage}
+        location={profile.location}
       />
 
       {/*

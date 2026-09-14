@@ -16,6 +16,7 @@ const MIXED_PROVENANCE: ProfileProvenance = {
   sector: "scraped",
   stage: "scraped",
   website: "enriched",
+  location: null,
 };
 
 let scratch: ScratchDb;
@@ -98,6 +99,26 @@ describe("profiles provenance", () => {
     expect(written?.provenance.website).toBeNull();
   });
 
+  it("stores a null provenance for a Profile whose location is unknown, and still satisfies the constraint", async () => {
+    const [written] = await scratch.db
+      .insert(profiles)
+      .values({
+        ownerId: JACK,
+        source: "test",
+        name: "Nowhere Co",
+        description: "No location stated by its Source.",
+        sector: "other",
+        stage: "Pre-seed",
+        website: null,
+        location: null,
+        provenance: { ...MIXED_PROVENANCE, website: null, location: null },
+      })
+      .returning();
+
+    expect(written?.location).toBeNull();
+    expect(written?.provenance.location).toBeNull();
+  });
+
   it("rejects a Profile field left without provenance", async () => {
     const missingSector: Partial<ProfileProvenance> = { ...MIXED_PROVENANCE };
     delete missingSector.sector;
@@ -166,6 +187,23 @@ describe("profiles provenance", () => {
         stage: "Seed",
         website: "https://sprocket.example",
         provenance: { ...MIXED_PROVENANCE, website: null },
+      }),
+    );
+
+    expect(violated).toBe("profiles_provenance_covers_every_field");
+  });
+
+  it("rejects a location left unattributed", async () => {
+    const violated = await constraintViolatedBy(
+      scratch.db.insert(profiles).values({
+        ownerId: JACK,
+        source: "test",
+        name: "Sprocket",
+        description: "Developer tooling for warehouse robotics.",
+        sector: "hardware-robotics",
+        stage: "Seed",
+        location: "Oakland, CA",
+        provenance: { ...MIXED_PROVENANCE, location: null },
       }),
     );
 
