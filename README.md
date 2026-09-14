@@ -1,11 +1,16 @@
 # rolodeck-ai
 
-A fully AI-authored build of the [rolodeck](https://github.com/fieldjw96/rolodeck) concept:
-a swipeable deck of Bay Area startup profiles. Built through `agent-harness` Runs with
-auto-merge on, as a stress test of the dispatcher running unattended.
+A fully AI-authored swipeable deck of Bay Area startup profiles, deployed at
+https://rolodeck-ai.vercel.app. It began as a stress test of an unattended dispatcher and is
+now the product; every line of it is written by Runs.
+
+The supervisor is [`foreman`](https://github.com/fieldjw96/foreman), which replaced
+`agent-harness` on 2026-09-10. Most pull requests here merge themselves once the checks are
+green, the review Gate has approved, and the branch is current; the exceptions are in
+`.github/CODEOWNERS` and the reasoning is in ADR 0012.
 
 See `CLAUDE.md` for the rules an agent works under here, `CONTEXT.md` for vocabulary, and
-`docs/adr/` for why the auto-merge and data-sourcing decisions were made this way.
+`docs/adr/` for why the merge and data-sourcing decisions were made this way.
 
 ## Prerequisites
 

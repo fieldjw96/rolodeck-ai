@@ -1,12 +1,13 @@
 # Rolodeck AI
 
-A fully AI-authored build of the rolodeck concept: a swipeable deck of Bay Area startup
-profiles. This repo exists as a stress test of the foreman dispatcher running unattended
-with auto-merge on, not as a separate product decision from rolodeck itself.
+A fully AI-authored swipeable deck of Bay Area startup profiles, deployed at
+https://rolodeck-ai.vercel.app. It began as a stress test of an unattended dispatcher and is
+the product now; ADR 0012 records where that changed.
 
-This repo runs on foreman's dispatcher and inherits its vocabulary as-is: Ticket, Lane, Run,
-Gate, Bounce, Blocker and Acceptance Criteria are all defined in `foreman/CONTEXT.md` and are
-not redefined here.
+Runs on this repo are dispatched by `foreman`, whose vocabulary it inherits as-is: Ticket,
+Run, Gate and Acceptance Criteria are defined in `foreman`'s own documentation and are not
+redefined here. Bounce and Lane are not used: a pull request that needs more work gets
+another Run, and there is one kind of agent.
 
 ## Language
 

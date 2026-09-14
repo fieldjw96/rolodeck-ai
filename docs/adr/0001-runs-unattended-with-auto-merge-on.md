@@ -1,5 +1,6 @@
 ---
-status: accepted
+status: superseded
+superseded-by: 0012
 ---
 
 # This repo runs unattended, with auto-merge on, by explicit request
