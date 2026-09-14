@@ -192,6 +192,11 @@ rather than dealing the Deck a second card for the same company. `source` is a l
 naming the Source; `name_key` is the company name case-folded and whitespace-collapsed by
 Postgres itself. See `docs/adr/0008` for why the key is that and not something else.
 
+An update takes the incoming scrape's value and provenance for every field except one whose
+stored provenance is `jack`: a value a human put there keeps both, however often the Source
+runs again. The rule is decided inside the `on conflict` statement itself, not by reading the
+row first.
+
 The connection it writes through is its own: `getIngestDb()` in `db/ingest-connection.ts`, as
 the `rolodeck_ingest` role, built from `ROLODECK_INGEST_DATABASE_URL` rather than the app's own
 `DATABASE_URL`. The app's connection is a member of `authenticated` on purpose; ingest writes

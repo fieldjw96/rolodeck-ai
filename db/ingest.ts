@@ -9,7 +9,13 @@ import {
   type IngestRejection,
   type ProfileInput,
 } from "./profile-input";
-import { profileProvenanceSchema, type ProfileProvenance } from "./provenance";
+import {
+  PROVENANCED_FIELDS,
+  profileProvenanceSchema,
+  type ProfileProvenance,
+  type Provenance,
+  type ProvenancedField,
+} from "./provenance";
 import { profiles } from "./schema";
 
 /**
@@ -87,6 +93,42 @@ export const sourceSchema = z
     /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
     "must be a lowercase slug, like `sec-form-d`",
   );
+
+/**
+ * The Provenance a scrape may never overwrite. Every other value is the default re-ingest
+ * rule working as intended: a company that raised a round should stop reading `pre-seed`.
+ */
+const HUMAN: Provenance = "jack";
+
+/** Whether the stored row's `field` is one a human put there. Reads the row being replaced. */
+const isHuman = (field: ProvenancedField) =>
+  `profiles.provenance ->> '${field}' = '${HUMAN}'`;
+
+/**
+ * A column's `on conflict` value: the incoming scrape's, unless the stored value is `jack`.
+ *
+ * Decided in the statement rather than by reading the row first, so two ingest Runs on one
+ * company cannot both read "scraped" and then race to overwrite a correction that landed
+ * between; docs/adr/0008's idempotency claim rests on Postgres doing the deciding. A stored
+ * provenance that is null or absent compares as NULL, which `case` treats as not `jack`.
+ */
+const scrapedUnlessHuman = (field: ProvenancedField) =>
+  sql.raw(
+    `case when ${isHuman(field)} then profiles.${field} else excluded.${field} end`,
+  );
+
+/**
+ * `provenance` is one jsonb column holding every field's entry, so it is rebuilt field by
+ * field with the same rule rather than replaced: each entry travels with the value it
+ * describes, which keeps `profiles_provenance_covers_every_field` true whichever side won.
+ * Built from `PROVENANCED_FIELDS` so a field added there cannot be silently dropped here.
+ */
+const provenanceUnlessHuman = sql.raw(
+  `jsonb_build_object(${PROVENANCED_FIELDS.map(
+    (field) =>
+      `'${field}', case when ${isHuman(field)} then profiles.provenance -> '${field}' else excluded.provenance -> '${field}' end`,
+  ).join(", ")})`,
+);
 
 /**
  * What a batch did. `inserted` and `updated` are counted separately because that difference
@@ -174,19 +216,21 @@ export async function persistProfiles(
           target: [profiles.ownerId, profiles.source, profiles.nameKey],
           set: {
             // The name too: the key is case- and whitespace-insensitive, so the row keeps
-            // whatever spelling the source most recently used.
-            name: sql`excluded.name`,
-            description: sql`excluded.description`,
-            sector: sql`excluded.sector`,
-            stage: sql`excluded.stage`,
-            website: sql`excluded.website`,
-            location: sql`excluded.location`,
-            provenance: sql`excluded.provenance`,
+            // whatever spelling the source most recently used — unless a human chose it.
+            name: scrapedUnlessHuman("name"),
+            description: scrapedUnlessHuman("description"),
+            sector: scrapedUnlessHuman("sector"),
+            stage: scrapedUnlessHuman("stage"),
+            website: scrapedUnlessHuman("website"),
+            location: scrapedUnlessHuman("location"),
+            provenance: provenanceUnlessHuman,
           },
         })
         // Postgres's own answer to "was this row new?": `xmax` is zero on a freshly inserted
         // tuple and carries the updating transaction's id on one that `do update` replaced.
         // Asking the statement beats reading the table first and racing whatever ran between.
+        // `do update` writes a new tuple even when every field was kept, so a row whose
+        // fields are all `jack` still counts as updated: it existed, and nothing was inserted.
         .returning({ inserted: sql<boolean>`(xmax = 0)` });
 
       if (written?.inserted === true) {
