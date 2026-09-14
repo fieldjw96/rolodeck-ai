@@ -1,20 +1,38 @@
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, notInArray, sql, type SQL } from "drizzle-orm";
 import { z } from "zod";
 
+import { citiesInArea } from "../lib/location/bay-area";
 import type { Database } from "./connection";
 import { profiles, swipes, type Profile, type SwipeDecision } from "./schema";
+import {
+  EMPTY_USER_PROFILE,
+  readSavedUserProfile,
+  type UserProfile,
+} from "./user-profile";
 
 /** The Deck's page size when a request does not ask for one, and the most it may ask for. */
 export const DEFAULT_PAGE_SIZE = 20;
 export const MAX_PAGE_SIZE = 50;
 
 /**
- * Where a page of the Deck resumes. The Deck is ordered newest Profile first, and `created_at`
- * alone is not unique, so the id goes in the cursor as the tiebreak — without it two Profiles
- * written in the same millisecond could straddle a page boundary and one of them would never
- * be dealt.
+ * What each stated preference a Company Profile matches adds to its score, and so to how early
+ * the Deck deals it. The one place the weights live. Powers of two, so no two different sets of
+ * matches ever tie: a Sector match outranks a Stage and an area match together. A Company
+ * Profile matching nothing scores 0 and is still dealt, last. See docs/adr/0011.
  */
-export type DeckCursor = { createdAt: Date; id: string };
+export const DECK_RANK_WEIGHTS = { sector: 4, stage: 2, area: 1 } as const;
+
+const MAX_DECK_SCORE =
+  DECK_RANK_WEIGHTS.sector + DECK_RANK_WEIGHTS.stage + DECK_RANK_WEIGHTS.area;
+
+/**
+ * Where a page of the Deck resumes: the whole of the order the last Profile dealt was in. The
+ * Deck is ordered by score, then newest first, and neither is unique, so the id goes in the
+ * cursor as the final tiebreak. Every column of the order has to be here — leave the score out
+ * and a page would resume from the right age at the wrong rank, repeating some Profiles and
+ * never dealing others.
+ */
+export type DeckCursor = { score: number; createdAt: Date; id: string };
 
 const CURSOR_SEPARATOR = " ";
 
@@ -25,7 +43,9 @@ const CURSOR_SEPARATOR = " ";
  */
 export function encodeCursor(cursor: DeckCursor): string {
   return Buffer.from(
-    `${cursor.createdAt.toISOString()}${CURSOR_SEPARATOR}${cursor.id}`,
+    [cursor.score, cursor.createdAt.toISOString(), cursor.id].join(
+      CURSOR_SEPARATOR,
+    ),
     "utf8",
   ).toString("base64url");
 }
@@ -33,7 +53,15 @@ export function encodeCursor(cursor: DeckCursor): string {
 // `z.guid()` rather than `z.uuid()`: Postgres's `uuid` type accepts any 128 bits laid out as
 // hex, and a boundary that is stricter than the column it guards would reject an id the
 // database itself is perfectly happy to hold.
-const cursorPartsSchema = z.tuple([z.iso.datetime(), z.guid()]);
+const cursorPartsSchema = z.tuple([
+  z
+    .string()
+    .regex(/^\d+$/)
+    .transform(Number)
+    .pipe(z.number().max(MAX_DECK_SCORE)),
+  z.iso.datetime(),
+  z.guid(),
+]);
 
 /** The cursor a request sent back, or null if it is not one this endpoint could have issued. */
 export function decodeCursor(raw: string): DeckCursor | null {
@@ -47,7 +75,11 @@ export function decodeCursor(raw: string): DeckCursor | null {
     return null;
   }
 
-  return { createdAt: new Date(parts.data[0]), id: parts.data[1] };
+  return {
+    score: parts.data[0],
+    createdAt: new Date(parts.data[1]),
+    id: parts.data[2],
+  };
 }
 
 /**
@@ -117,8 +149,47 @@ export type DeckPage = {
 };
 
 /**
+ * `location`'s city as `isBayArea` reads it in `lib/location/bay-area.ts`: everything before
+ * the first comma, trimmed and case-folded, and null for a location with no comma — a bare
+ * state names no city. The ranking tests hold this and `isBayArea` to the same answers.
+ */
+const locationCity = sql`case when strpos(${profiles.location}, ',') > 0 then lower(regexp_replace(split_part(${profiles.location}, ',', 1), '^[[:space:]]+|[[:space:]]+$', '', 'g')) end`;
+
+/**
+ * What the Deck ranks by for an owner who has never saved a User Profile: nothing, so it deals
+ * newest-first. Not `EMPTY_USER_PROFILE` itself, whose `area` is the settings form's starting
+ * value rather than a place anybody chose — ranking by it would reorder a Deck whose owner has
+ * stated nothing. See docs/adr/0011.
+ */
+const NOTHING_STATED: UserProfile = { ...EMPTY_USER_PROFILE, area: "" };
+
+const weighted = (matches: SQL, weight: number) =>
+  sql`case when ${matches} then ${weight}::int else 0 end`;
+
+/**
+ * A Company Profile's score under `userProfile`, as SQL, so the Deck is ordered inside
+ * Postgres rather than by fetching every row. Each empty preference compiles to `false` and
+ * adds nothing, which is how a User Profile that states nothing deals the Deck newest-first
+ * without anyone checking for it.
+ */
+function deckScore(userProfile: UserProfile): SQL<number> {
+  return sql<number>`(${weighted(
+    inArray(profiles.sector, userProfile.sectors),
+    DECK_RANK_WEIGHTS.sector,
+  )} + ${weighted(
+    inArray(profiles.stage, userProfile.stages),
+    DECK_RANK_WEIGHTS.stage,
+  )} + ${weighted(
+    inArray(locationCity, [...citiesInArea(userProfile.area)]),
+    DECK_RANK_WEIGHTS.area,
+  )})`.mapWith(Number);
+}
+
+/**
  * One page of the Deck: the reader's own Profiles, minus the ones they have already Kept or
- * Passed, newest first.
+ * Passed and the ones in a Sector their User Profile excludes, ranked by that User Profile and
+ * newest first within a rank. Ranked rather than filtered: a Profile matching nothing the
+ * owner stated is still dealt, at the bottom. See docs/adr/0011.
  *
  * Ownership and the swipe exclusion are both written out here rather than left to RLS. Per
  * CLAUDE.md the policies are a backstop and never the only control, and the exclusion is not
@@ -132,30 +203,41 @@ export async function readDeckPage(
     cursor,
   }: { userId: string; limit: number; cursor?: DeckCursor },
 ): Promise<DeckPage> {
+  const userProfile =
+    (await readSavedUserProfile(db, userId)) ?? NOTHING_STATED;
+  const score = deckScore(userProfile);
+
   // One more row than asked for: whether it comes back is the whole of the "is there a next
   // page?" question, and it costs one row rather than a second count query.
   const rows = await db
-    .select(deckColumns)
+    .select({ profile: deckColumns, score })
     .from(profiles)
     .where(
       and(
         eq(profiles.ownerId, userId),
+        notInArray(profiles.sector, userProfile.excludedSectors),
         sql`not exists (select 1 from ${swipes} where ${swipes.profileId} = ${profiles.id} and ${swipes.userId} = ${userId})`,
         cursor === undefined
           ? undefined
-          : sql`(${profiles.createdAt}, ${profiles.id}) < (${cursor.createdAt.toISOString()}::timestamptz, ${cursor.id}::uuid)`,
+          : sql`(${score}, ${profiles.createdAt}, ${profiles.id}) < (${cursor.score}::int, ${cursor.createdAt.toISOString()}::timestamptz, ${cursor.id}::uuid)`,
       ),
     )
-    .orderBy(desc(profiles.createdAt), desc(profiles.id))
+    .orderBy(desc(score), desc(profiles.createdAt), desc(profiles.id))
     .limit(limit + 1);
 
   const page = rows.slice(0, limit);
   const last = page.at(-1);
 
   return {
-    profiles: page,
+    profiles: page.map((row) => row.profile),
     nextCursor:
-      rows.length > limit && last !== undefined ? encodeCursor(last) : null,
+      rows.length > limit && last !== undefined
+        ? encodeCursor({
+            score: last.score,
+            createdAt: last.profile.createdAt,
+            id: last.profile.id,
+          })
+        : null,
   };
 }
 
