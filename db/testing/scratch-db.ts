@@ -14,11 +14,16 @@ const MIGRATIONS_FOLDER = fileURLToPath(
   new URL("../migrations", import.meta.url),
 );
 
+export type ScratchRole = "anon" | "authenticated" | "rolodeck_ingest";
+
 export type ScratchDb = {
   db: PgliteDatabase<typeof schema>;
   client: PGlite;
-  /** Switches the session to `role`, presenting `userId` as the signed-in user. */
-  as: (role: "anon" | "authenticated", userId?: string) => Promise<void>;
+  /**
+   * Switches the session to `role`, presenting `userId` as the signed-in user. `rolodeck_ingest`
+   * is ingest's own role, from migration `0008_ingest_role`; it has no signed-in user.
+   */
+  as: (role: ScratchRole, userId?: string) => Promise<void>;
   /** Adds the `auth.users` row that `profiles.owner_id` needs to point at. */
   createUser: (id: string) => Promise<void>;
   /** Returns to the superuser session, which bypasses RLS. */
@@ -45,7 +50,11 @@ export async function createScratchDb(): Promise<ScratchDb> {
     );
   };
 
-  const as = async (role: "anon" | "authenticated", userId?: string) => {
+  // `set role` changes the current user, which is what table privileges and RLS are checked
+  // against, but not the session user. So a session switched this way still passes any check
+  // Postgres makes against the session user — `set role` to some other role, notably. A test of
+  // those has to log in for real; see "logged in as the ingest role" in `db/ingest-role.test.ts`.
+  const as = async (role: ScratchRole, userId?: string) => {
     await reset();
     const claims = userId === undefined ? "" : JSON.stringify({ sub: userId });
     await client.query("select set_config('request.jwt.claims', $1, false)", [

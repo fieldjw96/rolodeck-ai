@@ -1,5 +1,5 @@
-import { closeIngestDb, getIngestDb } from "../db/connection";
 import { persistProfiles, type ProfileCandidate } from "../db/ingest";
+import { closeIngestDb, getIngestDb } from "../db/ingest-connection";
 import {
   parseShowHnPosts,
   showHnSearchResponseSchema,
@@ -13,7 +13,7 @@ import {
  * CI: `lib/ingest/show-hn.test.ts` covers the parsing offline, against committed fixtures, and
  * this is the one place that actually calls the API and the database.
  *
- *     SUPABASE_DB_URL=... ROLODECK_OWNER_ID=... npm run source:show-hn
+ *     ROLODECK_INGEST_DATABASE_URL=... ROLODECK_OWNER_ID=... npm run source:show-hn
  *
  * Exits non-zero when nothing new was inserted — a run that finds zero companies HN has not
  * shown this pipeline before is either a quiet day or a source that has changed shape, and

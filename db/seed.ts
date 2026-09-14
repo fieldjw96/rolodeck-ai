@@ -1,7 +1,7 @@
 import { eq, sql } from "drizzle-orm";
 
 import { SEED_CANDIDATES, SEED_SOURCE } from "../lib/ingest/seed-profiles";
-import { readOwnerId } from "../lib/supabase/env";
+import { readOwnerId } from "../lib/ingest/env";
 import type { Database } from "./connection";
 import { persistProfiles, type IngestReport } from "./ingest";
 import { profiles } from "./schema";

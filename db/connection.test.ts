@@ -39,46 +39,16 @@ describe("the app's connection to Postgres", () => {
 
     expect(() => getDb()).toThrow(/DATABASE_URL/);
   });
-});
 
-describe("ingest's connection to Postgres", () => {
-  it("is made once and handed out again, separately from the app's own connection", async () => {
-    vi.stubEnv("SUPABASE_DB_URL", A_CONNECTION_STRING);
+  it("does not fall back to ingest's connection string when its own is missing", async () => {
     vi.stubEnv("DATABASE_URL", undefined);
+    vi.stubEnv(
+      "ROLODECK_INGEST_DATABASE_URL",
+      "postgres://rolodeck_ingest:secret@localhost:5432/rolodeck",
+    );
 
-    const { getIngestDb } = await freshModule();
+    const { getDb } = await freshModule();
 
-    expect(getIngestDb()).toBe(getIngestDb());
-  });
-
-  it.each([
-    ["is missing", undefined],
-    ["is empty", ""],
-    ["is not a URL at all", "localhost:5432"],
-    ["points somewhere that is not Postgres", "https://example.com/db"],
-  ])("fails naming SUPABASE_DB_URL when it %s", async (_description, value) => {
-    vi.stubEnv("SUPABASE_DB_URL", value);
-
-    const { getIngestDb } = await freshModule();
-
-    expect(() => getIngestDb()).toThrow(/SUPABASE_DB_URL/);
-  });
-
-  it("hands out a new connection after being closed", async () => {
-    vi.stubEnv("SUPABASE_DB_URL", A_CONNECTION_STRING);
-
-    const { getIngestDb, closeIngestDb } = await freshModule();
-
-    const first = getIngestDb();
-    await closeIngestDb();
-    const second = getIngestDb();
-
-    expect(second).not.toBe(first);
-  });
-
-  it("closing before ever connecting does not throw", async () => {
-    const { closeIngestDb } = await freshModule();
-
-    await expect(closeIngestDb()).resolves.toBeUndefined();
+    expect(() => getDb()).toThrow(/DATABASE_URL/);
   });
 });
