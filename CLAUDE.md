@@ -45,6 +45,12 @@ secrets; `DATABASE_URL`, the service role key, and anything else that reaches Po
 Supabase stay off GitHub. Widening that role, or adding a second database credential to
 Actions, needs a new ADR. See ADR 0013.
 
+**The deploy workflow's `production` environment is the second, and ADR 0014 is that ADR.**
+It holds `MIGRATION_DATABASE_URL` and `SUPABASE_POOLER_URL`, as environment secrets whose
+deployment branches are restricted to `main`, for `.github/workflows/deploy.yml` alone. They
+never become repository secrets, and no other workflow names them. The service role key is
+not among them.
+
 **Scraped data is hostile.** Every external field is parsed through a Zod schema at the
 boundary. A site that changes shape must fail loudly, at the edge, naming the field, rather
 than propagating `undefined` into a Profile.
