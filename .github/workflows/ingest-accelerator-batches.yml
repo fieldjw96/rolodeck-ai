@@ -1,0 +1,27 @@
+# Weekly: South Park Commons and AngelPad post new portfolio companies far slower than News or
+# Events go stale. See README.md's "Scheduled runs" for the full list.
+
+name: Ingest - Accelerator batches
+
+on:
+  schedule:
+    - cron: "15 9 * * 1" # Monday 09:15 UTC
+  workflow_dispatch: {}
+
+concurrency:
+  group: ingest-accelerator-batches
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  ingest:
+    uses: ./.github/workflows/ingest-run.yml
+    with:
+      source-name: accelerator-batches
+      npm-script: ingest:accelerators
+    secrets:
+      ROLODECK_INGEST_DATABASE_URL: ${{ secrets.ROLODECK_INGEST_DATABASE_URL }}
+      ROLODECK_OWNER_ID: ${{ secrets.ROLODECK_OWNER_ID }}

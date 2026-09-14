@@ -1,0 +1,100 @@
+# The one place a scheduled ingest workflow's steps are written. Ticket #138: six Sources
+# needed a schedule, and each caller workflow in this directory (ingest-sec-form-d.yml,
+# ingest-accelerator-batches.yml, ingest-show-hn.yml, ingest-events.yml, ingest-news.yml)
+# differs only in its cron, its concurrency group and which npm script it runs — everything
+# below is shared so a fix to how a failure is reported lands once, not five times.
+#
+# `workflow_call` only: this file has no `schedule` or `workflow_dispatch` of its own and
+# cannot be run directly from the Actions tab. Each caller supplies both triggers.
+
+name: Ingest run
+
+on:
+  workflow_call:
+    inputs:
+      source-name:
+        description: What to call this Source in the job summary and in a failure issue's title.
+        required: true
+        type: string
+      npm-script:
+        description: The package.json script this run executes, e.g. ingest:sec-form-d.
+        required: true
+        type: string
+    secrets:
+      ROLODECK_INGEST_DATABASE_URL:
+        required: true
+      ROLODECK_OWNER_ID:
+        required: true
+      # Only sec-form-d reads this; unset for every other caller, and readEdgarContact()
+      # never runs for them so an empty value never matters.
+      SEC_EDGAR_CONTACT:
+        required: false
+      # Only ingest-news reads this; unset for every other caller.
+      GNEWS_API_KEY:
+        required: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      # Every ingest entry point already prints what it did — inserted, updated, rejected,
+      # per Source — and exits non-zero on a run that wrote nothing (see each script's own
+      # comment for why zero rows is a failure, not a quiet day). `tee` keeps that output for
+      # the job summary step below without changing what the process itself does; `pipefail`
+      # keeps this step's own exit code the script's, not `tee`'s.
+      - name: Run ${{ inputs.npm-script }}
+        env:
+          ROLODECK_INGEST_DATABASE_URL: ${{ secrets.ROLODECK_INGEST_DATABASE_URL }}
+          ROLODECK_OWNER_ID: ${{ secrets.ROLODECK_OWNER_ID }}
+          SEC_EDGAR_CONTACT: ${{ secrets.SEC_EDGAR_CONTACT }}
+          GNEWS_API_KEY: ${{ secrets.GNEWS_API_KEY }}
+        run: |
+          set -o pipefail
+          npm run ${{ inputs.npm-script }} 2>&1 | tee /tmp/ingest-output.log
+
+      # Runs whether the step above passed or failed, so a failed run's rejections are in the
+      # summary too, not just a run that happened to succeed. The log may not exist at all if
+      # a step before the script ran — checkout, setup-node, npm ci — is what failed instead;
+      # that is still worth a summary saying so, rather than this step itself failing on a
+      # missing file and burying the real cause in the job's raw log.
+      - name: Record what this run did
+        if: always()
+        run: |
+          {
+            echo "### ${{ inputs.source-name }}"
+            echo ""
+            echo '```'
+            cat /tmp/ingest-output.log 2>/dev/null || echo "(no output: a step before the script ran did not complete)"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # One open issue per Source, not one per failed run: a Source down for a week must
+      # produce one issue to read, not seven to ignore. Matched on the exact title a prior
+      # run of this same Source would have used, so a second failure while the first issue is
+      # still open adds a comment instead of opening a duplicate.
+      - name: Open or update an issue for a failed run
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          title="Ingest failure: ${{ inputs.source-name }}"
+          run_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+
+          existing=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open \
+            --search "\"$title\" in:title" --json number,title \
+            --jq --arg t "$title" '[.[] | select(.title == $t)] | .[0].number // empty')
+
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --repo "$GITHUB_REPOSITORY" \
+              --body "Failed again: $run_url"
+          else
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" \
+              --body "The scheduled ingest run for **${{ inputs.source-name }}** failed. See the run: $run_url"
+          fi

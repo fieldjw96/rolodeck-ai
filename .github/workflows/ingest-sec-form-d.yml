@@ -1,0 +1,29 @@
+# Weekly: SEC Form D filings change as slowly as a Company Profile itself does. See
+# README.md's "Scheduled runs" for the full list and lib/ingest/throttle.ts for why EDGAR
+# gets a whole week between requests rather than a daily poll.
+
+name: Ingest - SEC Form D
+
+on:
+  schedule:
+    - cron: "0 9 * * 1" # Monday 09:00 UTC
+  workflow_dispatch: {}
+
+concurrency:
+  group: ingest-sec-form-d
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  ingest:
+    uses: ./.github/workflows/ingest-run.yml
+    with:
+      source-name: sec-form-d
+      npm-script: ingest:sec-form-d
+    secrets:
+      ROLODECK_INGEST_DATABASE_URL: ${{ secrets.ROLODECK_INGEST_DATABASE_URL }}
+      ROLODECK_OWNER_ID: ${{ secrets.ROLODECK_OWNER_ID }}
+      SEC_EDGAR_CONTACT: ${{ secrets.SEC_EDGAR_CONTACT }}
