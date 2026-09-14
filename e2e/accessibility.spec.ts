@@ -26,6 +26,40 @@ async function stubProfiles(page: Page): Promise<void> {
   });
 }
 
+/** One important Event and one not, so the Diary's marking is on the page axe inspects. */
+const EVENTS = [
+  {
+    id: "22222222-2222-2222-2222-222222222222",
+    name: "Acme Demo Day",
+    start_date: "2999-01-01",
+    end_date: "2999-01-02",
+    location: "San Francisco",
+    url: "https://example.com/demo-day",
+    important: true,
+    kept_companies: [PROFILE.name],
+  },
+  {
+    id: "33333333-3333-3333-3333-333333333333",
+    name: "Robotics Meetup",
+    start_date: "2999-02-01",
+    end_date: null,
+    location: null,
+    url: "https://example.com/meetup",
+    important: false,
+    kept_companies: [],
+  },
+];
+
+async function stubEvents(page: Page): Promise<void> {
+  await page.route("**/api/events*", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ events: EVENTS }),
+    });
+  });
+}
+
 /** One article about the same Profile, for the News page's own checks. */
 async function stubNews(page: Page): Promise<void> {
   await page.route("**/api/news", async (route) => {
@@ -66,6 +100,7 @@ async function openSignedInPage(
 
   const page = await context.newPage();
   await stubProfiles(page);
+  await stubEvents(page);
   await stubNews(page);
   return page;
 }
@@ -75,6 +110,32 @@ async function openSignedInPage(
 async function expectVisibleFocusOutline(locator: Locator): Promise<void> {
   await expect(locator).toHaveCSS("outline-style", "solid");
 }
+
+test("/diary has no critical or serious accessibility violations, and marks the important Event in words", async ({
+  browser,
+  app,
+}) => {
+  const page = await openSignedInPage(browser, app);
+  await page.goto(`${app.baseURL}/diary`);
+  await expect(
+    page.getByRole("heading", { level: 2, name: "Acme Demo Day" }),
+  ).toBeVisible();
+  await expect(page.getByText("Kept company attending:")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Diary" })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+
+  const results = await new AxeBuilder({ page }).analyze();
+  const seriousOrWorse = results.violations.filter(
+    (violation) =>
+      violation.impact === "critical" || violation.impact === "serious",
+  );
+
+  expect(seriousOrWorse, JSON.stringify(seriousOrWorse, null, 2)).toEqual([]);
+
+  await page.context().close();
+});
 
 test("/deck has no critical or serious accessibility violations", async ({
   browser,
@@ -140,7 +201,7 @@ test("/news has no critical or serious accessibility violations", async ({
   await page.context().close();
 });
 
-test("Tab reaches Deck, Watchlist, News, Settings, Sign out, Pass and Keep on /deck, in DOM order, each with a visible focus outline", async ({
+test("Tab reaches Deck, Watchlist, News, Diary, Settings, Sign out, Pass and Keep on /deck, in DOM order, each with a visible focus outline", async ({
   browser,
   app,
 }) => {
@@ -167,6 +228,11 @@ test("Tab reaches Deck, Watchlist, News, Settings, Sign out, Pass and Keep on /d
 
   await page.keyboard.press("Tab");
   await expect(focused).toHaveRole("link");
+  await expect(focused).toHaveAccessibleName("Diary");
+  await expectVisibleFocusOutline(focused);
+
+  await page.keyboard.press("Tab");
+  await expect(focused).toHaveRole("link");
   await expect(focused).toHaveAccessibleName("Settings");
   await expectVisibleFocusOutline(focused);
 
@@ -188,7 +254,7 @@ test("Tab reaches Deck, Watchlist, News, Settings, Sign out, Pass and Keep on /d
   await page.context().close();
 });
 
-test("Tab reaches Deck, Watchlist, News, Settings and Sign out on /watchlist, in DOM order, each with a visible focus outline", async ({
+test("Tab reaches Deck, Watchlist, News, Diary, Settings and Sign out on /watchlist, in DOM order, each with a visible focus outline", async ({
   browser,
   app,
 }) => {
@@ -213,6 +279,11 @@ test("Tab reaches Deck, Watchlist, News, Settings and Sign out on /watchlist, in
   await page.keyboard.press("Tab");
   await expect(focused).toHaveRole("link");
   await expect(focused).toHaveAccessibleName("News");
+  await expectVisibleFocusOutline(focused);
+
+  await page.keyboard.press("Tab");
+  await expect(focused).toHaveRole("link");
+  await expect(focused).toHaveAccessibleName("Diary");
   await expectVisibleFocusOutline(focused);
 
   await page.keyboard.press("Tab");

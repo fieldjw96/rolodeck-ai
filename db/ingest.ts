@@ -78,9 +78,10 @@ const candidateSchema = z
 /**
  * Which pipeline is writing. Constrained to a lowercase slug so that `yc`, `YC` and `Yc`
  * cannot become three sources holding three copies of the same company — the name is half
- * the natural key, so its spelling is part of a row's identity.
+ * the natural key, so its spelling is part of a row's identity. Shared with `persistEvents`,
+ * whose Events carry the same Source slugs.
  */
-const sourceSchema = z
+export const sourceSchema = z
   .string()
   .regex(
     /^[a-z0-9]+(?:-[a-z0-9]+)*$/,

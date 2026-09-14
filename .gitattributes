@@ -6,3 +6,6 @@ db/fixtures/*.html -text
 db/fixtures/show-hn-*.json -text
 db/fixtures/*.meta.json text
 db/fixtures/*.xml -text
+# iCalendar mandates CRLF line endings, so for these a rewritten newline is not even cosmetic:
+# it is a different document from the one the Source served.
+db/fixtures/*.ics -text
