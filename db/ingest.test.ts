@@ -11,7 +11,7 @@ import {
 
 import { persistProfiles, type ProfileCandidate } from "./ingest";
 import type { ProfileInput } from "./profile-input";
-import type { ProfileProvenance } from "./provenance";
+import type { ProfileProvenance, ProvenancedField } from "./provenance";
 import { profiles } from "./schema";
 import { createScratchDb, type ScratchDb } from "./testing/scratch-db";
 
@@ -313,6 +313,225 @@ describe("persistProfiles idempotency", () => {
     const rows = await scratch.db.select().from(profiles);
 
     expect(rows.map((row) => row.source).sort()).toEqual(["sec-form-d", "yc"]);
+  });
+});
+
+describe("persistProfiles against a value a human put there", () => {
+  const ALL_JACK: ProfileProvenance = {
+    name: "jack",
+    description: "jack",
+    sector: "jack",
+    stage: "jack",
+    website: "jack",
+    location: "jack",
+  };
+
+  /** Sprocket as the next scrape finds it: it raised a round and describes itself anew. */
+  const RAISED: ProfileInput = {
+    ...SPROCKET,
+    description: "Warehouse robotics, now with a Series A.",
+    stage: "series-a",
+    location: "San Francisco, CA",
+  };
+
+  /**
+   * A hand correction as it lands in the table: one field's value and its provenance changed
+   * together, by some means other than ingest. There is no edit flow (see the Ticket's Out of
+   * Scope), so raw SQL is as faithful a stand-in as any.
+   */
+  async function correctByHand(
+    name: string,
+    field: ProvenancedField,
+    value: string,
+  ) {
+    await scratch.client.query(
+      `update profiles set ${field} = $1, provenance = jsonb_set(provenance, '{${field}}', '"jack"') where name = $2`,
+      [value, name],
+    );
+  }
+
+  async function onlyRow() {
+    const rows = await scratch.db.select().from(profiles);
+    expect(rows).toHaveLength(1);
+    return rows[0]!;
+  }
+
+  it("updates a scraped field from the incoming scrape", async () => {
+    await persistProfiles(scratch.db, {
+      source: "yc",
+      candidates: [candidateFor(SPROCKET)],
+    });
+
+    await persistProfiles(scratch.db, {
+      source: "yc",
+      candidates: [candidateFor(RAISED)],
+    });
+
+    const row = await onlyRow();
+
+    expect(row.stage).toBe("series-a");
+    expect(row.description).toBe(RAISED.description);
+    expect(row.location).toBe("San Francisco, CA");
+    expect(row.provenance).toEqual(SCRAPED_EXCEPT_STAGE);
+  });
+
+  it("does not overwrite a jack field's value", async () => {
+    await persistProfiles(scratch.db, {
+      source: "yc",
+      candidates: [candidateFor(SPROCKET)],
+    });
+    await correctByHand("Sprocket", "sector", "saas-enterprise");
+
+    await persistProfiles(scratch.db, {
+      source: "yc",
+      candidates: [candidateFor(SPROCKET)],
+    });
+
+    const row = await onlyRow();
+
+    expect(row.sector).toBe("saas-enterprise");
+  });
+
+  it("leaves a jack field's provenance reading jack afterwards", async () => {
+    await persistProfiles(scratch.db, {
+      source: "yc",
+      candidates: [candidateFor(SPROCKET)],
+    });
+    await correctByHand("Sprocket", "sector", "saas-enterprise");
+
+    await persistProfiles(scratch.db, {
+      source: "yc",
+      candidates: [candidateFor(SPROCKET)],
+    });
+
+    const row = await onlyRow();
+
+    expect(row.provenance.sector).toBe("jack");
+  });
+
+  it("keeps the jack field and updates the rest on a row with a mix", async () => {
+    await persistProfiles(scratch.db, {
+      source: "yc",
+      candidates: [candidateFor(SPROCKET)],
+    });
+    await correctByHand("Sprocket", "sector", "saas-enterprise");
+
+    await persistProfiles(scratch.db, {
+      source: "yc",
+      candidates: [candidateFor({ ...RAISED, sector: "ai-ml" })],
+    });
+
+    const row = await onlyRow();
+
+    expect(row).toMatchObject({
+      name: "Sprocket",
+      description: RAISED.description,
+      sector: "saas-enterprise",
+      stage: "series-a",
+      website: SPROCKET.website,
+      location: "San Francisco, CA",
+    });
+    expect(row.provenance).toEqual({
+      ...SCRAPED_EXCEPT_STAGE,
+      sector: "jack",
+    });
+  });
+
+  it("keeps a jack website the scrape no longer states, with its provenance beside it", async () => {
+    await persistProfiles(scratch.db, {
+      source: "yc",
+      candidates: [candidateFor(SPROCKET)],
+    });
+    await correctByHand("Sprocket", "website", "https://sprocket.example/hand");
+
+    await persistProfiles(scratch.db, {
+      source: "yc",
+      candidates: [candidateFor({ ...RAISED, website: undefined })],
+    });
+
+    const row = await onlyRow();
+
+    // The check constraint requires a website and its provenance to be null together; keeping
+    // the pair, rather than one half of it, is what lets this statement satisfy it.
+    expect(row.website).toBe("https://sprocket.example/hand");
+    expect(row.provenance.website).toBe("jack");
+    expect(row.location).toBe("San Francisco, CA");
+    expect(row.provenance.location).toBe("scraped");
+  });
+
+  it("keeps a jack name's spelling although the scrape matched it on the key", async () => {
+    await persistProfiles(scratch.db, {
+      source: "yc",
+      candidates: [candidateFor(SPROCKET)],
+    });
+    await correctByHand("Sprocket", "name", "SPROCKET");
+
+    const report = await persistProfiles(scratch.db, {
+      source: "yc",
+      candidates: [candidateFor(SPROCKET)],
+    });
+
+    expect(report.inserted).toBe(0);
+
+    const row = await onlyRow();
+
+    expect(row.name).toBe("SPROCKET");
+    expect(row.provenance.name).toBe("jack");
+  });
+
+  it("counts a row whose every field is jack as updated, not inserted, and changes none of it", async () => {
+    await persistProfiles(scratch.db, {
+      source: "yc",
+      candidates: [
+        candidateFor({ ...SPROCKET, location: "Oakland, CA" }, ALL_JACK),
+      ],
+    });
+
+    const before = await onlyRow();
+
+    const report = await persistProfiles(scratch.db, {
+      source: "yc",
+      candidates: [candidateFor({ ...RAISED, sector: "ai-ml" })],
+    });
+
+    expect(report).toEqual({
+      inserted: 0,
+      updated: 1,
+      rejected: 0,
+      rejections: [],
+    });
+    await expect(onlyRow()).resolves.toEqual(before);
+  });
+
+  it("still inserts nothing the second time the same batch is run over a jack field", async () => {
+    const batch = [
+      candidateFor(SPROCKET),
+      candidateFor({
+        name: "Quiet Co",
+        description: "Stealth, no site yet.",
+        sector: "fintech",
+        stage: "pre-seed",
+      }),
+    ];
+
+    const first = await persistProfiles(scratch.db, {
+      source: "yc",
+      candidates: batch,
+    });
+    await correctByHand("Sprocket", "stage", "series-a");
+
+    const second = await persistProfiles(scratch.db, {
+      source: "yc",
+      candidates: batch,
+    });
+
+    expect(first).toMatchObject({ inserted: 2, updated: 0 });
+    expect(second).toMatchObject({ inserted: 0, updated: 2 });
+
+    const rows = await scratch.db.select().from(profiles);
+
+    expect(rows).toHaveLength(2);
+    expect(rows.find((row) => row.name === "Sprocket")?.stage).toBe("series-a");
   });
 });
 
