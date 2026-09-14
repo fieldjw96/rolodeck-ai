@@ -1,0 +1,27 @@
+# Weekly: a Show HN launch is a company-formation event, not a daily one. See README.md's
+# "Scheduled runs" for the full list.
+
+name: Ingest - Show HN
+
+on:
+  schedule:
+    - cron: "30 9 * * 1" # Monday 09:30 UTC
+  workflow_dispatch: {}
+
+concurrency:
+  group: ingest-show-hn
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  ingest:
+    uses: ./.github/workflows/ingest-run.yml
+    with:
+      source-name: show-hn
+      npm-script: source:show-hn
+    secrets:
+      ROLODECK_INGEST_DATABASE_URL: ${{ secrets.ROLODECK_INGEST_DATABASE_URL }}
+      ROLODECK_OWNER_ID: ${{ secrets.ROLODECK_OWNER_ID }}

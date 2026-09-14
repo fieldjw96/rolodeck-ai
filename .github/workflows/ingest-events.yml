@@ -1,0 +1,28 @@
+# Daily: the Diary goes stale by definition. Runs before ingest-news each day so a Company
+# Profile an Event names has a chance to already be in the Deck. See README.md's "Ingest
+# schedules" for the full list.
+
+name: Ingest - Events
+
+on:
+  schedule:
+    - cron: "0 8 * * *" # 08:00 UTC daily
+  workflow_dispatch: {}
+
+concurrency:
+  group: ingest-events
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  ingest:
+    uses: ./.github/workflows/ingest-run.yml
+    with:
+      source-name: events
+      npm-script: ingest:events
+    secrets:
+      ROLODECK_INGEST_DATABASE_URL: ${{ secrets.ROLODECK_INGEST_DATABASE_URL }}
+      ROLODECK_OWNER_ID: ${{ secrets.ROLODECK_OWNER_ID }}
