@@ -70,8 +70,8 @@ describe("measureProfileDuplicates", () => {
     const stats = await measureProfileDuplicates(scratch.db, JACK);
 
     expect(stats.totalProfiles).toBe(2);
-    expect(stats.profilesInMultipleSources).toBe(1);
-    expect(stats.percentageInMultipleSources).toBe(50);
+    expect(stats.profilesInMultipleSources).toBe(2);
+    expect(stats.percentageInMultipleSources).toBe(100);
     expect(stats.worstOffenders).toHaveLength(1);
     expect(stats.worstOffenders[0]).toEqual({
       nameKey: "acme corp",
@@ -190,8 +190,8 @@ describe("measureProfileDuplicates", () => {
     const stats = await measureProfileDuplicates(scratch.db, JACK);
 
     expect(stats.totalProfiles).toBe(3);
-    expect(stats.profilesInMultipleSources).toBe(1);
-    expect(stats.percentageInMultipleSources).toBeCloseTo(33.33, 1);
+    expect(stats.profilesInMultipleSources).toBe(3);
+    expect(stats.percentageInMultipleSources).toBe(100);
     expect(stats.worstOffenders).toHaveLength(1);
     expect(stats.worstOffenders[0]?.nameKey).toBe("acme corp");
     expect(stats.worstOffenders[0]?.count).toBe(3);
@@ -396,6 +396,6 @@ describe("measureProfileDuplicates", () => {
     expect(rowsAfter).toEqual(rowsBefore);
     expect(statsBefore).toEqual(statsAfter);
     expect(statsAfter.totalProfiles).toBe(2);
-    expect(statsAfter.profilesInMultipleSources).toBe(1);
+    expect(statsAfter.profilesInMultipleSources).toBe(2);
   });
 });

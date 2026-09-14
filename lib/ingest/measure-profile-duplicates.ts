@@ -64,7 +64,10 @@ export async function measureProfileDuplicates(
     duplicatesArray = (duplicatesResult as { rows: DuplicateRow[] }).rows;
   }
 
-  const profilesInMultipleSources = duplicatesArray.length;
+  const profilesInMultipleSources = duplicatesArray.reduce(
+    (sum, row: DuplicateRow) => sum + Number(row.source_count),
+    0,
+  );
   const percentageInMultipleSources =
     totalProfiles > 0
       ? Math.round((profilesInMultipleSources / totalProfiles) * 10000) / 100
