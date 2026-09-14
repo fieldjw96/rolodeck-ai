@@ -19,11 +19,14 @@ import path from "node:path";
  * `SUPABASE_SERVICE_ROLE_KEY` is Supabase's older name for the secret key and is here so that
  * reaching for the old name is caught too. `GNEWS_API_KEY` is News's provider credential: it
  * spends a quota on Jack's account, and nothing in the browser fetches News from GNews.
+ * `ROLODECK_INGEST_DATABASE_URL` is ingest's own connection (docs/adr/0013); `SUPABASE_DB_URL` is
+ * the name it replaced, kept for the reason the old secret-key name is.
  */
 const SECRET_VARIABLES = [
   "SUPABASE_SECRET_KEY",
   "SUPABASE_SERVICE_ROLE_KEY",
   "DATABASE_URL",
+  "ROLODECK_INGEST_DATABASE_URL",
   "SUPABASE_DB_URL",
   "GNEWS_API_KEY",
 ];

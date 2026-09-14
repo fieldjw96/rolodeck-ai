@@ -1,6 +1,9 @@
 import type { Database } from "../../db/connection";
-import { readKeptProfiles } from "../../db/deck";
-import { persistNewsItems, type NewsCandidate } from "../../db/news";
+import {
+  persistNewsItems,
+  readKeptCompaniesForNews,
+  type NewsCandidate,
+} from "../../db/news";
 import type { IngestRejection } from "../../db/profile-input";
 import { parseGNewsResponse, type GNewsClient } from "./gnews";
 import { NEWS_DISPLAY_THRESHOLD, scoreNewsMatch } from "./match";
@@ -34,10 +37,10 @@ export type NewsRunReport = {
 /**
  * Fetches, scores and stores News for `ownerId`'s Kept Company Profiles.
  *
- * Kept comes from `readKeptProfiles`, the same query the Watchlist reads, so "which companies
- * does News ask about" and "which companies are on the Watchlist" cannot drift apart. A Company
- * Profile that is unswiped or Passed is never searched for — which also keeps the provider's
- * daily quota spent on companies the owner has said are worth it.
+ * Kept comes from `readKeptCompaniesForNews`, which asks the one function the ingest role may
+ * call about `swipes` rather than reading the table, since this runs as that role — see
+ * docs/adr/0013. A Company Profile that is unswiped or Passed is never searched for — which also
+ * keeps the provider's daily quota spent on companies the owner has said are worth it.
  *
  * Never throws for a provider problem. A search that fails, or a response that has changed
  * shape, is a failure naming the company and the reason, and the next company is still
@@ -48,7 +51,7 @@ export async function fetchNewsForKeptProfiles(
   db: Database,
   { ownerId, client }: { ownerId: string; client: GNewsClient },
 ): Promise<NewsRunReport> {
-  const kept = await readKeptProfiles(db, ownerId);
+  const kept = await readKeptCompaniesForNews(db, ownerId);
 
   let articles = 0;
   let shown = 0;

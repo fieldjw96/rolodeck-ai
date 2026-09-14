@@ -33,9 +33,23 @@ components and route handlers using the signed-in user's session. RLS is enabled
 table as a hard backstop, never as the only control, so authorisation stays testable in
 TypeScript.
 
-**The service role key is for ingest only.** It bypasses RLS completely. It lives on the
-server laptop, is used by the scraper path, and never reaches a browser, a client bundle,
-or OneDrive.
+**The service role key never leaves the server laptop.** It bypasses RLS completely. It is
+for provisioning the one account and for running the auth tests against a real project, and it
+never reaches a browser, a client bundle, OneDrive, or GitHub. Ingest does not use it.
+
+**Ingest connects as `rolodeck_ingest`, and that is the one exception.** The role can select,
+insert and update `profiles`, `news_items`, `events` and `event_attendances`, bypassing RLS on
+those four tables only, and can do nothing else. Its connection string,
+`ROLODECK_INGEST_DATABASE_URL`, is the only database credential permitted in GitHub Actions
+secrets; `DATABASE_URL`, the service role key, and anything else that reaches Postgres or
+Supabase stay off GitHub. Widening that role, or adding a second database credential to
+Actions, needs a new ADR. See ADR 0013.
+
+**The deploy workflow's `production` environment is the second, and ADR 0014 is that ADR.**
+It holds `MIGRATION_DATABASE_URL` and `SUPABASE_POOLER_URL`, as environment secrets whose
+deployment branches are restricted to `main`, for `.github/workflows/deploy.yml` alone. They
+never become repository secrets, and no other workflow names them. The service role key is
+not among them.
 
 **Scraped data is hostile.** Every external field is parsed through a Zod schema at the
 boundary. A site that changes shape must fail loudly, at the edge, naming the field, rather

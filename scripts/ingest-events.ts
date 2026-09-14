@@ -1,5 +1,5 @@
-import { closeIngestDb, getIngestDb } from "../db/connection";
 import { persistEvents, type EventIngestReport } from "../db/events";
+import { closeIngestDb, getIngestDb } from "../db/ingest-connection";
 import type { IngestRejection } from "../db/profile-input";
 import { createAcceleratorClient } from "../lib/ingest/accelerator-fetch";
 import {
@@ -18,9 +18,9 @@ import {
  * the same split `scripts/ingest-accelerator-batches.ts` makes.
  *
  * On demand only. It is not in `npm test` and not in CI: it makes real requests to two live
- * sites and writes real rows under the secret key.
+ * sites and writes real rows as the ingest role.
  *
- *     npm run ingest:events
+ *     ROLODECK_INGEST_DATABASE_URL=... ROLODECK_OWNER_ID=... npm run ingest:events
  *
  * Requests go through `createAcceleratorClient`, which is this repo's one polite outbound
  * client rather than anything accelerator-specific: every request waits on

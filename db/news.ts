@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { NEWS_DISPLAY_THRESHOLD } from "../lib/news/match";
@@ -14,6 +14,43 @@ import { newsItems, profiles, swipes } from "./schema";
  * every one of them, and on the way out shows only those at or above `NEWS_DISPLAY_THRESHOLD`.
  * That split — store everything, filter on read — is the decision docs/adr/0010 records.
  */
+
+/** A Kept Company Profile, as much of it as News needs to search for it and score the results. */
+export type KeptCompany = {
+  readonly id: string;
+  readonly name: string;
+  readonly sector: string;
+};
+
+/**
+ * The Kept Company Profiles a News run searches for, read the way the ingest role can.
+ *
+ * `readKeptProfiles` in `db/deck.ts` answers the same question for the Watchlist by joining
+ * `swipes`, which the ingest role holds no grant on. This asks `ingest.kept_profile_ids` — a
+ * function migration `0008_ingest_role` defines and lets that role alone call — for the ids
+ * instead, so ingest learns which companies are Kept without being able to read or write
+ * anything else about a swipe. See docs/adr/0013.
+ *
+ * Ordered by name, not by when each was Kept: the function hands out ids and nothing more, and
+ * the order a run searches in only decides which company a spent quota lands on.
+ */
+export async function readKeptCompaniesForNews(
+  db: Database,
+  ownerId: string,
+): Promise<KeptCompany[]> {
+  const owner = z.guid().parse(ownerId);
+
+  return db
+    .select({ id: profiles.id, name: profiles.name, sector: profiles.sector })
+    .from(profiles)
+    .where(
+      and(
+        eq(profiles.ownerId, owner),
+        sql`${profiles.id} in (select ingest.kept_profile_ids(${owner}::uuid))`,
+      ),
+    )
+    .orderBy(asc(profiles.name), asc(profiles.id));
+}
 
 /** One article on its way in, attributed to one Company Profile with a score for how sure. */
 export type NewsCandidate = {
@@ -32,7 +69,7 @@ const nonBlank = z
 
 /**
  * The same shape again, in Zod, for the reason `persistProfiles` gives: this is the last
- * boundary before Postgres, the write runs under the RLS-bypassing connection, and a candidate
+ * boundary before Postgres, the write runs as the RLS-bypassing ingest role, and a candidate
  * that went wrong between the parser and here is rejected by field name rather than aborting
  * the batch on a check constraint.
  */

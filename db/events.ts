@@ -1,7 +1,7 @@
 import { and, asc, eq, sql, type SQL } from "drizzle-orm";
 import { z } from "zod";
 
-import { readOwnerId } from "../lib/supabase/env";
+import { readOwnerId } from "../lib/ingest/env";
 import { issueField } from "../lib/zod/issues";
 import type { Database } from "./connection";
 import { eventInputSchema, type EventInput } from "./event-input";

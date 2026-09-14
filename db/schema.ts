@@ -6,6 +6,7 @@ import {
   index,
   jsonb,
   pgPolicy,
+  pgRole,
   pgTable,
   primaryKey,
   text,
@@ -42,6 +43,43 @@ export const nameKeyOf = (value: SQL): SQL =>
   // requires.
   sql`lower(btrim(regexp_replace(${value}, '[[:space:]]+', ' ', 'g')))`;
 
+/**
+ * The Postgres role every ingest path connects as. See docs/adr/0013.
+ *
+ * `.existing()` because Drizzle cannot say what matters about it — that it is not a superuser,
+ * cannot create roles, is a member of nothing, and holds grants on four tables only — so
+ * migration `0008_ingest_role` creates it by hand, grants it exactly that, and refuses to finish
+ * if the role turns out to be any broader. Declared here so the policies below are part of the
+ * schema Drizzle diffs rather than SQL it has never heard of.
+ */
+export const ingestRole = pgRole("rolodeck_ingest").existing();
+
+/**
+ * Ingest writes rows owned by the account, not by itself, so no ownership policy could ever
+ * match it; these admit it to one table outright. A policy is scoped to its table, so they
+ * reach nothing else: `swipes`, `user_profiles` and `auth` carry no policy for this role and
+ * no grant to it, and a missing grant fails before RLS is ever consulted. Not `for: "all"`,
+ * which would read as a delete right on tables ingest has no business deleting from.
+ */
+const ingestPolicies = (table: string) => [
+  pgPolicy(`${table}_ingest_select`, {
+    for: "select",
+    to: ingestRole,
+    using: sql`true`,
+  }),
+  pgPolicy(`${table}_ingest_insert`, {
+    for: "insert",
+    to: ingestRole,
+    withCheck: sql`true`,
+  }),
+  pgPolicy(`${table}_ingest_update`, {
+    for: "update",
+    to: ingestRole,
+    using: sql`true`,
+    withCheck: sql`true`,
+  }),
+];
+
 const hasValidProvenance = (field: string) =>
   `provenance ->> '${field}' in (${provenanceLiterals})`;
 
@@ -51,7 +89,7 @@ const NULLABLE_FIELDS: readonly string[] = ["website", "location"];
 /**
  * The database's own half of the per-field provenance rule. Zod guards the boundary in
  * TypeScript; this guards it for anything that reaches Postgres another way, including the
- * service-role ingest path, which bypasses RLS but not a check constraint.
+ * ingest role, which bypasses RLS on this table but not a check constraint.
  */
 const provenanceCoversEveryField = sql.raw(
   // A CHECK passes when it evaluates to NULL, and `null in (...)` is NULL, so a field with
@@ -114,7 +152,7 @@ export const profiles = pgTable(
     check("profiles_provenance_covers_every_field", provenanceCoversEveryField),
     /**
      * The database's own half of the Sector vocabulary being closed. Zod guards the boundary
-     * in TypeScript; this guards it for the service-role ingest path, which bypasses RLS but
+     * in TypeScript; this guards it for the ingest role, which bypasses RLS on this table but
      * not a check constraint, so `sector` cannot drift back to free text through it.
      */
     check(
@@ -123,8 +161,8 @@ export const profiles = pgTable(
     ),
     /**
      * The natural key ingest is idempotent on: one Profile per company name, per source, per
-     * owner. It is a constraint rather than a convention because the write path runs under the
-     * secret key — the one credential that bypasses RLS — and a duplicate it created would be
+     * owner. It is a constraint rather than a convention because the write path runs as the
+     * ingest role, which bypasses RLS on this table, and a duplicate it created would be
      * a second card for the same company in the Deck, not an error anything would raise. See
      * docs/adr/0008.
      */
@@ -153,6 +191,7 @@ export const profiles = pgTable(
       to: authenticatedRole,
       using: sql`${authUid} = ${table.ownerId}`,
     }),
+    ...ingestPolicies("profiles"),
   ],
 );
 
@@ -347,7 +386,7 @@ export const newsItems = pgTable(
       sql.raw("confidence >= 0 and confidence <= 1"),
     ),
     /**
-     * The page renders `url` as a link, and the service-role ingest path bypasses RLS but not a
+     * The page renders `url` as a link, and the ingest role bypasses RLS on this table but not a
      * check constraint, so a `javascript:` URL cannot reach an `href` through it.
      */
     check("news_items_url_is_http", sql.raw("url ~ '^https?://'")),
@@ -363,15 +402,16 @@ export const newsItems = pgTable(
       table.publishedAt.desc(),
     ),
     /**
-     * Read-only to the app, and only to the owner. There is no insert or update policy: nothing
-     * in the app writes News, only the ingest script, which does so under the RLS-bypassing
-     * connection per CLAUDE.md.
+     * Read-only to the app, and only to the owner. There is no insert or update policy for
+     * `authenticated`: nothing in the app writes News, only the ingest script, as the ingest
+     * role — docs/adr/0013.
      */
     pgPolicy("news_items_select_own", {
       for: "select",
       to: authenticatedRole,
       using: sql`${authUid} = ${table.ownerId}`,
     }),
+    ...ingestPolicies("news_items"),
   ],
 );
 
@@ -417,7 +457,7 @@ export const events = pgTable(
     ),
     /**
      * The natural key events ingest is idempotent on, and a constraint rather than a
-     * convention for the reason `profiles` gives: the write path runs under the secret key.
+     * convention for the reason `profiles` gives: the write path bypasses RLS.
      */
     uniqueIndex("events_owner_id_source_external_id_idx").on(
       table.ownerId,
@@ -431,6 +471,7 @@ export const events = pgTable(
       to: authenticatedRole,
       using: sql`${authUid} = ${table.ownerId}`,
     }),
+    ...ingestPolicies("events"),
   ],
 );
 
@@ -456,12 +497,23 @@ export const eventAttendances = pgTable(
     /**
      * Visible exactly when both ends are. There is no owner column to match on, so the policy
      * reads `events` and `profiles` through their own policies instead, the way
-     * `swipes_insert_own` does. There is no write policy: ingest is the only writer.
+     * `swipes_insert_own` does. There is no write policy for `authenticated`: ingest is the
+     * only writer.
      */
     pgPolicy("event_attendances_select_own", {
       for: "select",
       to: authenticatedRole,
       using: sql`exists (select 1 from ${events} where ${events.id} = ${table.eventId}) and exists (select 1 from ${profiles} where ${profiles.id} = ${table.profileId})`,
+    }),
+    ...ingestPolicies("event_attendances"),
+    /**
+     * The one delete ingest may make anywhere. `persistEvents` replaces an Event's Attendance
+     * wholesale on every run, so a company a Source stops naming stops being linked.
+     */
+    pgPolicy("event_attendances_ingest_delete", {
+      for: "delete",
+      to: ingestRole,
+      using: sql`true`,
     }),
   ],
 );

@@ -21,6 +21,7 @@ const SERVER_ONLY_MODULES = [
   "lib/auth/session",
   "lib/api/authenticated",
   "db/connection",
+  "db/ingest-connection",
 ];
 
 /** The modules that must carry the `server-only` marker, which makes this a build error too. */

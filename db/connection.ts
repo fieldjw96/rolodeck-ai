@@ -1,9 +1,9 @@
 import type { ExtractTablesWithRelations } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import { drizzle } from "drizzle-orm/postgres-js";
-import postgres, { type Sql } from "postgres";
+import postgres from "postgres";
 
-import { readDatabaseUrl, readIngestDatabaseUrl } from "../lib/supabase/env";
+import { readDatabaseUrl } from "../lib/supabase/env";
 import * as schema from "./schema";
 
 /**
@@ -25,8 +25,8 @@ let connection: Database | null = null;
  *
  * This is not an RLS bypass: the connection role is a member of `authenticated`, and every
  * query the app makes goes through `asUser()` in `db/rls.ts`, which drops to that role for
- * the length of a transaction. The RLS-bypassing path is the secret key in
- * `lib/supabase/admin.ts`, which per CLAUDE.md belongs to ingest alone.
+ * the length of a transaction. Ingest never uses it: it has its own connection, as its own
+ * narrower role, in `db/ingest-connection.ts` — see docs/adr/0013.
  */
 export function getDb(): Database {
   if (connection === null) {
@@ -39,34 +39,4 @@ export function getDb(): Database {
   }
 
   return connection;
-}
-
-let ingestClient: Sql | null = null;
-let ingestConnection: Database | null = null;
-
-/**
- * Ingest's own connection to Postgres — the one `persistProfiles` (`db/ingest.ts`) writes
- * through, and the one the RLS-bypass docs/adr/0008 describes actually is. Kept entirely apart
- * from `getDb()`: that connection's role is a member of `authenticated` and is meant to be, so
- * a fetch script reaching for it would either fail RLS or, worse, only work for whichever
- * Profiles the calling role happens to already own.
- */
-export function getIngestDb(): Database {
-  if (ingestConnection === null) {
-    ingestClient = postgres(readIngestDatabaseUrl(), { prepare: false });
-    ingestConnection = drizzle(ingestClient, { schema });
-  }
-
-  return ingestConnection;
-}
-
-/**
- * Closes ingest's connection, so a one-shot fetch script's process can exit instead of
- * waiting on a socket it has no more use for. `getDb()` has no equivalent: it backs a server
- * process that never wants its connection to end on purpose.
- */
-export async function closeIngestDb(): Promise<void> {
-  await ingestClient?.end();
-  ingestClient = null;
-  ingestConnection = null;
 }

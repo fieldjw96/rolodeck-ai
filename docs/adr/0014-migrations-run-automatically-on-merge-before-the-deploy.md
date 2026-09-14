@@ -42,6 +42,25 @@ merge, on `main`, with its secret withheld from every other ref. The connections
 often, or unattended on a schedule, cannot change the schema at all. `SUPABASE_SECRET_KEY` is
 not handed to the workflow either, since the running app never reads it.
 
+**This widens ADR 0013's rule on Actions secrets, by exactly two credentials, in one
+environment.** ADR 0013 allowed one database credential in GitHub Actions, ingest's, and said a
+second needs a new ADR. This is that ADR. The deploy cannot run without two more: migrating
+needs the privileged connection, and setting the app's variables in Vercel needs the app's
+pooler URL, which `DATABASE_URL` is. So `MIGRATION_DATABASE_URL` and `SUPABASE_POOLER_URL` may be
+secrets of the `production` environment, and nowhere else in Actions. They are not repository
+secrets, because ADR 0013's concern was right: a repository secret is available to any workflow,
+including one a pull request adds. An environment whose deployment branches are `main` only
+gives them to a job on `main`, and nothing reaches `main` without review, with `deploy.yml`
+itself also needing Jack's approval under ADR 0012. `ROLODECK_INGEST_DATABASE_URL` stays the only
+database credential a scheduled or repository-wide workflow may hold. CLAUDE.md names this
+exception, and `scripts/deploy-workflow.test.ts` fails if the workflow names any secret beyond
+its list.
+
+`SUPABASE_DB_URL`, which ADR 0013 retired, is still one of the four variables set in Vercel,
+pointed at the same pooler URL as `DATABASE_URL`. Nothing reads it. It stays so the workflow and
+`deploy-rolodeck.ps1` leave Vercel in the same state. It adds no credential Vercel does not
+already hold, and it should be dropped from both routes together.
+
 **Failure is loud.** A failed run opens a GitHub issue naming the step and linking the run, or
 comments on the one already open, so it arrives in the same queue as every other piece of
 work. After a successful deploy, `npm run smoke` signs in to production read-only. A deploy

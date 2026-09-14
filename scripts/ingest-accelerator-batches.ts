@@ -1,5 +1,5 @@
-import { closeIngestDb, getIngestDb } from "../db/connection";
 import { persistProfiles, type IngestReport } from "../db/ingest";
+import { closeIngestDb, getIngestDb } from "../db/ingest-connection";
 import type { IngestRejection, ProfileInput } from "../db/profile-input";
 import { createAcceleratorClient } from "../lib/ingest/accelerator-fetch";
 import {
@@ -21,9 +21,9 @@ import {
  * the same split `scripts/ingest-sec-form-d.ts` makes.
  *
  * On demand only. It is not in `npm test` and not in CI: it makes real requests to two live
- * sites and writes real rows under the secret key.
+ * sites and writes real rows as the ingest role.
  *
- *     npm run ingest:accelerators
+ *     ROLODECK_INGEST_DATABASE_URL=... ROLODECK_OWNER_ID=... npm run ingest:accelerators
  *
  * `robots.txt`, checked before any fixture was captured:
  *

@@ -152,6 +152,27 @@ describe("the production deploy workflow", () => {
     });
   });
 
+  it("names no secret beyond the ones ADR 0014 lets the production environment hold", () => {
+    // CLAUDE.md and ADR 0013 allow one database credential in Actions, ingest's; ADR 0014 widens
+    // that by exactly the two below. Anything more needs another ADR, not an edit here alone.
+    const named = new Set(
+      [
+        ...read("../.github/workflows/deploy.yml").matchAll(/secrets\.(\w+)/g),
+      ].map((match) => match[1]),
+    );
+    expect([...named].sort()).toEqual(
+      [
+        "MIGRATION_DATABASE_URL",
+        "SUPABASE_POOLER_URL",
+        "NEXT_PUBLIC_SUPABASE_URL",
+        "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
+        "VERCEL_TOKEN",
+        "ROLODECK_SMOKE_EMAIL",
+        "ROLODECK_SMOKE_PASSWORD",
+      ].sort(),
+    );
+  });
+
   it("never gives any step the secret key, which the running app does not read", () => {
     for (const s of job.steps) {
       expect(JSON.stringify(s.env ?? {})).not.toContain("SUPABASE_SECRET_KEY");

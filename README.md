@@ -16,9 +16,10 @@ See `CLAUDE.md` for the rules an agent works under here, `CONTEXT.md` for vocabu
 
 - Node 22.x and npm. `package.json`'s `engines.node` pins the same version CI and Vercel
   build with.
-- A Supabase project: its URL, publishable key, secret key, and the pooled and direct
-  Postgres connection strings, all from the project's dashboard. See `.env.example` for
-  exactly which values and where each one lives.
+- A Supabase project: its URL, publishable key, secret key, and its pooled Postgres
+  connection string, all from the project's dashboard, plus a password you set for the
+  ingest role — see "Ingest's credential" below. See `.env.example` for exactly which values
+  and where each one lives.
 - Nothing else. `npm run test` and `npm run test:e2e` both run against in-process
   stand-ins — a stub Postgres and a stub Supabase Auth backend — so no database or Supabase
   project needs to exist just to run the suite.
@@ -91,8 +92,8 @@ and on nothing else, and stops at the first step that fails:
    in production has changed yet, so a missing secret costs nothing.
 2. Applies pending migrations with `npm run db:migrate`. Production is a real Supabase
    project, so `db/testing/supabase-shim.sql` is never applied to it.
-3. Sets the four variables the app reads in Vercel's Production environment, and checks the two
-   browser-visible ones round-trip exactly.
+3. Sets the four variables `deploy-rolodeck.ps1` sets in Vercel's Production environment, and
+   checks the two browser-visible ones round-trip exactly.
 4. Deploys with `vercel deploy --prod`.
 5. Runs `npm run smoke` against https://rolodeck-ai.vercel.app.
 
@@ -117,7 +118,7 @@ repository-level secrets would not be withheld from it.
 | Secret                                 | What it is                                                                                                                                |
 | -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | `MIGRATION_DATABASE_URL`               | The privileged `postgres` connection migrations run as, through the session-mode pooler (`pooler.supabase.com`, port 5432). Not ingest's. |
-| `SUPABASE_POOLER_URL`                  | The pooler URL the deployed app connects with; set in Vercel as both `DATABASE_URL` and `SUPABASE_DB_URL`.                                |
+| `SUPABASE_POOLER_URL`                  | The pooler URL the deployed app connects with; set in Vercel as both `DATABASE_URL` and `SUPABASE_DB_URL`, as the manual script does.     |
 | `NEXT_PUBLIC_SUPABASE_URL`             | The project URL, as in `.env.example`.                                                                                                    |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | The publishable key, as in `.env.example`.                                                                                                |
 | `VERCEL_TOKEN`                         | A Vercel access token for the account that owns the `rolodeck-ai` project.                                                                |
@@ -128,10 +129,21 @@ Both database URLs must be pooler URLs, and the workflow refuses anything else b
 touches production. Supabase's direct host `db.<ref>.supabase.co` is IPv6-only, and neither
 GitHub's runners nor Vercel's functions have IPv6 outbound.
 
-`SUPABASE_SECRET_KEY` is deliberately not among them, and neither is `GNEWS_API_KEY`: the
-running app reads neither. Both stay on the server laptop, for `npm run account:provision` and
-ingest. `ROLODECK_OWNER_ID` comes from running `npm run account:provision` once, against the
-real project.
+`SUPABASE_SECRET_KEY` is deliberately not among them, and neither are
+`ROLODECK_INGEST_DATABASE_URL` or `GNEWS_API_KEY`: the running app reads none of them, so none
+belongs in Vercel either. The secret key stays on the server laptop for
+`npm run account:provision`; the other two are ingest's. `ROLODECK_OWNER_ID` comes from running
+`npm run account:provision` once, against the real project.
+
+Two of these are database credentials, and CLAUDE.md otherwise allows only ingest's in GitHub
+Actions. ADR 0014 is the ADR that widens that rule, and it widens it this far and no further:
+`MIGRATION_DATABASE_URL` and `SUPABASE_POOLER_URL`, as secrets of the `production` environment
+only, never as repository secrets. `scripts/deploy-workflow.test.ts` fails if the workflow names
+any secret beyond the ones in this table.
+
+`SUPABASE_DB_URL` is the name ADR 0013 retired; nothing reads it any more. The workflow still
+sets it because `deploy-rolodeck.ps1` does, so that both routes leave Vercel identical. Dropping
+it means changing both at once.
 
 The `build-with-documented-env` job in CI keeps `.env.example` honest: it builds with only
 `.env.example`'s variables set, in a job with nothing else in its environment, so a variable
@@ -228,7 +240,7 @@ curl "https://hn.algolia.com/api/v1/search?tags=story_<id>" -o db/fixtures/show-
 
 with a `db/fixtures/show-hn-<slug>.meta.json` beside it recording `query` and `capturedAt`.
 `npm run source:show-hn` runs it live, against the real API and a real database, and is not
-part of `npm test` or CI for that reason: it needs `SUPABASE_DB_URL` and `ROLODECK_OWNER_ID`,
+part of `npm test` or CI for that reason: it needs `ROLODECK_INGEST_DATABASE_URL` and `ROLODECK_OWNER_ID`,
 and it exits non-zero if it inserts nothing.
 
 ### Writing what a Source parsed
@@ -249,10 +261,46 @@ stored provenance is `jack`: a value a human put there keeps both, however often
 runs again. The rule is decided inside the `on conflict` statement itself, not by reading the
 row first.
 
-The connection it writes through is its own: `getIngestDb()` in `db/connection.ts`, built from
-`SUPABASE_DB_URL` rather than the app's own `DATABASE_URL`. That is the RLS bypass CLAUDE.md
-and `docs/adr/0008` describe — the app's connection is a member of `authenticated` on purpose,
-and every Source's fetch script needs the one that is not.
+The connection it writes through is its own: `getIngestDb()` in `db/ingest-connection.ts`, as
+the `rolodeck_ingest` role, built from `ROLODECK_INGEST_DATABASE_URL` rather than the app's own
+`DATABASE_URL`. The app's connection is a member of `authenticated` on purpose; ingest writes
+rows owned by the account rather than by itself, so it needs a role that bypasses RLS — on the
+tables it writes, and nowhere else.
+
+### Ingest's credential
+
+`ROLODECK_INGEST_DATABASE_URL` logs in as `rolodeck_ingest`, a Postgres role created by
+migration `0008_ingest_role`. See `docs/adr/0013` for why it exists and how it is scoped.
+
+**What it may do:** select, insert and update `profiles`, `news_items`, `events` and
+`event_attendances`, bypassing RLS on those four tables; delete from `event_attendances`, which
+`persistEvents` replaces on every run; and call `ingest.kept_profile_ids`, which tells News which
+Company Profiles are Kept.
+
+**What it may not:** read or write `swipes`, `user_profiles`, or anything in the `auth` schema;
+delete or truncate a Company Profile, an Event or News; create roles or databases; or become
+any other role. `db/ingest-role.test.ts` asserts each of those against a real Postgres, and the
+migration itself refuses to finish if the role it leaves behind can do more.
+
+**It is the only database credential that belongs in GitHub Actions repository secrets.**
+Scheduled ingest runs there, so this one connection string may be an Actions secret.
+`DATABASE_URL` and `SUPABASE_SECRET_KEY` may not: both reach every table. The one exception is
+the deploy workflow's `production` environment, restricted to `main`, which ADR 0014 allows to
+hold the migration and app connection strings; see "The workflow's secrets" above.
+
+Setting it up, once the migration has been applied — by hand, never by a Run:
+
+1. In the Supabase SQL editor, give the role a password:
+   `alter role rolodeck_ingest with password '<a long random password>';`
+2. Build the connection string from the pooler's, under Project Settings → Database, with
+   `rolodeck_ingest.<project-ref>` as the user in place of `postgres.<project-ref>`. The pooler
+   is what an IPv4-only host such as a GitHub Actions runner can reach; on a host with IPv6 the
+   direct connection works too, with plain `rolodeck_ingest` as the user.
+3. Put it in `.env.local` on the server laptop and, for the scheduled workflows, in the
+   repository's Actions secrets under the same name.
+
+`getIngestDb()` refuses a connection string whose user is anything but `rolodeck_ingest`, so
+pasting the `postgres` one in its place fails on the first line rather than quietly working.
 
 ### The Diary's events Sources
 
@@ -263,7 +311,7 @@ hosting organisations are the Diary's Attendance. `persistEvents` in `db/events.
 write path into `events` and `event_attendances`, idempotent on `(owner_id, source,
 external_id)`, and it matches each attendee to Company Profiles on `name_key`.
 
-`npm run ingest:events` fetches both live and writes through `SUPABASE_DB_URL`, like the Profile
+`npm run ingest:events` fetches both live and writes through `ROLODECK_INGEST_DATABASE_URL`, like the Profile
 Sources. Run those first: an attendee only links to a Company Profile already in the Deck, and
 the links fill in on the next run once it is.
 
@@ -273,7 +321,7 @@ News is articles about the Company Profiles you Kept, read from the
 [GNews API](https://gnews.io) and shown on `/news`, grouped by company, newest first.
 
 ```
-GNEWS_API_KEY=... SUPABASE_DB_URL=... ROLODECK_OWNER_ID=... npm run ingest:news
+GNEWS_API_KEY=... ROLODECK_INGEST_DATABASE_URL=... ROLODECK_OWNER_ID=... npm run ingest:news
 ```
 
 searches GNews once per Kept Company Profile — never for one that is unswiped or Passed — and

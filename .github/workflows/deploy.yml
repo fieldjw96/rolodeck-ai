@@ -142,9 +142,11 @@ jobs:
           DATABASE_URL: ${{ secrets.MIGRATION_DATABASE_URL }}
         run: npm run db:migrate
 
-      # The same four variables deploy-rolodeck.ps1 sets, and no more: the running app reads
-      # nothing else, and a key it does not read has no business on a public host. Both
-      # database variables are the pooler URL, for the IPv6 reason above.
+      # The same four variables deploy-rolodeck.ps1 sets, and no more: a key the running app does
+      # not read has no business on a public host. Both database variables are the pooler URL,
+      # for the IPv6 reason above. SUPABASE_DB_URL is read by nothing since ADR 0013 retired it,
+      # but it is the same URL as DATABASE_URL, and it stays so this and the manual script leave
+      # Vercel identical; drop it from both together.
       - id: environment
         name: Set the production environment variables
         env:
