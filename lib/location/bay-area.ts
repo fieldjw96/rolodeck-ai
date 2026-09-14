@@ -1,8 +1,8 @@
 /**
  * Whether a Company Profile's `location` is in the Bay Area — the product's central claim,
- * per CLAUDE.md, and otherwise unenforceable once `location` is free text. The ranking
- * Ticket this helper exists for is out of scope here; this module only answers the
- * criterion, so ranking has something fixed to call rather than a scattered string match.
+ * per CLAUDE.md, and otherwise unenforceable once `location` is free text. The Deck ranks
+ * on it through `citiesInArea` below, so ranking has something fixed to call rather than a
+ * scattered string match. See docs/adr/0011.
  *
  * A criterion on cities rather than counties, because `location` is stored as a human-
  * readable place — "San Francisco, CA" — not as a county, and a criterion cannot consult a
@@ -159,4 +159,18 @@ export function isBayArea(location: string | null): boolean {
   const city = cityOf(location);
 
   return city !== undefined && BAY_AREA_CITIES.has(city);
+}
+
+/**
+ * The cities a User Profile's `area` stands for, so the Deck can rank on it inside Postgres
+ * rather than calling `isBayArea` on every row in TypeScript. `db/deck.ts` reproduces
+ * `cityOf` in SQL against this list, and `db/deck-ranking.test.ts` holds the two to the same
+ * answers.
+ *
+ * "Bay Area" is the one area with a list. Any other area is empty — it matches no Company
+ * Profile rather than raising — because `area` is free text and an owner who types somewhere
+ * this module does not know should get the Deck unranked by place, not an error.
+ */
+export function citiesInArea(area: string): readonly string[] {
+  return area.trim().toLowerCase() === "bay area" ? [...BAY_AREA_CITIES] : [];
 }

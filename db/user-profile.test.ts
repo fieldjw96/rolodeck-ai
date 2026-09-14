@@ -7,6 +7,7 @@ import { userProfiles } from "./schema";
 import { createScratchDb, type ScratchDb } from "./testing/scratch-db";
 import {
   EMPTY_USER_PROFILE,
+  readSavedUserProfile,
   readUserProfile,
   writeUserProfile,
 } from "./user-profile";
@@ -67,6 +68,25 @@ describe("readUserProfile", () => {
       area: "Bay Area",
       excludedSectors: ["security"],
     });
+  });
+});
+
+describe("readSavedUserProfile", () => {
+  it("returns null rather than the defaults when the owner has never saved one", async () => {
+    await expect(readSavedUserProfile(scratch.db, JACK)).resolves.toBeNull();
+  });
+
+  it("returns what was saved, even when it is exactly the defaults", async () => {
+    await writeUserProfile(scratch.db, JACK, {
+      sectors: [],
+      stages: [],
+      area: "Bay Area",
+      excluded_sectors: [],
+    });
+
+    await expect(readSavedUserProfile(scratch.db, JACK)).resolves.toEqual(
+      EMPTY_USER_PROFILE,
+    );
   });
 });
 

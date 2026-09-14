@@ -1,6 +1,23 @@
 import { describe, expect, it } from "vitest";
 
-import { isBayArea } from "./bay-area";
+import { citiesInArea, isBayArea } from "./bay-area";
+
+describe("citiesInArea", () => {
+  it("lists the cities isBayArea accepts for the Bay Area", () => {
+    const cities = citiesInArea("Bay Area");
+
+    expect(cities).toContain("san francisco");
+    expect(cities.every((city) => isBayArea(`${city}, CA`))).toBe(true);
+  });
+
+  it("reads the area case- and whitespace-insensitively", () => {
+    expect(citiesInArea("  bay area ")).toEqual(citiesInArea("Bay Area"));
+  });
+
+  it("lists nothing for an area it has no cities for, rather than throwing", () => {
+    expect(citiesInArea("New York")).toEqual([]);
+  });
+});
 
 describe("isBayArea", () => {
   it("accepts a Bay Area city", () => {

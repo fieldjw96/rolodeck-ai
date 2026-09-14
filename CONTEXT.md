@@ -20,7 +20,8 @@ The owner's stated preferences, which rank the Deck: sectors, stages, area, excl
 _Avoid_: settings, preferences, brief
 
 **Deck**:
-The ordered set of Company Profiles a session works through.
+The ordered set of Company Profiles a session works through, ranked by the User Profile. Every
+Company Profile not yet swiped appears except those in an excluded Sector. See `docs/adr/0011`.
 _Avoid_: feed, list, queue
 
 **Keep** / **Pass**:

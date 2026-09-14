@@ -30,6 +30,18 @@ export async function readUserProfile(
   db: Database,
   userId: string,
 ): Promise<UserProfile> {
+  return (await readSavedUserProfile(db, userId)) ?? EMPTY_USER_PROFILE;
+}
+
+/**
+ * The owner's User Profile as they last saved it, or null if they never have. For a reader
+ * that has to tell "never said anything" from "said the defaults" — the Deck, which does not
+ * rank by `EMPTY_USER_PROFILE`'s `area` because nobody chose it. See docs/adr/0011.
+ */
+export async function readSavedUserProfile(
+  db: Database,
+  userId: string,
+): Promise<UserProfile | null> {
   const [row] = await db
     .select()
     .from(userProfiles)
@@ -37,7 +49,7 @@ export async function readUserProfile(
     .limit(1);
 
   if (row === undefined) {
-    return EMPTY_USER_PROFILE;
+    return null;
   }
 
   return {
