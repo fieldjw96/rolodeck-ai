@@ -38,13 +38,15 @@ export async function measureProfileDuplicates(
     name_key: string;
     sources: string[];
     source_count: number;
+    profile_count: number;
   };
 
   const duplicatesResult = (await db.execute<DuplicateRow>(sql`
     select
       name_key,
       array_agg(distinct source order by source) as sources,
-      count(distinct source) as source_count
+      count(distinct source) as source_count,
+      count(*) as profile_count
     from profiles
     where owner_id = ${ownerId}
     group by name_key
@@ -65,7 +67,7 @@ export async function measureProfileDuplicates(
   }
 
   const profilesInMultipleSources = duplicatesArray.reduce(
-    (sum, row: DuplicateRow) => sum + Number(row.source_count),
+    (sum, row: DuplicateRow) => sum + Number(row.profile_count),
     0,
   );
   const percentageInMultipleSources =

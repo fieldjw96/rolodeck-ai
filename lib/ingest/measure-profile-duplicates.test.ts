@@ -377,7 +377,7 @@ describe("measureProfileDuplicates", () => {
       },
     ]);
 
-    // Switch to ingest role, which has only SELECT on profiles, not INSERT/UPDATE/DELETE on the guarded tables
+    // Switch to ingest role, which can SELECT, INSERT, and UPDATE on profiles per ADR 0013
     await scratch.as("rolodeck_ingest");
 
     // Get state before
