@@ -63,6 +63,7 @@ beforeEach(async () => {
 describe("the Deck cursor", () => {
   it("round-trips the sort key it was built from", () => {
     const cursor = {
+      score: 6,
       createdAt: new Date(FIRST_CREATED_AT),
       id: NO_SUCH_PROFILE,
     };
@@ -78,15 +79,33 @@ describe("the Deck cursor", () => {
     ],
     [
       "a timestamp with no id",
-      Buffer.from("2026-01-01T09:00:00.000Z").toString("base64url"),
+      Buffer.from("0 2026-01-01T09:00:00.000Z").toString("base64url"),
     ],
     [
       "an id that is not a uuid",
-      Buffer.from("2026-01-01T09:00:00.000Z nope").toString("base64url"),
+      Buffer.from("0 2026-01-01T09:00:00.000Z nope").toString("base64url"),
     ],
     [
       "a timestamp that is not a date",
-      Buffer.from(`the other day ${NO_SUCH_PROFILE}`).toString("base64url"),
+      Buffer.from(`0 yesterday ${NO_SUCH_PROFILE}`).toString("base64url"),
+    ],
+    [
+      "a cursor from before the Deck was ranked, with no score",
+      Buffer.from(`2026-01-01T09:00:00.000Z ${NO_SUCH_PROFILE}`).toString(
+        "base64url",
+      ),
+    ],
+    [
+      "a score that is not a whole number",
+      Buffer.from(`1.5 2026-01-01T09:00:00.000Z ${NO_SUCH_PROFILE}`).toString(
+        "base64url",
+      ),
+    ],
+    [
+      "a score higher than any Profile can earn",
+      Buffer.from(`99 2026-01-01T09:00:00.000Z ${NO_SUCH_PROFILE}`).toString(
+        "base64url",
+      ),
     ],
   ])("rejects %s", (_description, raw) => {
     expect(decodeCursor(raw)).toBeNull();
