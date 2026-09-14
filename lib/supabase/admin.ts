@@ -3,9 +3,10 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { readBrowserSafeEnv, readSecretKey } from "./env";
 
 /**
- * The secret-key client. It bypasses RLS entirely, so per CLAUDE.md it belongs to the ingest
- * and account-provisioning paths that run on the server laptop — never to a request handler
- * acting on behalf of a browser, and never to anything that could reach a client bundle.
+ * The secret-key client. It bypasses RLS entirely, so per CLAUDE.md it belongs to provisioning
+ * the one account on the server laptop — never to ingest, which has its own narrower role (see
+ * docs/adr/0013), never to a request handler acting on behalf of a browser, and never to
+ * anything that could reach a client bundle.
  *
  * Deliberately not marked `server-only`: `scripts/` runs this under plain Node, outside
  * React's server condition, where that package throws. `lib/supabase/client-boundary.test.ts`

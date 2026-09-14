@@ -57,6 +57,13 @@
       "when": 1789353579769,
       "tag": "0007_events",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1789420023654,
+      "tag": "0008_ingest_role",
+      "breakpoints": true
     }
   ]
 }

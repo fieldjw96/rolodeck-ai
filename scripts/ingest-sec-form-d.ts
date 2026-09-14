@@ -1,5 +1,5 @@
-import { getDb } from "../db/connection";
 import { persistProfiles } from "../db/ingest";
+import { closeIngestDb, getIngestDb } from "../db/ingest-connection";
 import {
   createEdgarClient,
   fetchCaliforniaFormDProfiles,
@@ -18,8 +18,10 @@ import { SEC_FORM_D_SOURCE } from "../lib/ingest/sec-form-d";
  * `lib/ingest/`; this file is argv in, stdout out, and an exit code.
  *
  * On demand only. It is not in `npm test` and not in CI: it makes real requests to the SEC,
- * writes real rows under the secret key, and neither belongs in a suite that has to be able to
+ * writes real rows as the ingest role, and neither belongs in a suite that has to be able to
  * run a hundred times a day.
+ *
+ * Needs `ROLODECK_INGEST_DATABASE_URL` and `ROLODECK_OWNER_ID` as well as:
  *
  *     SEC_EDGAR_CONTACT=you@example.com npm run ingest:sec-form-d
  *     SEC_EDGAR_CONTACT=you@example.com npm run ingest:sec-form-d -- --since 2026-09-01 --limit 50
@@ -40,7 +42,7 @@ async function main(): Promise<void> {
     options,
   );
 
-  const report = await persistProfiles(getDb(), {
+  const report = await persistProfiles(getIngestDb(), {
     source: SEC_FORM_D_SOURCE,
     candidates: batch.profiles.map((profile) => ({
       input: profile.input,
@@ -59,7 +61,9 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch((error: unknown) => {
-  console.error(error instanceof Error ? error.message : error);
-  process.exitCode = 1;
-});
+main()
+  .catch((error: unknown) => {
+    console.error(error instanceof Error ? error.message : error);
+    process.exitCode = 1;
+  })
+  .finally(closeIngestDb);
