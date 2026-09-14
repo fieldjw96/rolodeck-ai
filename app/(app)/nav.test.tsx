@@ -13,6 +13,7 @@ const LINKS = [
   ["Watchlist", "/watchlist"],
   ["News", "/news"],
   ["Diary", "/diary"],
+  ["Settings", "/settings"],
 ] as const;
 
 beforeEach(() => {
@@ -33,7 +34,7 @@ function currentLinks(): string[] {
 }
 
 describe("Nav", () => {
-  it("links to the Deck, the Watchlist, News and the Diary, in that order", () => {
+  it("links to the Deck, the Watchlist, News, the Diary and Settings, in that order", () => {
     vi.mocked(usePathname).mockReturnValue("/deck");
 
     render(<Nav />);
@@ -62,6 +63,14 @@ describe("Nav", () => {
     for (const [name, path] of LINKS) {
       expect(screen.getByRole("link", { name })).toHaveAttribute("href", path);
     }
+  });
+
+  it("marks the Settings link with aria-current when on Settings", () => {
+    vi.mocked(usePathname).mockReturnValue("/settings");
+
+    render(<Nav />);
+
+    expect(currentLinks()).toEqual(["Settings"]);
   });
 
   it("does not mark any link when on a different route", () => {

@@ -45,9 +45,16 @@
       "breakpoints": true
     },
     {
-      "idx": 5,
+      "idx": 6,
       "version": "7",
-      "when": 1789336146663,
+      "when": 1789341483457,
+      "tag": "0006_user_profiles",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1789353579769,
       "tag": "0007_events",
       "breakpoints": true
     }
