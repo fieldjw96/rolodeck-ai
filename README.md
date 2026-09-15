@@ -383,6 +383,20 @@ non-zero if any company could not be searched for. See `docs/adr/0010`.
 listed in `npm run check:bundle-secrets`. Like every Source's script, this is on demand and not
 part of `npm test` or CI.
 
+## Measuring profile duplicates
+
+A read-only script that measures how often the same company appears under multiple sources:
+
+```
+ROLODECK_INGEST_DATABASE_URL=... ROLODECK_OWNER_ID=... npm run measure:profile-duplicates
+```
+
+Reports the count of profiles that appear under more than one source, their percentage of the
+total, and the worst offenders — companies appearing under the most sources. Matching uses the
+same `name_key` the unique index on `profiles` uses, so case-insensitive and whitespace-insensitive
+matching. Never writes to the database, only selects. See ADR 0008 for why `name_key` is the
+identity rule.
+
 ## Database
 
 The schema lives in `db/schema.ts`. After changing it, run `npm run db:generate` to write a
