@@ -17,6 +17,10 @@
 #      environment's deployment branches are restricted to `main`, so GitHub will not hand
 #      them to a job from any other ref. That includes a workflow a pull request adds of its
 #      own, which neither 1 nor 2 can stop, since it would not be this file.
+#
+# And the tip of `main` only (Ticket #149). None of the three stops a re-run of an older run,
+# which keeps its original commit, workflow file and ref. So the job checks that its commit is
+# still `origin/main` before it touches a secret, and again just before it deploys.
 
 name: Deploy
 
@@ -44,8 +48,6 @@ jobs:
     timeout-minutes: 30
     env:
       PRODUCTION_URL: https://rolodeck-ai.vercel.app
-      # Pinned, so the CLI flags below are the ones checked when this was written.
-      VERCEL_CLI: vercel@59.17.0
       # Which Vercel project to act on. Identifiers, not credentials, so they may sit at job
       # level. With these set the CLI needs no `vercel link`, and so no account-level read:
       # VERCEL_TOKEN is scoped to this one project, and `vercel whoami` and `vercel link` both
@@ -55,6 +57,11 @@ jobs:
       VERCEL_PROJECT_ID: prj_GAlCUw73gTlFxlMOSOBt1AXTX2yK
     # Secrets are handed to the steps that need them, by name, and never at job level:
     # `npm ci` runs dependencies' install scripts, and those have no business seeing them.
+    #
+    # For the same reason the Vercel CLI is a pinned devDependency, run as
+    # ./node_modules/.bin/vercel, and never `npx vercel@<version>`: npx pins only the top-level
+    # package and resolves the rest with no lockfile, running their install scripts inside a
+    # step that holds VERCEL_TOKEN. `npm ci` installs it from the lockfile, with no secret set.
     steps:
       - id: checkout
         name: Check out main
@@ -77,6 +84,23 @@ jobs:
       - id: browsers
         name: Install the smoke test browser
         run: npx playwright install --with-deps chromium
+
+      # A GitHub re-run keeps the original commit, workflow file and ref, so the job's `if:`
+      # still passes. Drizzle would then apply nothing, since it only applies newer entries, and
+      # `vercel deploy --prod` would ship the old code behind the newer schema: a rollback
+      # nobody chose. First, before any step that holds a secret, so a stale run sets nothing in
+      # Vercel either.
+      - id: tip_before_migrate
+        name: Check this commit is still the tip of main
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --depth=1 origin +refs/heads/main:refs/remotes/origin/main
+          main_sha=$(git rev-parse refs/remotes/origin/main)
+          if [ "$main_sha" != "$GITHUB_SHA" ]; then
+            echo "::error::This run is for $GITHUB_SHA, but origin/main is $main_sha. Refusing to ship a commit main has moved past; to redeploy, re-run the Deploy run for $main_sha instead."
+            exit 1
+          fi
+          echo "origin/main is $GITHUB_SHA, this run's commit."
 
       - id: preflight
         name: Check the production secrets
@@ -140,8 +164,65 @@ jobs:
           # with "User not found" against a token that was otherwise fine. Listing the project's
           # own variables is a project-level read, which is exactly what the later steps need,
           # so a bad token or a wrong project id still fails here, by name, before migrations.
-          npx --yes "$VERCEL_CLI" env ls production > /dev/null
+          ./node_modules/.bin/vercel env ls production > /dev/null
           echo "Vercel project $VERCEL_PROJECT_ID is reachable with this token."
+
+      # Before the migration, not between it and the deploy: once the schema has moved, the
+      # only thing left to fail should be the deploy itself. Vercel applies environment changes
+      # to new deployments only, so setting them first changes nothing that is already serving.
+      #
+      # The same three variables the running app reads, and no more: a key it does not read has
+      # no business on a public host. DATABASE_URL is the pooler URL, for the IPv6 reason above.
+      - id: environment
+        name: Set the production environment variables
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+          DATABASE_URL: ${{ secrets.SUPABASE_POOLER_URL }}
+        run: |
+          set -euo pipefail
+
+          # Privileged credentials the running app never reads must not sit in Vercel at all:
+          # the secret key bypasses RLS, and the old database URL is a name ADR 0013 retired.
+          # `env ls` prints names and never values, and its output is only searched, never echoed.
+          listed=$(./node_modules/.bin/vercel env ls production 2>&1)
+          for name in SUPABASE_SECRET_KEY SUPABASE_DB_URL; do
+            if grep -qw -- "$name" <<< "$listed"; then
+              echo "::error::Vercel's production environment holds $name, which the running app does not read. Remove it with: vercel env rm $name production"
+              exit 1
+            fi
+          done
+
+          # Through stdin, never --value, which would put a live credential on a command line.
+          # printf '%s' rather than echo, so no trailing newline becomes part of the value. The
+          # manual script's first deploy stored a BOM as the first character of
+          # NEXT_PUBLIC_SUPABASE_URL, and every sign-in failed against a URL that looked right.
+          set_var() {
+            printf '%s' "${!1}" \
+              | ./node_modules/.bin/vercel env add "$1" production --force --type "$2" --yes > /dev/null
+            echo "set $1 ($2)"
+          }
+          set_var NEXT_PUBLIC_SUPABASE_URL config
+          set_var NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY config
+          set_var DATABASE_URL secret
+
+          # Verify rather than trust: a wrong value deploys perfectly and fails only at sign-in.
+          # Secret-typed values cannot be pulled back, so only the config ones can be checked.
+          pulled="$RUNNER_TEMP/vercel-verify.env"
+          trap 'rm -f "$pulled"' EXIT
+          ./node_modules/.bin/vercel env pull "$pulled" --environment production --yes > /dev/null
+          for name in NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY; do
+            stored=$(grep -m1 "^${name}=" "$pulled" | cut -d= -f2- || true)
+            stored=${stored#\"}
+            stored=${stored%\"}
+            sent=${!name}
+            if [ "$stored" != "$sent" ]; then
+              echo "::error::$name did not round-trip: sent ${#sent} characters, stored ${#stored}."
+              exit 1
+            fi
+            echo "verified $name round-trips exactly"
+          done
 
       # Production is a real Supabase project, so db/testing/supabase-shim.sql is never applied
       # here: it exists for scratch Postgres that lacks Supabase's roles and auth schema.
@@ -155,52 +236,21 @@ jobs:
           DATABASE_URL: ${{ secrets.MIGRATION_DATABASE_URL }}
         run: npm run db:migrate
 
-      # The same four variables deploy-rolodeck.ps1 sets, and no more: a key the running app does
-      # not read has no business on a public host. Both database variables are the pooler URL,
-      # for the IPv6 reason above. SUPABASE_DB_URL is read by nothing since ADR 0013 retired it,
-      # but it is the same URL as DATABASE_URL, and it stays so this and the manual script leave
-      # Vercel identical; drop it from both together.
-      - id: environment
-        name: Set the production environment variables
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
-          DATABASE_URL: ${{ secrets.SUPABASE_POOLER_URL }}
-          SUPABASE_DB_URL: ${{ secrets.SUPABASE_POOLER_URL }}
+      # The same check again, now that the migration has taken time. It is the one step that can
+      # fail between migrating and deploying, and it holds no secret. If main has moved, this
+      # commit's schema is applied but not its code, and the run for the newer commit, which the
+      # concurrency group queued behind this one, migrates and deploys that.
+      - id: tip_before_deploy
+        name: Check main has not moved since the migration
         run: |
           set -euo pipefail
-
-          # Through stdin, never --value, which would put a live credential on a command line.
-          # printf '%s' rather than echo, so no trailing newline becomes part of the value. The
-          # manual script's first deploy stored a BOM as the first character of
-          # NEXT_PUBLIC_SUPABASE_URL, and every sign-in failed against a URL that looked right.
-          set_var() {
-            printf '%s' "${!1}" \
-              | npx --yes "$VERCEL_CLI" env add "$1" production --force --type "$2" --yes > /dev/null
-            echo "set $1 ($2)"
-          }
-          set_var NEXT_PUBLIC_SUPABASE_URL config
-          set_var NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY config
-          set_var DATABASE_URL secret
-          set_var SUPABASE_DB_URL secret
-
-          # Verify rather than trust: a wrong value deploys perfectly and fails only at sign-in.
-          # Secret-typed values cannot be pulled back, so only the config ones can be checked.
-          pulled="$RUNNER_TEMP/vercel-verify.env"
-          trap 'rm -f "$pulled"' EXIT
-          npx --yes "$VERCEL_CLI" env pull "$pulled" --environment production --yes > /dev/null
-          for name in NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY; do
-            stored=$(grep -m1 "^${name}=" "$pulled" | cut -d= -f2- || true)
-            stored=${stored#\"}
-            stored=${stored%\"}
-            sent=${!name}
-            if [ "$stored" != "$sent" ]; then
-              echo "::error::$name did not round-trip: sent ${#sent} characters, stored ${#stored}."
-              exit 1
-            fi
-            echo "verified $name round-trips exactly"
-          done
+          git fetch --no-tags --depth=1 origin +refs/heads/main:refs/remotes/origin/main
+          main_sha=$(git rev-parse refs/remotes/origin/main)
+          if [ "$main_sha" != "$GITHUB_SHA" ]; then
+            echo "::error::This run is for $GITHUB_SHA, but origin/main is $main_sha. Refusing to ship a commit main has moved past; to redeploy, re-run the Deploy run for $main_sha instead."
+            exit 1
+          fi
+          echo "origin/main is $GITHUB_SHA, this run's commit."
 
       # `--prod` waits for the build and for the production domain to be moved onto the new
       # deployment before it exits, so the smoke test below reaches this deployment and not
@@ -211,7 +261,7 @@ jobs:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: |
           set -euo pipefail
-          url=$(npx --yes "$VERCEL_CLI" deploy --prod --yes)
+          url=$(./node_modules/.bin/vercel deploy --prod --yes)
           echo "Deployed $url, now serving $PRODUCTION_URL"
 
       # Against the production domain rather than the deployment's own URL: Vercel's standard
@@ -249,10 +299,12 @@ jobs:
             (steps.setup_node.outcome == 'failure' || steps.setup_node.outcome == 'cancelled') && 'Set up Node' ||
             (steps.install.outcome == 'failure' || steps.install.outcome == 'cancelled') && 'Install dependencies' ||
             (steps.browsers.outcome == 'failure' || steps.browsers.outcome == 'cancelled') && 'Install the smoke test browser' ||
+            (steps.tip_before_migrate.outcome == 'failure' || steps.tip_before_migrate.outcome == 'cancelled') && 'Check this commit is still the tip of main' ||
             (steps.preflight.outcome == 'failure' || steps.preflight.outcome == 'cancelled') && 'Check the production secrets' ||
             (steps.link.outcome == 'failure' || steps.link.outcome == 'cancelled') && 'Check the Vercel project is reachable' ||
-            (steps.migrate.outcome == 'failure' || steps.migrate.outcome == 'cancelled') && 'Apply pending migrations' ||
             (steps.environment.outcome == 'failure' || steps.environment.outcome == 'cancelled') && 'Set the production environment variables' ||
+            (steps.migrate.outcome == 'failure' || steps.migrate.outcome == 'cancelled') && 'Apply pending migrations' ||
+            (steps.tip_before_deploy.outcome == 'failure' || steps.tip_before_deploy.outcome == 'cancelled') && 'Check main has not moved since the migration' ||
             (steps.deploy.outcome == 'failure' || steps.deploy.outcome == 'cancelled') && 'Deploy to Vercel production' ||
             (steps.smoke.outcome == 'failure' || steps.smoke.outcome == 'cancelled') && 'Smoke test the deployment' ||
             'an unidentified step'
@@ -280,6 +332,11 @@ jobs:
               'A failure after it leaves the schema ahead of the running code. A failed *Smoke' \
               'test the deployment* means the new deployment is live and broken; promoting the' \
               'previous one in the Vercel dashboard is the rollback.' \
+              '' \
+              'Either *Check ...main* step failing is deliberate: this commit is no longer the tip' \
+              'of `main`, usually because this is a re-run of an older run, and shipping it would' \
+              'roll production back. The run for the newest commit deploys that one; to redeploy,' \
+              're-run that run rather than this one.' \
               '' \
               'A failed migration shows no Postgres error in the log, because drizzle-kit hides' \
               'it: reproduce with `npm run db:migrate` against a copy of production.'

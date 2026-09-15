@@ -12,10 +12,12 @@ anyone looked, production was five migrations behind `main`.
 ## The decision
 
 **Merging to `main` applies pending migrations and then deploys.** One workflow,
-`.github/workflows/deploy.yml`, holds one job. Its steps run in a fixed order: migrate, set
-the app's environment, deploy, smoke test. A failed step skips every step after it, so a
-failed migration means no deploy. Drizzle applies every pending migration in a single
-transaction, so a failed one also leaves the schema as it was. Schema goes first because the other order is the broken
+`.github/workflows/deploy.yml`, holds one job. Its steps run in a fixed order: set the app's
+environment, migrate, deploy, smoke test. A failed step skips every step after it, so a
+failed migration means no deploy. Setting the environment comes first, since Ticket #149, so
+nothing that calls Vercel's API can fail between the migration and the deploy; Vercel applies
+environment changes to new deployments only, so doing it early changes nothing already serving.
+Drizzle applies every pending migration in a single transaction, so a failed one also leaves the schema as it was. Schema goes first because the other order is the broken
 one. Code that expects a table the database lacks fails every request that reads it. A schema
 one merge ahead of the running code is what an additive migration is written to tolerate.
 
@@ -56,10 +58,22 @@ database credential a scheduled or repository-wide workflow may hold. CLAUDE.md 
 exception, and `scripts/deploy-workflow.test.ts` fails if the workflow names any secret beyond
 its list.
 
-`SUPABASE_DB_URL`, which ADR 0013 retired, is still one of the four variables set in Vercel,
-pointed at the same pooler URL as `DATABASE_URL`. Nothing reads it. It stays so the workflow and
-`deploy-rolodeck.ps1` leave Vercel in the same state. It adds no credential Vercel does not
-already hold, and it should be dropped from both routes together.
+**Only the tip of `main` deploys.** A GitHub re-run keeps its original commit, workflow file
+and ref, so the `main`-only guards above all pass for a commit `main` has since moved past.
+Drizzle would apply nothing, and the deploy would ship old code behind the newer schema. So
+the job fetches `origin/main` before any step that holds a secret, and again just before the
+deploy, and fails naming both SHAs unless this commit is still its tip. The second check is
+the one step between migrating and deploying, deliberately: if `main` moved during the
+migration, the run queued behind this one deploys the newer commit.
+
+**Nothing unlocked installs beside a secret.** The Vercel CLI is a pinned devDependency that
+`npm ci` installs from the lockfile before any secret is set, not `npx vercel@<version>`,
+which resolves its dependencies unlocked inside the step holding the token.
+
+`SUPABASE_DB_URL`, which ADR 0013 retired, was set in Vercel until Ticket #149, pointed at the
+same pooler URL as `DATABASE_URL`. Nothing reads it, so the workflow no longer sets it, and it
+fails before migrating if Vercel's production environment lists it or `SUPABASE_SECRET_KEY`.
+`deploy-rolodeck.ps1` lives outside this repository and must stop setting it by hand.
 
 **Failure is loud.** A failed run opens a GitHub issue naming the step and linking the run, or
 comments on the one already open, so it arrives in the same queue as every other piece of
