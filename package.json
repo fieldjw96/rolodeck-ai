@@ -26,6 +26,7 @@
     "ingest:seed": "tsx scripts/ingest-seed.ts",
     "ingest:events": "tsx scripts/ingest-events.ts",
     "ingest:news": "tsx scripts/ingest-news.ts",
+    "measure:profile-duplicates": "tsx scripts/measure-profile-duplicates.ts",
     "smoke": "tsx scripts/smoke.ts"
   },
   "dependencies": {
