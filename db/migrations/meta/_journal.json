@@ -64,6 +64,13 @@
       "when": 1789420023654,
       "tag": "0008_ingest_role",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1789485920970,
+      "tag": "0009_ingest_update_columns",
+      "breakpoints": true
     }
   ]
 }

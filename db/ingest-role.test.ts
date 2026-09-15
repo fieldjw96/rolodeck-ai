@@ -33,8 +33,8 @@ import { createScratchDb, type ScratchDb } from "./testing/scratch-db";
 const JACK = "11111111-1111-1111-1111-111111111111";
 const SOMEONE_ELSE = "22222222-2222-2222-2222-222222222222";
 
-const MIGRATION_PATH = fileURLToPath(
-  new URL("./migrations/0008_ingest_role.sql", import.meta.url),
+const ROLE_CHECK_PATH = fileURLToPath(
+  new URL("./testing/ingest-role-check.sql", import.meta.url),
 );
 
 const candidate = (name: string): ProfileCandidate => ({
@@ -143,16 +143,80 @@ describe("the ingest role itself", () => {
       { table: "public.event_attendances", privilege: "DELETE" },
       { table: "public.event_attendances", privilege: "INSERT" },
       { table: "public.event_attendances", privilege: "SELECT" },
-      { table: "public.event_attendances", privilege: "UPDATE" },
       { table: "public.events", privilege: "INSERT" },
       { table: "public.events", privilege: "SELECT" },
-      { table: "public.events", privilege: "UPDATE" },
       { table: "public.news_items", privilege: "INSERT" },
       { table: "public.news_items", privilege: "SELECT" },
-      { table: "public.news_items", privilege: "UPDATE" },
       { table: "public.profiles", privilege: "INSERT" },
       { table: "public.profiles", privilege: "SELECT" },
-      { table: "public.profiles", privilege: "UPDATE" },
+    ]);
+  });
+
+  it("may update every column of its tables but id and owner_id, and nothing else by column", async () => {
+    const { rows } = await scratch.client.query(
+      `select n.nspname || '.' || c.relname as "table",
+              x.privilege_type as privilege,
+              array_agg(a.attname::text order by a.attname) as columns
+         from pg_class c
+         join pg_namespace n on n.oid = c.relnamespace
+         join pg_attribute a on a.attrelid = c.oid and not a.attisdropped
+         cross join lateral aclexplode(a.attacl) x
+        where x.grantee = $1::regrole
+        group by 1, 2
+        order by 1, 2`,
+      [INGEST_ROLE],
+    );
+
+    expect(rows).toEqual([
+      {
+        table: "public.event_attendances",
+        privilege: "UPDATE",
+        columns: ["event_id", "profile_id"],
+      },
+      {
+        table: "public.events",
+        privilege: "UPDATE",
+        columns: [
+          "created_at",
+          "end_date",
+          "external_id",
+          "location",
+          "name",
+          "source",
+          "start_date",
+          "url",
+        ],
+      },
+      {
+        table: "public.news_items",
+        privilege: "UPDATE",
+        columns: [
+          "confidence",
+          "description",
+          "fetched_at",
+          "profile_id",
+          "published_at",
+          "source_name",
+          "title",
+          "url",
+        ],
+      },
+      {
+        table: "public.profiles",
+        privilege: "UPDATE",
+        columns: [
+          "created_at",
+          "description",
+          "location",
+          "name",
+          "name_key",
+          "provenance",
+          "sector",
+          "source",
+          "stage",
+          "website",
+        ],
+      },
     ]);
   });
 });
@@ -267,6 +331,49 @@ describe("logged in as the ingest role", () => {
       /permission denied for table user_profiles/,
     );
   });
+
+  // Its update policies are `with check (true)`, so only the column grant stands between an
+  // update and a row moved into another account.
+  it("cannot move a Company Profile into another account, but can still correct one", async () => {
+    expect(
+      await refusal("update profiles set owner_id = $1 where id = $2", [
+        SOMEONE_ELSE,
+        keptProfileId,
+      ]),
+    ).toMatch(/permission denied for table profiles/);
+
+    expect(
+      await refusal("update profiles set description = $1 where id = $2", [
+        "Sprocket, corrected by ingest.",
+        keptProfileId,
+      ]),
+    ).toBeNull();
+    const { rows } = await session.client.query(
+      "select owner_id, description from profiles where id = $1",
+      [keptProfileId],
+    );
+    expect(rows).toEqual([
+      { owner_id: JACK, description: "Sprocket, corrected by ingest." },
+    ]);
+  });
+
+  it.each(["news_items", "events"])(
+    "cannot move a row of %s into another account",
+    async (table) => {
+      expect(
+        await refusal(`update ${table} set owner_id = $1`, [SOMEONE_ELSE]),
+      ).toMatch(new RegExp(`permission denied for table ${table}`));
+    },
+  );
+
+  it.each(["profiles", "news_items", "events"])(
+    "cannot change the id of a row of %s",
+    async (table) => {
+      expect(
+        await refusal(`update ${table} set id = gen_random_uuid()`),
+      ).toMatch(new RegExp(`permission denied for table ${table}`));
+    },
+  );
 
   it.each(["profiles", "news_items", "events"])(
     "cannot delete from %s",
@@ -434,20 +541,17 @@ describe("what ingest does, as the ingest role", () => {
   });
 });
 
-describe("the migration's own check on the role", () => {
+describe("the check on the role", () => {
   /**
-   * The last statement of migration `0008_ingest_role`, which refuses to finish if the role is
-   * any broader than the migration made it. Run here against a role deliberately broadened, so
-   * the check that guards the real project has been seen to fail and not only to pass.
+   * `db/testing/ingest-role-check.sql`, which refuses a role any broader than the migrations make
+   * it. This is the only place it runs: against `scratch`, freshly migrated, and then against a
+   * role deliberately broadened, so it has been seen to fail and not only to pass.
    */
   async function roleCheck(): Promise<string> {
-    const statements = (await readFile(MIGRATION_PATH, "utf8")).split(
-      "--> statement-breakpoint",
-    );
-    return statements.at(-1)!;
+    return readFile(ROLE_CHECK_PATH, "utf8");
   }
 
-  it("passes on the role as the migration left it", async () => {
+  it("passes on the role as the migrations left it", async () => {
     await expect(scratch.client.exec(await roleCheck())).resolves.toBeDefined();
   });
 
@@ -496,6 +600,56 @@ describe("the migration's own check on the role", () => {
       "membership of authenticated",
       "grant authenticated to rolodeck_ingest",
       "revoke authenticated from rolodeck_ingest",
+    ],
+    [
+      "a grant on a table in a schema that is neither public nor auth",
+      "create schema elsewhere; create table elsewhere.secrets (id int); grant select on elsewhere.secrets to rolodeck_ingest",
+      "drop schema elsewhere cascade",
+    ],
+    [
+      "a grant on drizzle's own migrations table",
+      "grant select on drizzle.__drizzle_migrations to rolodeck_ingest",
+      "revoke select on drizzle.__drizzle_migrations from rolodeck_ingest",
+    ],
+    [
+      "usage of a schema beyond public and ingest",
+      "grant usage on schema drizzle to rolodeck_ingest",
+      "revoke usage on schema drizzle from rolodeck_ingest",
+    ],
+    [
+      "the right to create in public",
+      "grant create on schema public to rolodeck_ingest",
+      "revoke create on schema public from rolodeck_ingest",
+    ],
+    [
+      "a grant on a sequence",
+      "grant usage on sequence drizzle.__drizzle_migrations_id_seq to rolodeck_ingest",
+      "revoke usage on sequence drizzle.__drizzle_migrations_id_seq from rolodeck_ingest",
+    ],
+    [
+      "a grant to PUBLIC on a sequence",
+      "create sequence public.escape_seq; grant select on sequence public.escape_seq to public",
+      "drop sequence public.escape_seq",
+    ],
+    [
+      "update on owner_id",
+      "grant update (owner_id) on news_items to rolodeck_ingest",
+      "revoke update (owner_id) on news_items from rolodeck_ingest",
+    ],
+    [
+      "update on id",
+      "grant update (id) on profiles to rolodeck_ingest",
+      "revoke update (id) on profiles from rolodeck_ingest",
+    ],
+    [
+      "a new function in public, which Postgres makes executable by PUBLIC",
+      "create function public.escape() returns int language sql as 'select 1'",
+      "drop function public.escape()",
+    ],
+    [
+      "a SECURITY DEFINER function executable by PUBLIC in a schema it cannot use",
+      "create schema elsewhere; create function elsewhere.escape() returns int language sql security definer as 'select 1'",
+      "drop schema elsewhere cascade",
     ],
   ])(
     "refuses a role broadened with %s",
