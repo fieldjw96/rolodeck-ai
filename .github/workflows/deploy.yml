@@ -46,6 +46,13 @@ jobs:
       PRODUCTION_URL: https://rolodeck-ai.vercel.app
       # Pinned, so the CLI flags below are the ones checked when this was written.
       VERCEL_CLI: vercel@59.17.0
+      # Which Vercel project to act on. Identifiers, not credentials, so they may sit at job
+      # level. With these set the CLI needs no `vercel link`, and so no account-level read:
+      # VERCEL_TOKEN is scoped to this one project, and `vercel whoami` and `vercel link` both
+      # failed with "User not found" because a project-scoped token cannot see its owner. The
+      # values are the ones `vercel link` writes to `.vercel/project.json`.
+      VERCEL_ORG_ID: team_QzwRrcOjY06TV0ugqA0fwsaG
+      VERCEL_PROJECT_ID: prj_GAlCUw73gTlFxlMOSOBt1AXTX2yK
     # Secrets are handed to the steps that need them, by name, and never at job level:
     # `npm ci` runs dependencies' install scripts, and those have no business seeing them.
     steps:
@@ -119,18 +126,22 @@ jobs:
           echo "Every production secret is present, and both database URLs use the pooler."
 
       - id: link
-        name: Link the Vercel project
+        name: Check the Vercel project is reachable
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: |
           set -euo pipefail
           # The CLI reads VERCEL_TOKEN from the environment, so the token never appears on a
-          # command line. Assigned rather than echoed inline, so a bad token fails here, by name.
-          who=$(npx --yes "$VERCEL_CLI" whoami)
-          echo "Deploying as $(printf '%s' "$who" | tail -n 1)"
-          npx --yes "$VERCEL_CLI" link --yes --project rolodeck-ai > /dev/null
-          # `vercel link` can write a live OIDC token into .env.local. Nothing reads it here.
-          rm -f .env.local
+          # command line, and VERCEL_ORG_ID and VERCEL_PROJECT_ID from the job's env, so there
+          # is nothing to link.
+          #
+          # This used to run `vercel whoami` and `vercel link`. Both need to read the account
+          # that owns the token, and a token scoped to a single project cannot, so both failed
+          # with "User not found" against a token that was otherwise fine. Listing the project's
+          # own variables is a project-level read, which is exactly what the later steps need,
+          # so a bad token or a wrong project id still fails here, by name, before migrations.
+          npx --yes "$VERCEL_CLI" env ls production > /dev/null
+          echo "Vercel project $VERCEL_PROJECT_ID is reachable with this token."
 
       # Production is a real Supabase project, so db/testing/supabase-shim.sql is never applied
       # here: it exists for scratch Postgres that lacks Supabase's roles and auth schema.
@@ -239,7 +250,7 @@ jobs:
             (steps.install.outcome == 'failure' || steps.install.outcome == 'cancelled') && 'Install dependencies' ||
             (steps.browsers.outcome == 'failure' || steps.browsers.outcome == 'cancelled') && 'Install the smoke test browser' ||
             (steps.preflight.outcome == 'failure' || steps.preflight.outcome == 'cancelled') && 'Check the production secrets' ||
-            (steps.link.outcome == 'failure' || steps.link.outcome == 'cancelled') && 'Link the Vercel project' ||
+            (steps.link.outcome == 'failure' || steps.link.outcome == 'cancelled') && 'Check the Vercel project is reachable' ||
             (steps.migrate.outcome == 'failure' || steps.migrate.outcome == 'cancelled') && 'Apply pending migrations' ||
             (steps.environment.outcome == 'failure' || steps.environment.outcome == 'cancelled') && 'Set the production environment variables' ||
             (steps.deploy.outcome == 'failure' || steps.deploy.outcome == 'cancelled') && 'Deploy to Vercel production' ||
