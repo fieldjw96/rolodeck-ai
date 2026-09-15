@@ -279,9 +279,11 @@ migration `0008_ingest_role`. See `docs/adr/0013` for why it exists and how it i
 Company Profiles are Kept.
 
 **What it may not:** read or write `swipes`, `user_profiles`, or anything in the `auth` schema;
-delete or truncate a Company Profile, an Event or News; create roles or databases; or become
-any other role. `db/ingest-role.test.ts` asserts each of those against a real Postgres, and the
-migration itself refuses to finish if the role it leaves behind can do more.
+change a row's `id` or `owner_id`, so move nothing between accounts; delete or truncate a Company
+Profile, an Event or News; create roles or databases; or become any other role.
+`db/ingest-role.test.ts` asserts each of those against a real Postgres, and runs
+`db/testing/ingest-role-check.sql` to refuse a role the migrations leave any broader. That check
+runs in the test suite only: a grant made by hand in the Supabase SQL editor is caught by nothing.
 
 **It is the only database credential that belongs in GitHub Actions repository secrets.**
 Scheduled ingest runs there, so this one connection string may be an Actions secret.
@@ -300,8 +302,10 @@ Setting it up, once the migration has been applied — by hand, never by a Run:
 3. Put it in `.env.local` on the server laptop and, for the scheduled workflows, in the
    repository's Actions secrets under the same name.
 
-`getIngestDb()` refuses a connection string whose user is anything but `rolodeck_ingest`, so
-pasting the `postgres` one in its place fails on the first line rather than quietly working.
+`getIngestDb()` refuses a connection string whose user is anything but `rolodeck_ingest`, or that
+carries any query parameter but `sslmode`, so pasting the `postgres` one in its place fails on the
+first line rather than quietly working. It then asks Postgres `select current_user`, and refuses
+to write unless the answer is `rolodeck_ingest`.
 
 ### The Diary's events Sources
 

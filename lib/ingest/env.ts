@@ -31,6 +31,25 @@ function connectsAsIngestRole(value: string): boolean {
 }
 
 /**
+ * The only query parameter a connection string may carry. postgres.js sends any parameter it
+ * does not recognise to the server as a startup parameter, and a startup parameter named `user`
+ * replaces the URL's own: `rolodeck_ingest:…@host/db?user=postgres` logs in as `postgres` while
+ * `connectsAsIngestRole` reads `rolodeck_ingest`. So rather than list the dangerous ones, every
+ * parameter but the one ingest needs is refused.
+ */
+const PERMITTED_QUERY_PARAMETERS: ReadonlySet<string> = new Set(["sslmode"]);
+
+function carriesOnlyPermittedParameters(value: string): boolean {
+  try {
+    return [...new URL(value).searchParams.keys()].every((name) =>
+      PERMITTED_QUERY_PARAMETERS.has(name),
+    );
+  } catch {
+    return false;
+  }
+}
+
+/**
  * The one database credential ingest holds, and the only one permitted in GitHub Actions.
  *
  * Named for what it is rather than for Supabase, and deliberately unlike the app's own
@@ -43,6 +62,9 @@ const ingestDatabaseSchema = z.object({
     .url({ protocol: /^postgres(ql)?$/ })
     .refine(connectsAsIngestRole, {
       error: `must log in as the ${INGEST_ROLE} role (or ${INGEST_ROLE}.<project-ref> through Supabase's pooler), never as postgres — see docs/adr/0013`,
+    })
+    .refine(carriesOnlyPermittedParameters, {
+      error: `may carry no query parameter but sslmode, because any other is sent to Postgres at login and ?user= replaces the ${INGEST_ROLE} login — see docs/adr/0013`,
     }),
 });
 
