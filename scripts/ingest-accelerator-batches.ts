@@ -7,6 +7,11 @@ import {
   parseAngelPadPortfolio,
 } from "../lib/ingest/angelpad";
 import {
+  describeEmptySources,
+  emptySources,
+  type SourceRun,
+} from "../lib/ingest/multi-source-run";
+import {
   toProfileProvenance,
   type ProfileAttribution,
 } from "../lib/ingest/scraped-profile";
@@ -58,9 +63,10 @@ import {
  * deals the Deck a second card for those. Left for the later Ticket ADR 0008 already points to,
  * not solved here.
  *
- * Exits non-zero when the run wrote nothing at all, across both sources. A scraper whose
- * selectors have gone stale returns zero rows and reports success, and that silence is the
- * failure this project keeps meeting.
+ * Exits non-zero when either Source wrote nothing, even if the other wrote rows: a scraper
+ * whose selectors have gone stale returns zero rows and reports success, and summing the two
+ * Sources' counts before checking would let a healthy South Park Commons run hide a dead
+ * AngelPad. See `lib/ingest/multi-source-run.ts`.
  */
 
 type Batch = {
@@ -112,7 +118,7 @@ async function main(): Promise<void> {
   const db = await getIngestDb();
   const capturedAt = new Date().toISOString().slice(0, 10);
 
-  let totalWritten = 0;
+  const runs: SourceRun[] = [];
 
   for (const batch of BATCHES) {
     const page = await client.get(batch.url);
@@ -130,15 +136,13 @@ async function main(): Promise<void> {
     });
 
     console.log(summarise(batch.source, parsed.rejections, report));
-    totalWritten += report.inserted + report.updated;
+    runs.push({ source: batch.source, report });
   }
 
-  if (totalWritten === 0) {
-    throw new Error(
-      "This run wrote no Profiles at all, across every accelerator batch page. Either " +
-        "both pages changed shape, or something upstream is down — check the rejections " +
-        "above before believing either page is simply empty.",
-    );
+  const empty = emptySources(runs);
+
+  if (empty.length > 0) {
+    throw new Error(describeEmptySources(empty, "Profiles"));
   }
 }
 

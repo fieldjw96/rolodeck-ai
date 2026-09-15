@@ -119,6 +119,13 @@ describe("wroteNothing", () => {
   it("passes a first run", () => {
     expect(wroteNothing(report({ inserted: 12 }))).toBe(false);
   });
+
+  // scripts/fetch-show-hn.ts imports this rather than defining its own: a week whose
+  // companies were all seen before, and a manual re-run straight after a scheduled one, must
+  // both pass rather than fail on `inserted === 0` alone.
+  it("passes a show-hn run where every company already existed", () => {
+    expect(wroteNothing(report({ inserted: 0, updated: 5 }))).toBe(false);
+  });
 });
 
 describe("summariseRun", () => {

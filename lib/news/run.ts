@@ -119,12 +119,15 @@ export async function fetchNewsForKeptProfiles(
 }
 
 /**
- * Whether the run should exit non-zero: any company the provider could not answer for. A run
- * that finds no articles is not a failure — a two-person startup can go a month unreported —
- * but a run that could not ask is, or a spent quota or a revoked key reads as a quiet month.
+ * Whether the run should exit non-zero: any company the provider could not answer for, or zero
+ * Kept Company Profiles searched at all. A run that asked about companies and found no articles
+ * is not a failure — a two-person startup can go a month unreported — but a run that asked about
+ * nobody is exactly the silent failure this Ticket's Sources are held to elsewhere: a broken
+ * `readKeptCompaniesForNews`, or Jack having Kept nothing, both report success today and
+ * shouldn't. A spent quota or a revoked key already fails via `failures`.
  */
 export function newsRunFailed(report: NewsRunReport): boolean {
-  return report.failures.length > 0;
+  return report.failures.length > 0 || report.companies === 0;
 }
 
 /** What the run did, in the order an operator wants to read it. */
