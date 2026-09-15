@@ -1,7 +1,10 @@
 // @vitest-environment node
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
-import { measureProfileDuplicates } from "./measure-profile-duplicates";
+import {
+  measureProfileDuplicates,
+  readOnly,
+} from "./measure-profile-duplicates";
 import { profiles } from "../../db/schema";
 import { createScratchDb, type ScratchDb } from "../../db/testing/scratch-db";
 
@@ -377,25 +380,100 @@ describe("measureProfileDuplicates", () => {
       },
     ]);
 
-    // Switch to ingest role, which can SELECT, INSERT, and UPDATE on profiles per ADR 0013
+    // The ingest role can SELECT, INSERT and UPDATE profiles (ADR 0013). The report must still
+    // read correctly through it, which is what this half proves.
     await scratch.as("rolodeck_ingest");
 
-    // Get state before
-    const statsBefore = await measureProfileDuplicates(scratch.db, JACK);
+    const stats = await measureProfileDuplicates(scratch.db, JACK);
+    expect(stats.totalProfiles).toBe(2);
+    expect(stats.profilesInMultipleSources).toBe(2);
+  });
 
-    // Attempt to verify no writes occurred by checking that mutations fail as expected
-    // The ingest role can write to these tables, but we can verify the function uses them read-only
-    const rowsBefore = await scratch.db.select().from(profiles);
-    expect(rowsBefore).toHaveLength(2);
+  /**
+   * The criterion as written, and the one the previous version of this test only claimed to
+   * meet. That test ran the report and checked the rows did not change, which proves the
+   * current code happens not to write, not that it cannot. The ingest role is allowed to write
+   * profiles, so nothing about the connection stopped a write either.
+   *
+   * This attempts one, as the same role, through the same read-only wrapper the report uses,
+   * and requires Postgres to refuse it.
+   */
+  it("refuses a write made through the report's read-only transaction, even as the ingest role", async () => {
+    await scratch.as("rolodeck_ingest");
 
-    // Run the analysis again
-    const statsAfter = await measureProfileDuplicates(scratch.db, JACK);
+    // Drizzle wraps the driver error as "Failed query: ...", so the Postgres reason is on
+    // `cause`. Asserting on the reason rather than on "it threw" matters here: an insert can
+    // also fail on a constraint, and a test that accepted any failure would pass for the
+    // wrong reason while proving nothing about read-only.
+    const refusal = await readOnly(scratch.db, (tx) =>
+      tx.insert(profiles).values({
+        ownerId: JACK,
+        source: "yc",
+        name: "Should Never Land",
+        description: "A write the report must not be able to make",
+        sector: "other",
+        stage: "seed",
+        website: null,
+        location: null,
+        provenance: {
+          name: "scraped",
+          description: "scraped",
+          sector: "scraped",
+          stage: "scraped",
+          website: null,
+          location: null,
+        },
+      }),
+    ).then(
+      () => null,
+      (error: unknown) => error,
+    );
 
-    // Verify no rows were added/deleted and results are consistent
-    const rowsAfter = await scratch.db.select().from(profiles);
-    expect(rowsAfter).toEqual(rowsBefore);
-    expect(statsBefore).toEqual(statsAfter);
-    expect(statsAfter.totalProfiles).toBe(2);
-    expect(statsAfter.profilesInMultipleSources).toBe(2);
+    expect(
+      refusal,
+      "the write went through, so the transaction was not read-only",
+    ).not.toBeNull();
+    const reason = String(
+      ((refusal as { cause?: { message?: unknown } }).cause?.message ??
+        (refusal as Error).message) as string,
+    );
+    expect(reason).toMatch(/read-only transaction/);
+
+    const rows = await scratch.db.select().from(profiles);
+    expect(rows.find((r) => r.name === "Should Never Land")).toBeUndefined();
+  });
+
+  // Guards the guard: without this, a readOnly() that silently stopped setting the transaction
+  // read-only would leave the refusal test above as the only signal, and a broken wrapper
+  // around a test that never writes would pass everything.
+  it("still lets the same role write outside the read-only wrapper", async () => {
+    await scratch.as("rolodeck_ingest");
+    // A plain await: if the role could not write at all, this throws and the test fails, which
+    // is the point. `expect(promise).resolves.not.toThrow()` would not have caught that, since
+    // `toThrow` expects a function and a resolved insert result is not one.
+    await scratch.db.insert(profiles).values({
+      ownerId: JACK,
+      source: "yc",
+      name: "Written Outside The Wrapper",
+      description:
+        "Proves the refusal above comes from READ ONLY, not from missing grants",
+      sector: "other",
+      stage: "seed",
+      website: null,
+      location: null,
+      provenance: {
+        name: "scraped",
+        description: "scraped",
+        sector: "scraped",
+        stage: "scraped",
+        website: null,
+        location: null,
+      },
+    });
+
+    const rows = await scratch.db.select().from(profiles);
+    expect(
+      rows.find((r) => r.name === "Written Outside The Wrapper"),
+    ).toBeDefined();
   });
 });

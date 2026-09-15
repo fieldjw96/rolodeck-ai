@@ -17,13 +17,41 @@ export interface DuplicateStats {
 }
 
 /**
+ * Runs `work` inside a transaction Postgres itself holds read-only.
+ *
+ * This is what makes the duplicate report read-only in fact rather than by intention. The
+ * ingest role it connects as can INSERT and UPDATE `profiles` (ADR 0013), so "this function
+ * only happens to issue SELECTs" is a promise about today's code, not a property anyone can
+ * test. `SET TRANSACTION READ ONLY` is: any INSERT, UPDATE, DELETE or DDL inside the
+ * transaction fails with "cannot execute ... in a read-only transaction", whatever the
+ * role's grants, so a future edit that adds a write fails loudly instead of silently
+ * mutating production.
+ */
+export async function readOnly<T>(
+  db: Database,
+  work: (tx: Database) => Promise<T>,
+): Promise<T> {
+  return db.transaction(async (tx) => {
+    await tx.execute(sql`set transaction read only`);
+    return work(tx);
+  });
+}
+
+/**
  * Analyze how many profiles appear under multiple sources by name_key.
  * Returns a DuplicateStats object with the count, percentage, and worst offenders.
+ *
+ * Every query runs inside {@link readOnly}, so the report cannot write even though the
+ * connection it is given could.
  */
 export async function measureProfileDuplicates(
   db: Database,
   ownerId: string,
 ): Promise<DuplicateStats> {
+  return readOnly(db, (tx) => measure(tx, ownerId));
+}
+
+async function measure(db: Database, ownerId: string): Promise<DuplicateStats> {
   // Get total count of all profiles
   const totalResult = await db
     .select({ count: count() })
