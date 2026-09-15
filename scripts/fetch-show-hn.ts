@@ -59,7 +59,7 @@ async function main(): Promise<void> {
     provenance: toProfileProvenance(profile.attribution),
   }));
 
-  const report = await persistProfiles(getIngestDb(), {
+  const report = await persistProfiles(await getIngestDb(), {
     source: "show-hn",
     candidates,
   });

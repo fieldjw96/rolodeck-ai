@@ -17,7 +17,7 @@ import { readOwnerId } from "../lib/ingest/env";
  */
 async function main(): Promise<void> {
   const ownerId = readOwnerId();
-  const db = getIngestDb();
+  const db = await getIngestDb();
 
   const stats = await measureProfileDuplicates(db, ownerId);
   console.log(formatDuplicateReport(stats));

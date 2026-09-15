@@ -24,7 +24,7 @@ async function main(): Promise<void> {
   const client = createGNewsClient({ apiKey: readGNewsApiKey() });
   const ownerId = readOwnerId();
 
-  const report = await fetchNewsForKeptProfiles(getIngestDb(), {
+  const report = await fetchNewsForKeptProfiles(await getIngestDb(), {
     ownerId,
     client,
   });

@@ -23,7 +23,8 @@ trade.
 Migration `0008_ingest_role` creates it with `LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT
 NOREPLICATION NOBYPASSRLS`, a member of no other role, and grants it:
 
-- `SELECT`, `INSERT` and `UPDATE` on `profiles`, `news_items`, `events` and `event_attendances`;
+- `SELECT`, `INSERT` and `UPDATE` on `profiles`, `news_items`, `events` and `event_attendances`,
+  the `UPDATE` on every column but `id` and `owner_id` since migration `0009`, below;
 - `DELETE` on `event_attendances` alone, because `persistEvents` replaces an Event's Attendance
   on every run so that a company a Source stops naming stops being linked;
 - `EXECUTE` on `ingest.kept_profile_ids(uuid)`, described below.
@@ -54,21 +55,42 @@ own `ingest` schema rather than `public`, because PostgREST exposes `public` fun
 Supabase grants `EXECUTE` on them to `anon` by default; `EXECUTE` is revoked from `PUBLIC`, `anon`
 and `authenticated` and granted to `rolodeck_ingest` alone.
 
-**The migration checks its own work, on every database it runs against.** Its last statement
-fails the migration if the role is a superuser, can create roles or databases, replicates,
-bypasses RLS, belongs to any role, or holds any privilege — directly, through `PUBLIC`, or on a
-column — on a relation in `public` or `auth` beyond its four tables, or `TRUNCATE` or an unlisted
-`DELETE` on those. The tests run against a scratch Postgres with a shim for Supabase's roles; this
-is what asks the same question of the real project, where the tests never run.
-`db/ingest-role.test.ts` broadens the role each of those ways and watches the check refuse it.
+**It cannot move a row between accounts.** Migration `0009_ingest_update_columns` replaced the
+table-wide `UPDATE` with `UPDATE` on named columns: every column of the four tables except `id`
+and `owner_id`. Ingest's upserts never set either, and an update that tries is refused with
+"permission denied" before RLS, whose `with check (true)` would otherwise have allowed it. A
+column added later gets no `UPDATE` for this role until a migration grants it.
+
+**A check asks whether the role is any broader than this, and it runs in the test suite.**
+`db/testing/ingest-role-check.sql` fails if the role is a superuser, can create roles or
+databases, replicates, bypasses RLS, or belongs to any role; if it holds `CREATE` on any schema,
+or `USAGE` on one but `public` and `ingest`; if it holds any privilege — directly, through
+`PUBLIC`, or on a column — on a relation or sequence in any schema that is not Postgres's own,
+beyond its four tables; if it holds `TRUNCATE`, an unlisted `DELETE`, or `UPDATE` on `id` or
+`owner_id` on those; or if it can execute any function but `ingest.kept_profile_ids` that is
+`SECURITY DEFINER` or sits in a schema it can use, which counts every function Postgres made
+executable by `PUBLIC` by default. `db/ingest-role.test.ts` runs it against a freshly migrated
+scratch Postgres, with a shim for Supabase's roles, then broadens the role each of those ways and
+watches it refuse.
+
+That is where it runs, and the only place. Migration `0008` ended with a narrower form of the
+same check, but a committed migration runs once, when it is first applied, and never again: it
+said the role was right on the day `0008` reached the real project and says nothing after. What
+the test suite checks is the role the migrations produce, so a migration that broadens it fails
+CI before it is merged. **A grant made by hand in the Supabase SQL editor is caught by nothing**:
+the real project is never tested, and no migration looks at it again.
 
 **The connection string is `ROLODECK_INGEST_DATABASE_URL`, and it must log in as the role.**
 Named for what it is, and unlike `DATABASE_URL`, so neither can be pasted into the other's place.
 `lib/ingest/env.ts` refuses it unless its user is `rolodeck_ingest`, or
 `rolodeck_ingest.<project-ref>` through Supabase's pooler: the scoping lives in the role, so the
 `postgres` connection string under the scoped name would be precisely a credential that looks
-scoped and is not. `getIngestDb()` moved to `db/ingest-connection.ts`, and `readOwnerId()` to
-`lib/ingest/env.ts`, so that nothing an ingest entry point loads names the secret key or reaches
+scoped and is not. It also refuses every query parameter but `sslmode`, because postgres.js
+sends one it does not recognise to the server at login, and `?user=postgres` there replaces the
+user the URL names. Reading the string can only say who it asks to log in as, so the connection
+asks Postgres too: before ingest's first query, `getIngestDb()` runs `select current_user` and
+refuses to hand out a connection unless the answer is `rolodeck_ingest`. `getIngestDb()` moved
+to `db/ingest-connection.ts`, and `readOwnerId()` to `lib/ingest/env.ts`, so that nothing an ingest entry point loads names the secret key or reaches
 the app's connection; `lib/ingest/credential-boundary.test.ts` walks each entry point's runtime
 imports to hold that.
 
@@ -116,9 +138,17 @@ string, as the README's "Ingest's credential" section describes. No Run ever hol
 
 A new table ingest needs to write gets nothing automatically — Supabase's default privileges name
 `anon`, `authenticated` and `service_role`, not this role — so the migration adding it has to grant
-the role and add its policies, and the check at the end of `0008` has to learn the new table name
-or it will refuse the next migration that runs it. That is deliberate: widening ingest should take
-an explicit step that a reviewer sees.
+the role, its columns included, and add its policies, and `db/testing/ingest-role-check.sql` has
+to learn the new table name or the test suite will fail. That is deliberate: widening ingest
+should take an explicit step that a reviewer sees. Nothing takes that step for a change made
+outside a migration: the check never sees the real project, so a grant typed into the SQL editor
+stands until someone notices it.
+
+Two things stay safe only while V1 has one account. `INSERT` accepts any `owner_id`, so ingest
+can write a new row into any account, though it cannot move an existing one; and
+`ingest.kept_profile_ids(for_owner)` answers for whichever owner it is asked about. With one
+account there is no other to write into or ask after. Adding a second, per CLAUDE.md's "multi-user
+is additive later", has to revisit both.
 
 `SUPABASE_DB_URL` is gone, replaced rather than repurposed, so a laptop still carrying the
 `postgres` connection string under the old name fails loudly naming the new one instead of
