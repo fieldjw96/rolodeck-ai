@@ -109,7 +109,7 @@ function summarise(
 
 async function main(): Promise<void> {
   const client = createAcceleratorClient();
-  const db = getIngestDb();
+  const db = await getIngestDb();
   const capturedAt = new Date().toISOString().slice(0, 10);
 
   let totalWritten = 0;
