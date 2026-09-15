@@ -8,6 +8,11 @@ import {
   type EventBatch,
 } from "../lib/ingest/luma-bond-ai-sf";
 import {
+  describeEmptySources,
+  emptySources,
+  type SourceRun,
+} from "../lib/ingest/multi-source-run";
+import {
   parseTechmemeEvents,
   TECHMEME_EVENTS_SOURCE,
 } from "../lib/ingest/techmeme-events";
@@ -47,9 +52,10 @@ import {
  * first. An Event whose hosts match nothing is still written; its attendances fill in the next
  * time this runs after those companies arrive.
  *
- * Exits non-zero when the run wrote no Events at all, across both Sources: a feed whose shape
- * has drifted returns nothing and reports success, and that silence is the failure this project
- * keeps meeting.
+ * Exits non-zero when either Source wrote no Events, even if the other wrote rows: a feed
+ * whose shape has drifted returns nothing and reports success, and summing the two Sources'
+ * counts before checking would let a healthy Techmeme run hide a dead Luma. See
+ * `lib/ingest/multi-source-run.ts`.
  */
 
 type Source = {
@@ -92,7 +98,7 @@ async function main(): Promise<void> {
   const client = createAcceleratorClient();
   const db = getIngestDb();
 
-  let totalWritten = 0;
+  const runs: SourceRun[] = [];
 
   for (const { source, url, parse } of SOURCES) {
     const page = await client.get(url);
@@ -101,15 +107,13 @@ async function main(): Promise<void> {
     const report = await persistEvents(db, { source, events: parsed.events });
 
     console.log(summarise(source, parsed.rejections, report));
-    totalWritten += report.inserted + report.updated;
+    runs.push({ source, report });
   }
 
-  if (totalWritten === 0) {
-    throw new Error(
-      "This run wrote no Events at all, across every events Source. Either both feeds " +
-        "changed shape, or something upstream is down — check the rejections above before " +
-        "believing either calendar is simply empty.",
-    );
+  const empty = emptySources(runs);
+
+  if (empty.length > 0) {
+    throw new Error(describeEmptySources(empty, "Events"));
   }
 }
 
