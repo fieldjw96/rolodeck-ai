@@ -144,7 +144,7 @@ describe("fetchNewsForKeptProfiles", () => {
     expect(report.companies).toBe(1);
   });
 
-  it("searches for nothing at all when nothing is Kept", async () => {
+  it("searches for nothing, and fails, when nothing is Kept", async () => {
     await companyProfile("Ramp", "fintech");
 
     const { client, searched } = fakeProvider({});
@@ -154,7 +154,10 @@ describe("fetchNewsForKeptProfiles", () => {
     });
 
     expect(searched).toEqual([]);
-    expect(newsRunFailed(report)).toBe(false);
+    // Zero Kept companies is indistinguishable, from inside this run, between "Jack hasn't
+    // Kept anyone yet" and a broken `readKeptCompaniesForNews` — so it fails either way,
+    // rather than the exemption this Ticket removes: see lib/news/run.ts.
+    expect(newsRunFailed(report)).toBe(true);
   });
 
   it("stores every article with its score, including the namesake below the threshold, and shows only the match", async () => {
@@ -283,8 +286,9 @@ describe("summariseNewsRun", () => {
     expect(summary).toContain("rejected on articles.0.url: Invalid URL");
   });
 
-  it("fails the run only when a company could not be searched for", () => {
+  it("fails when a company could not be searched for, or when none was searched at all", () => {
     expect(newsRunFailed(report)).toBe(true);
     expect(newsRunFailed({ ...report, failures: [], articles: 0 })).toBe(false);
+    expect(newsRunFailed({ ...report, failures: [], companies: 0 })).toBe(true);
   });
 });

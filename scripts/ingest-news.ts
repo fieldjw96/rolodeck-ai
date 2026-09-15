@@ -16,7 +16,8 @@ import {
  *
  *     GNEWS_API_KEY=... ROLODECK_INGEST_DATABASE_URL=... ROLODECK_OWNER_ID=... npm run ingest:news
  *
- * Exits non-zero when any company could not be searched for. See `newsRunFailed`.
+ * Exits non-zero when any company could not be searched for, or when it searched zero Kept
+ * Company Profiles at all. See `newsRunFailed`.
  */
 async function main(): Promise<void> {
   // Both read before anything is fetched, so a missing key or owner fails on the first line.
@@ -32,8 +33,11 @@ async function main(): Promise<void> {
 
   if (newsRunFailed(report)) {
     throw new Error(
-      `News could not be fetched for ${report.failures.length} of ${report.companies} companies. ` +
-        "See the failures above.",
+      report.companies === 0
+        ? "News searched zero Kept Company Profiles. Either nothing is Kept yet, or " +
+            "readKeptCompaniesForNews has changed shape."
+        : `News could not be fetched for ${report.failures.length} of ${report.companies} ` +
+            "companies. See the failures above.",
     );
   }
 }
