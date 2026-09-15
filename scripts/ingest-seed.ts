@@ -12,7 +12,9 @@ import { backfillSeedProfiles, MINIMUM_PROFILE_COUNT } from "../db/seed";
  *     ROLODECK_INGEST_DATABASE_URL=... ROLODECK_OWNER_ID=... npm run ingest:seed
  */
 async function main(): Promise<void> {
-  const { before, needed, report } = await backfillSeedProfiles(getIngestDb());
+  const { before, needed, report } = await backfillSeedProfiles(
+    await getIngestDb(),
+  );
 
   if (needed === 0) {
     console.log(

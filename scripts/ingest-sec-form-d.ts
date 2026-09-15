@@ -42,7 +42,7 @@ async function main(): Promise<void> {
     options,
   );
 
-  const report = await persistProfiles(getIngestDb(), {
+  const report = await persistProfiles(await getIngestDb(), {
     source: SEC_FORM_D_SOURCE,
     candidates: batch.profiles.map((profile) => ({
       input: profile.input,

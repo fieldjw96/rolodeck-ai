@@ -90,7 +90,7 @@ function summarise(
 
 async function main(): Promise<void> {
   const client = createAcceleratorClient();
-  const db = getIngestDb();
+  const db = await getIngestDb();
 
   let totalWritten = 0;
 
