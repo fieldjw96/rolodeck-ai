@@ -38,6 +38,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          # The job token can open issues. Nothing after checkout needs git credentials, and
+          # leaving them persisted makes that token readable to `npm ci`'s install scripts and
+          # to the ingest run itself.
+          persist-credentials: false
       - uses: actions/setup-node@v5
         with:
           node-version: 22
@@ -67,11 +72,19 @@ jobs:
       - name: Record what this run did
         if: always()
         run: |
+          # Only the count lines go to the summary. GitHub masks secrets in the job log but not
+          # in the step summary, so a driver error that ever printed a connection string would
+          # land unmasked on the run page. The full output, masked, stays in the log above.
           {
             echo "### ${{ inputs.source-name }}"
             echo ""
             echo '```'
-            cat /tmp/ingest-output.log 2>/dev/null || echo "(no output: a step before the script ran did not complete)"
+            if [ -f /tmp/ingest-output.log ]; then
+              grep -iE 'inserted|updated|rejected|wrote|stored|searched|companies|events|profiles' /tmp/ingest-output.log \
+                || echo "(no count lines: see the Run step's log for what happened)"
+            else
+              echo "(no output: a step before the script ran did not complete)"
+            fi
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -83,13 +96,18 @@ jobs:
         if: failure()
         env:
           GH_TOKEN: ${{ github.token }}
+          # Read by jq below as env.TITLE. gh's --jq takes one expression and has no --arg,
+          # which is what the previous version passed: gh rejected the call as
+          # "unknown arguments", bash stopped the step there, and no failure of any Source
+          # ever opened an issue. News and Events failed daily with nothing in the queue.
+          TITLE: "Ingest failure: ${{ inputs.source-name }}"
         run: |
-          title="Ingest failure: ${{ inputs.source-name }}"
+          title="$TITLE"
           run_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
 
           existing=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open \
             --search "\"$title\" in:title" --json number,title \
-            --jq --arg t "$title" '[.[] | select(.title == $t)] | .[0].number // empty')
+            --jq '[.[] | select(.title == env.TITLE)] | .[0].number // empty')
 
           if [ -n "$existing" ]; then
             gh issue comment "$existing" --repo "$GITHUB_REPOSITORY" \
