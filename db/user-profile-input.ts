@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { sectorSchema, stageSchema } from "./profile-input";
+import { sectorSchema, statedStageSchema } from "./profile-input";
 
 /**
  * The one shared boundary schema for a User Profile write: the settings page's `PUT` and
@@ -11,7 +11,8 @@ import { sectorSchema, stageSchema } from "./profile-input";
 export const userProfileInputSchema = z
   .strictObject({
     sectors: z.array(sectorSchema),
-    stages: z.array(stageSchema),
+    // Stated stages only: `not-stated` marks a Source's silence, and is not something to prefer.
+    stages: z.array(statedStageSchema),
     area: z.string().min(1, "must not be blank"),
     excluded_sectors: z.array(sectorSchema),
   })

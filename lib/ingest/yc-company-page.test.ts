@@ -15,10 +15,11 @@ import { parseCompanyPage, parseCompanyPages } from "./yc-company-page";
  * - `yc-buxfer`   — a blank long description, so the one-liner is what a Profile gets, and a
  *                   team of one, which is the bottom of the stage ladder.
  * - `yc-dropbox`  — a real page that lists no industries at all, so there is no `sector`.
- * - `yc-lawdingo` — a real page with no team size, so there is no `stage`.
+ * - `yc-lawdingo` — a real page with no team size, so there is no `stage` to derive, and the
+ *                   Profile's stage is `not-stated` rather than the company rejected.
  */
-const CLEAN = ["yc-stripe", "yc-razorpay", "yc-buxfer"] as const;
-const REJECTED = ["yc-dropbox", "yc-lawdingo"] as const;
+const CLEAN = ["yc-stripe", "yc-razorpay", "yc-buxfer", "yc-lawdingo"] as const;
+const REJECTED = ["yc-dropbox"] as const;
 
 const fixtures = new Map<string, CompanyFixture>();
 
@@ -125,15 +126,32 @@ describe("parseCompanyPage, against captured pages", () => {
     expect(result.rejection.reason.length).toBeGreaterThan(0);
   });
 
-  it("rejects a page with no team size, naming stage, rather than guessing one", () => {
+  it("keeps a page with no team size, its stage `not-stated` rather than guessed", () => {
+    const { input, attribution } = parsed("yc-lawdingo");
+
+    expect(input.name).toBe("Lawdingo");
+    expect(input.stage).toBe("not-stated");
+    // The page did not state it; this pipeline wrote the marker. See docs/adr/0015.
+    expect(attribution.stage).toEqual({
+      ...fixture("yc-lawdingo").capture,
+      provenance: "enriched",
+    });
+  });
+
+  it("keeps `not-stated` for a team size of zero, which names no band", () => {
     const result = parseCompanyPage(
-      fixture("yc-lawdingo").html,
-      fixture("yc-lawdingo").capture,
+      pageWith({
+        name: "Sprocket",
+        tags: ["Robotics"],
+        one_liner: "Arms.",
+        team_size: 0,
+      }),
+      CAPTURE,
     );
 
-    expect(result.success).toBe(false);
-    if (result.success) return;
-    expect(result.rejection.field).toBe("stage");
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.profile.input.stage).toBe("not-stated");
   });
 });
 
@@ -325,7 +343,6 @@ describe("parseCompanyPages", () => {
     expect(batch.rejections).toHaveLength(REJECTED.length);
     expect(batch.rejections.map((rejection) => rejection.field)).toEqual([
       "sector",
-      "stage",
     ]);
   });
 

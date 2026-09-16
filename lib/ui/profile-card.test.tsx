@@ -61,6 +61,37 @@ describe("a Profile card", () => {
     expect(term.nextElementSibling).toHaveTextContent(value);
   });
 
+  it("renders a `not-stated` stage as `Not stated`, set apart from a stated one", () => {
+    render(
+      <ProfileCard
+        headingLevel={1}
+        name="Stated"
+        sector="Hardware"
+        stage="seed"
+      />,
+    );
+    const stated = screen.getByText("Stage").nextElementSibling;
+
+    cleanup();
+
+    render(
+      <ProfileCard
+        headingLevel={1}
+        name="Unstated"
+        sector="Hardware"
+        stage="not-stated"
+      />,
+    );
+    const unstated = screen.getByText("Stage").nextElementSibling;
+
+    expect(unstated?.tagName).toBe("DD");
+    expect(unstated).toHaveTextContent(/^Not stated$/);
+    expect(screen.queryByText("not-stated")).not.toBeInTheDocument();
+    // Visibly distinct: the unstated value carries a class the stated one does not.
+    expect(unstated?.className).not.toBe(stated?.className);
+    expect(stated?.className).not.toBe("");
+  });
+
   it("renders no description when there is none to render", () => {
     render(
       <ProfileCard

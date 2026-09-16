@@ -1,13 +1,16 @@
 import { z } from "zod";
 
 import { issueField } from "../lib/zod/issues";
+import { NOT_STATED_STAGE } from "./not-stated-stage";
+
+export { NOT_STATED_STAGE };
 
 /**
- * The fixed set of funding stages a Profile can be in. Named and closed rather than a free
- * string, so a source's own spelling ("Series A", "series_a") cannot fragment the Deck's
- * notion of stage.
+ * The funding stages a Source can state or a pipeline can derive, and so the ones an owner can
+ * state a preference for. Named and closed rather than a free string, so a source's own
+ * spelling ("Series A", "series_a") cannot fragment the Deck's notion of stage.
  */
-export const STAGE_VALUES = [
+export const STATED_STAGE_VALUES = [
   "pre-seed",
   "seed",
   "series-a",
@@ -15,9 +18,33 @@ export const STAGE_VALUES = [
   "growth",
 ] as const;
 
+/**
+ * The fixed set of values a Company Profile's `stage` can hold. `not-stated` is deliberate, for
+ * the reason `SECTOR_VALUES` carries `other`: ingest must be able to place every row, and a
+ * visible `not-stated` is honest where a silent guess is not — or where throwing away a company
+ * that is provably raising, for want of one derived field, is no answer at all. See
+ * docs/adr/0015.
+ *
+ * Position in this array carries no meaning. `db/deck.ts` ranks a stage with `inArray`, a set
+ * membership test, and never compares two stages as more or less advanced; the one place that
+ * does, `lib/ingest/stage.ts`, keeps its own ladder.
+ */
+export const STAGE_VALUES = [...STATED_STAGE_VALUES, NOT_STATED_STAGE] as const;
+
 export const stageSchema = z.enum(STAGE_VALUES);
 
 export type Stage = z.infer<typeof stageSchema>;
+
+/**
+ * A stage an owner can prefer. `not-stated` is not one: it says a Source was silent, not what
+ * a company is, so a User Profile preferring it would rank companies by what we failed to learn.
+ */
+export const statedStageSchema = z.enum(STATED_STAGE_VALUES, {
+  error: (issue) =>
+    `must be one of the stated Stage values, not ${JSON.stringify(issue.input)}`,
+});
+
+export type StatedStage = z.infer<typeof statedStageSchema>;
 
 /**
  * The controlled vocabulary a Company Profile's `sector` is ranked against. Closed for the

@@ -4,6 +4,9 @@ status: accepted
 
 # `stage` is derived from team size and attributed `enriched`, not `scraped`
 
+_Amended by docs/adr/0015: the derivation below stands, but a page with no usable team size is
+now kept with its stage `not-stated` rather than rejected naming `stage`._
+
 A Y Combinator company page carries name, description, industries, website, batch, founding
 year, status, headcount and founders. It does not carry a funding round, and nothing on the
 page is one. `profileInputSchema` requires `stage`, so ingesting YC pages at all means

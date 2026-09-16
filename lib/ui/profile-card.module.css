@@ -72,3 +72,10 @@
   color: var(--color-text);
   overflow-wrap: anywhere;
 }
+
+/* The absence of a value, not a value: faint and italic, so it cannot be read as a stage. */
+.notStated {
+  font-style: italic;
+  font-weight: var(--weight-normal);
+  color: var(--color-text-muted);
+}
