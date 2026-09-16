@@ -199,6 +199,19 @@ describe("PUT /api/user-profile with input it will not accept", () => {
     });
   });
 
+  it("answers 422 naming stages for `not-stated`, a Company Profile's stage but never a preference", async () => {
+    const response = await put({
+      ...EMPTY_BODY,
+      stages: ["seed", "not-stated"],
+    });
+
+    expect(response.status).toBe(422);
+    await expect(response.json()).resolves.toMatchObject({
+      error: "invalid request",
+      field: "stages.1",
+    });
+  });
+
   it("answers 422 naming excluded_sectors for a Sector listed as both stated and excluded", async () => {
     const response = await put({
       ...EMPTY_BODY,

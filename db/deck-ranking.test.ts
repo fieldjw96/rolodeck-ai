@@ -175,6 +175,32 @@ describe("ranking the Deck by the User Profile", () => {
     await expect(dealPage()).resolves.toEqual(["Newest", "Middle", "Oldest"]);
   });
 
+  it("deals a `not-stated` stage, scoring nothing for it, below an otherwise identical stated match", async () => {
+    // Newer than its twin, so newest-first alone would deal it first. `not-stated` matches no
+    // stage preference because it can never be one, and deck.ts has no case for it. See
+    // docs/adr/0011 and docs/adr/0015.
+    await seed([
+      { name: "Stated", minute: 0, sector: "ai-ml", stage: "series-a" },
+      { name: "Not stated", minute: 1, sector: "ai-ml", stage: "not-stated" },
+    ]);
+    await statePreferences({ sectors: ["ai-ml"], stages: ["series-a"] });
+
+    const page = await asUser(scratch.db, JACK, (tx) =>
+      readDeckPage(tx, { userId: JACK, limit: 50 }),
+    );
+
+    expect(page.profiles.map((profile) => profile.name)).toEqual([
+      "Stated",
+      "Not stated",
+    ]);
+    expect(page.profiles[1]?.stage).toBe("not-stated");
+    // Dealt on the Sector match alone: the stage component added nothing.
+    await expect(dealWholeDeck(1)).resolves.toEqual([
+      ["Stated"],
+      ["Not stated"],
+    ]);
+  });
+
   it("omits a Company Profile in an excluded Sector entirely, however well it otherwise matches", async () => {
     await seed([
       { name: "Unmatched", minute: 0 },

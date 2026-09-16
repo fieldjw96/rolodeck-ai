@@ -135,7 +135,11 @@ describe("summariseRun", () => {
         profiles: [],
         filtered: 2,
         rejections: [
-          { field: "stage", reason: "the filing named no round", raw: null },
+          {
+            field: "industryGroup",
+            reason: "the issuer holds assets",
+            raw: null,
+          },
         ],
       },
       report({
@@ -149,7 +153,9 @@ describe("summariseRun", () => {
     expect(summary).toContain("Read 3 filings from EDGAR.");
     expect(summary).toContain("2 outside California, 1 rejected.");
     expect(summary).toContain("Wrote 1 new Profiles and updated 0.");
-    expect(summary).toContain("rejected on stage: the filing named no round");
+    expect(summary).toContain(
+      "rejected on industryGroup: the issuer holds assets",
+    );
     expect(summary).toContain("rejected on provenance.website: must be null");
   });
 });

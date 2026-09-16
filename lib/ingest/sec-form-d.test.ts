@@ -4,6 +4,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { profileInputSchema } from "../../db/profile-input";
 import { readFilingFixture, type FilingFixture } from "../testing/fixtures";
 import {
+  ASSET_HOLDING_INDUSTRY_GROUPS,
   parseFormDFiling,
   parseFormDFilings,
   SEC_FORM_D_SOURCE,
@@ -19,8 +20,15 @@ import { toProfileProvenance } from "./scraped-profile";
  * - `elder-swamp-club`   — San Francisco, and the filing names a Series Seed.
  * - `sporty-and-rich`    — a Series A, and an `&amp;` in the issuer's own name.
  * - `point2-technology`  — "Senior Series B Preferred Stock", so a round with a word in front.
- * - `krina-ai`           — a real Californian filing naming no round at all, which is the
- *                          docs/adr/0007 fallback path and, with no headcount, a rejection.
+ * - `krina-ai`           — a real Californian filing naming no round at all. It stays in the
+ *                          suite because it is the docs/adr/0007 fallback path when a headcount
+ *                          is known and, with none, a Profile whose stage is `not-stated` —
+ *                          where before docs/adr/0015 it was a rejection.
+ * - `maitrics`           — an operating company whose only security is a SAFE, the commonest
+ *                          early-stage answer, which docs/adr/0009 declines to read as a round.
+ * - `horsley-bridge-growth-15`, `rtp-cabana-2026`, `hz-seasons-at-horsetooth-crossing` — a
+ *                          pooled investment fund, an investing vehicle and a residential
+ *                          property, each Californian, each rejected as not a company at all.
  * - `communion`          — a real filing from a New York issuer, so the California filter has
  *                          something to actually exclude.
  */
@@ -31,11 +39,19 @@ const CALIFORNIAN_WITH_A_ROUND = [
 ] as const;
 
 const NO_ROUND = "sec-form-d-krina-ai";
+const SAFE_ONLY = "sec-form-d-maitrics";
+const HOLDS_ASSETS = [
+  ["sec-form-d-horsley-bridge-growth-15", "Pooled Investment Fund"],
+  ["sec-form-d-rtp-cabana-2026", "Investing"],
+  ["sec-form-d-hz-seasons-at-horsetooth-crossing", "Residential"],
+] as const;
 const OUT_OF_STATE = "sec-form-d-communion";
 
 const SLUGS = [
   ...CALIFORNIAN_WITH_A_ROUND.map(([slug]) => slug),
   NO_ROUND,
+  SAFE_ONLY,
+  ...HOLDS_ASSETS.map(([slug]) => slug),
   OUT_OF_STATE,
 ];
 
@@ -188,14 +204,38 @@ describe("where `stage` comes from, and what it is attributed", () => {
     expect(result.profile.attribution.stage.provenance).toBe("enriched");
   });
 
-  it("rejects naming `stage` when the filing names no round and no headcount is known", () => {
-    const result = parseFormDFiling(fixture(NO_ROUND));
+  it.each([NO_ROUND, SAFE_ONLY])(
+    "keeps %s, which names no round and has no headcount, with its stage `not-stated` and enriched",
+    (slug) => {
+      const result = parseFormDFiling(fixture(slug));
 
-    expect(result.outcome).toBe("rejected");
-    if (result.outcome !== "rejected") return;
+      expect(result.outcome).toBe("profile");
+      if (result.outcome !== "profile") return;
 
-    expect(result.rejection.field).toBe("stage");
-    expect(result.rejection.reason).toContain("named no round");
+      expect(result.profile.input.stage).toBe("not-stated");
+      // The filing did not state it; this pipeline wrote the marker. See docs/adr/0015.
+      expect(result.profile.attribution.stage).toEqual({
+        ...fixture(slug).capture,
+        provenance: "enriched",
+      });
+      expect(() =>
+        profileInputSchema.parse(result.profile.input),
+      ).not.toThrow();
+    },
+  );
+
+  it("reads a SAFE as no round, per adr/0009, and still keeps the company", () => {
+    const result = parseFormDFiling(fixture(SAFE_ONLY));
+
+    expect(result.outcome).toBe("profile");
+    if (result.outcome !== "profile") return;
+
+    expect(result.profile.input.name).toBe("MaiTRICS, Inc.");
+    expect(result.profile.input.location).toBe("Burlingame, CA");
+    expect(result.profile.input.description).toBe(
+      "Other Technology issuer in Burlingame, CA. Raising $1,500,000 in a private placement, " +
+        "of which $816,500 has been sold. First sale 2025-08-11.",
+    );
   });
 
   it("still prefers the filing's own round over a headcount that disagrees", () => {
@@ -230,6 +270,45 @@ describe("where `stage` comes from, and what it is attributed", () => {
     expect(toProfileProvenance(inferred.profile.attribution).stage).toBe(
       "enriched",
     );
+  });
+});
+
+describe("a filing whose issuer holds assets rather than building a product", () => {
+  it.each(HOLDS_ASSETS)(
+    "rejects %s, a Californian %s, naming `industryGroup` and not `stage`",
+    (slug, group) => {
+      const result = parseFormDFiling(fixture(slug));
+
+      expect(result.outcome).toBe("rejected");
+      if (result.outcome !== "rejected") return;
+
+      expect(result.rejection.field).toBe("industryGroup");
+      expect(result.rejection.reason).toContain(group);
+    },
+  );
+
+  it.each(ASSET_HOLDING_INDUSTRY_GROUPS)(
+    "rejects every listed group, %s, however the filing cases it",
+    (group) => {
+      const result = parseFormDFiling(
+        filingWith(
+          CALIFORNIAN_ISSUER,
+          `<industryGroup><industryGroupType> ${group.toUpperCase()} </industryGroupType></industryGroup>`,
+        ),
+      );
+
+      expect(result.outcome).toBe("rejected");
+      if (result.outcome !== "rejected") return;
+      expect(result.rejection.field).toBe("industryGroup");
+    },
+  );
+
+  it("still keeps an operating company in a group not listed", () => {
+    const result = parseFormDFiling(filingWith(CALIFORNIAN_ISSUER, TECHNOLOGY));
+
+    expect(result.outcome).toBe("profile");
+    if (result.outcome !== "profile") return;
+    expect(result.profile.input.stage).toBe("not-stated");
   });
 });
 
@@ -302,8 +381,9 @@ describe("a filing that cannot be read is rejected, naming the field", () => {
   );
 
   it("never writes a partial Profile: a rejection carries no input at all", () => {
-    const result = parseFormDFiling(fixture(NO_ROUND));
+    const result = parseFormDFiling(fixture(HOLDS_ASSETS[0][0]));
 
+    expect(result.outcome).toBe("rejected");
     expect(result).not.toHaveProperty("profile");
   });
 });
@@ -312,11 +392,15 @@ describe("parseFormDFilings, over a batch", () => {
   it("counts profiles, rejections and filtered issuers apart", () => {
     const batch = parseFormDFilings(SLUGS.map(fixture));
 
-    expect(batch.profiles.map((profile) => profile.input.name)).toEqual(
-      CALIFORNIAN_WITH_A_ROUND.map(([, name]) => name),
-    );
+    expect(batch.profiles.map((profile) => profile.input.name)).toEqual([
+      ...CALIFORNIAN_WITH_A_ROUND.map(([, name]) => name),
+      "Krina AI, Inc.",
+      "MaiTRICS, Inc.",
+    ]);
     expect(batch.rejections.map((rejection) => rejection.field)).toEqual([
-      "stage",
+      "industryGroup",
+      "industryGroup",
+      "industryGroup",
     ]);
     expect(batch.filtered).toBe(1);
   });

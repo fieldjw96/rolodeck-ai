@@ -39,6 +39,13 @@ Source maps its own raw sector text onto one of these at ingest, rather than wri
 text; `other` is the honest answer when nothing else fits, not a bug.
 _Avoid_: industry, category, tag
 
+**Stage**:
+A Company Profile's funding stage: `pre-seed`, `seed`, `series-a`, `series-b-plus`, `growth`, or
+`not-stated` where the Source gave no stage and none could be derived. `not-stated` is the honest
+answer for a company whose round nobody stated, as `other` is for Sector, and is never a
+preference a User Profile can state. See `docs/adr/0015`.
+_Avoid_: round, series
+
 **Provenance**:
 Where a Company Profile field's value came from: `scraped`, `enriched`, or `jack`. Carried
 per field, not per Company Profile, matching rolodeck's own rule so the two repos stay

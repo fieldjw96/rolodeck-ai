@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import {
+  NOT_STATED_STAGE,
   parseProfileInput,
   type IngestRejection,
 } from "../../db/profile-input";
@@ -130,8 +131,9 @@ export function parseCompanyPage(
     sector: rawSector === undefined ? undefined : sectorFromRawText(rawSector),
     // Derived from headcount, never stated by the page: a YC page carries batch, founding
     // year, status and team size, and no funding round at all. A page with no usable team
-    // size yields no stage, and the candidate is rejected naming `stage`. See docs/adr/0007.
-    stage: stageFromTeamSize(company.team_size),
+    // size yields no stage to derive, and the company is kept with its stage `not-stated`
+    // rather than thrown away. See docs/adr/0007 and docs/adr/0015.
+    stage: stageFromTeamSize(company.team_size) ?? NOT_STATED_STAGE,
   };
 
   const website = trimmed(company.website);
@@ -155,7 +157,8 @@ export function parseCompanyPage(
         name: scraped,
         description: scraped,
         sector: scraped,
-        // Derived from headcount, not stated by the page. See above.
+        // Derived from headcount, or `not-stated` for want of one: either way the page did not
+        // state it. See above.
         stage: attribute(capture, "enriched"),
         website: input.data.website === undefined ? null : scraped,
         // A YC company page carries no headquarters address at all.
