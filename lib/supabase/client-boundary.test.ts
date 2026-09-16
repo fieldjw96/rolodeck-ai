@@ -45,17 +45,6 @@ const SECRET_KEY_CALLERS = [
   "scripts/check-bundle-secrets.ts",
 ];
 
-/**
- * Where News's provider key is allowed to be named: the one module that reads it, the operator
- * script whose usage line spells it out, and the build-output check. Not a Supabase secret, but
- * it spends a quota on Jack's account and nothing in a browser has any use for it.
- */
-const NEWS_API_KEY_CALLERS = [
-  "lib/news/gnews.ts",
-  "scripts/ingest-news.ts",
-  "scripts/check-bundle-secrets.ts",
-];
-
 const isTest = (file: SourceFile) => /\.test\.tsx?$/.test(file.path);
 
 let sources: SourceFile[];
@@ -110,23 +99,6 @@ describe("the client bundle boundary", () => {
           !isTest(file) &&
           file.text.includes("SUPABASE_SECRET_KEY") &&
           !SECRET_KEY_CALLERS.includes(file.path),
-      ),
-    ).toEqual([]);
-  });
-
-  it("names the news provider's API key only where it belongs, and never in a client component", () => {
-    expect(
-      offenders(
-        (file) =>
-          !isTest(file) &&
-          file.text.includes("GNEWS_API_KEY") &&
-          !NEWS_API_KEY_CALLERS.includes(file.path),
-      ),
-    ).toEqual([]);
-    expect(
-      offenders(
-        (file) =>
-          declaresUseClient(file.text) && file.text.includes("GNEWS_API_KEY"),
       ),
     ).toEqual([]);
   });

@@ -145,10 +145,10 @@ Both database URLs must be pooler URLs, and the workflow refuses anything else b
 touches production. Supabase's direct host `db.<ref>.supabase.co` is IPv6-only, and neither
 GitHub's runners nor Vercel's functions have IPv6 outbound.
 
-`SUPABASE_SECRET_KEY` is deliberately not among them, and neither are
-`ROLODECK_INGEST_DATABASE_URL` or `GNEWS_API_KEY`: the running app reads none of them, so none
-belongs in Vercel either. The secret key stays on the server laptop for
-`npm run account:provision`; the other two are ingest's. `ROLODECK_OWNER_ID` comes from running
+`SUPABASE_SECRET_KEY` is deliberately not among them, and neither is
+`ROLODECK_INGEST_DATABASE_URL`: the running app reads neither, so neither belongs in Vercel
+either. The secret key stays on the server laptop for `npm run account:provision`; the database
+URL is ingest's. `ROLODECK_OWNER_ID` comes from running
 `npm run account:provision` once, against the real project.
 
 Two of these are database credentials, and CLAUDE.md otherwise allows only ingest's in GitHub
@@ -382,32 +382,38 @@ each script's own console output. A run that writes zero rows is a failure every
 `ingest-news.yml`: every company-yielding Source and `ingest-events.yml` already exit non-zero
 on an empty run — a rotted selector returns nothing and exits clean, which reads as "nothing new
 today" at every layer above it unless the entry point itself refuses to call that success — but
-News's own `newsRunFailed` (`lib/news/run.ts`) only trips when GNews could not be searched for a
-company at all. A two-person startup can go a month unreported with no article to find, which is
-a quiet month and not a stale selector, so `ingest-news.yml` does not treat zero articles as a
-failure. A failed run opens or comments on a GitHub issue titled "Ingest failure: `<source>`", so
+News's own `newsRunFailed` (`lib/news/run.ts`) only trips when not one of its feeds could be
+read. Until something is Kept there is nothing to match against, and a two-person startup can go a
+month unreported after that, which is a quiet month and not a stale selector, so
+`ingest-news.yml` does not treat zero articles as a failure. A feed that has changed shape is not
+a quiet month either: it fails to parse, and is named in the job summary. A failed run opens or comments on a GitHub issue titled "Ingest failure: `<source>`", so
 a Source down for a week produces one issue to read rather than seven to ignore.
 
 ## News
 
-News is articles about the Company Profiles you Kept, read from the
-[GNews API](https://gnews.io) and shown on `/news`, grouped by company, newest first.
+News is articles about the Company Profiles you Kept, read from the RSS feeds publishers offer
+and shown on `/news`, grouped by company, newest first.
 
 ```
-GNEWS_API_KEY=... ROLODECK_INGEST_DATABASE_URL=... ROLODECK_OWNER_ID=... npm run ingest:news
+ROLODECK_INGEST_DATABASE_URL=... ROLODECK_OWNER_ID=... npm run ingest:news
 ```
 
-searches GNews once per Kept Company Profile — never for one that is unswiped or Passed — and
-stores every article that comes back in `news_items`, each with a `confidence` from
-`scoreNewsMatch` in `lib/news/match.ts` for how sure it is that the article is about that
-company and not a namesake. The page shows only items at or above `NEWS_DISPLAY_THRESHOLD` in
-the same file; the rest stay stored, so the threshold can be retuned without fetching anything
-again. Running it twice adds no rows: articles are keyed on `(profile_id, url)`. Requests go
-through `lib/ingest/throttle.ts` at GNews's free-plan limit of one a second, and the run exits
-non-zero if any company could not be searched for. See `docs/adr/0010`.
+fetches every feed in `NEWS_FEEDS` (`lib/news/feeds.ts`) once — today, Techmeme's `/feed.xml` —
+scores every article in them against every Kept Company Profile, never one that is unswiped or
+Passed, and stores each pair in `news_items` with a `confidence` from `scoreNewsMatch` in
+`lib/news/match.ts` for how sure it is that the article is about that company and not a
+namesake. The page shows only items at or above `NEWS_DISPLAY_THRESHOLD` in the same file; the
+rest stay stored, so the threshold can be retuned without fetching anything again. Running it
+twice adds no rows: articles are keyed on `(profile_id, url)`.
 
-`GNEWS_API_KEY` is server-only. It is sent in a header rather than the URL, never logged, and
-listed in `npm run check:bundle-secrets`. Like every Source's script, this is on demand and not
+Each feed is parsed through a Zod schema keyed by RSS's own element names, offline and tested
+against its capture in `db/fixtures/`, so a feed that changes shape is rejected naming the feed
+and the element, and one bad item costs that item. Requests go through
+`lib/news/feed-fetch.ts` at one a second per host, with the same `User-Agent` as the other
+Sources. The run prints each feed's outcome by name and exits non-zero only if every feed
+failed. No key is needed. See `docs/adr/0010` and `docs/adr/0015`, which records what reading
+feeds rather than searching costs in coverage. Adding a feed is one entry in `NEWS_FEEDS`, with
+its `robots.txt` position, and a capture. Like every Source's script, this is on demand and not
 part of `npm test` or CI.
 
 ## Measuring profile duplicates

@@ -62,6 +62,11 @@ _Avoid_: feed, provider, site
 Articles about a Kept Company Profile.
 _Avoid_: dispatch, feed, updates
 
+**Feed**:
+A syndication document a publisher offers for software to read, such as Techmeme's RSS, which
+News reads articles from. Never a synonym for News or for a Source. See `docs/adr/0015`.
+_Avoid_: provider, river, stream
+
 **Confidence**:
 How sure News is that an article is about the Kept Company Profile it is attributed to, from 0
 to 1. Stored for every candidate article; only those at or above the display threshold are
