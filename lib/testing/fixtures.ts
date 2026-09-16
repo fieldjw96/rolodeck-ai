@@ -133,6 +133,21 @@ export type EventSourceFixture = {
   readonly capture: Capture;
 };
 
+export type NewsFeedFixture = {
+  readonly slug: string;
+  readonly xml: string;
+  readonly capture: Capture;
+};
+
+/** One captured News feed, as `NEWS_FEEDS` in `lib/news/feeds.ts` names it: `news-feed-<name>`. */
+export async function readNewsFeedFixture(
+  name: string,
+): Promise<NewsFeedFixture> {
+  const slug = `news-feed-${name}`;
+  const { text, capture } = await readFixture(slug, "xml");
+  return { slug, xml: text, capture };
+}
+
 /** One captured events Source document: Techmeme's iCalendar feed, a Luma calendar page. */
 export async function readEventSourceFixture(
   slug: string,

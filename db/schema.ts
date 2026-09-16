@@ -370,7 +370,7 @@ export const newsItems = pgTable(
     description: text("description"),
     url: text("url").notNull(),
     publishedAt: timestamp("published_at", { withTimezone: true }).notNull(),
-    /** The publication, as the provider names it: "TechCrunch", not `gnews`. */
+    /** The publication, as the feed it came from names it: "Techmeme", not a hostname. */
     sourceName: text("source_name").notNull(),
     /** From `scoreNewsMatch` in `lib/news/match.ts`. Double precision rather than `real`, so
      * a score of exactly 0.6 compares equal to a threshold of 0.6. */

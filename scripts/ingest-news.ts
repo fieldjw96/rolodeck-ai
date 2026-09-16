@@ -1,6 +1,7 @@
 import { closeIngestDb, getIngestDb } from "../db/ingest-connection";
 import { readOwnerId } from "../lib/ingest/env";
-import { createGNewsClient, readGNewsApiKey } from "../lib/news/gnews";
+import { createNewsFeedClient } from "../lib/news/feed-fetch";
+import { NEWS_FEEDS } from "../lib/news/feeds";
 import {
   fetchNewsForKeptProfiles,
   newsRunFailed,
@@ -11,33 +12,31 @@ import {
  * The operator entry point for News. Everything worth testing lives in `lib/news/`; this file
  * is environment in, stdout out, and an exit code.
  *
- * On demand only, like every Source's script: it makes real requests to GNews, spends real
- * quota, and writes real rows as the ingest role, none of which belongs in `npm test` or CI.
+ * On demand only, like every Source's script: it makes real requests to the feeds in
+ * `NEWS_FEEDS` and writes real rows as the ingest role, neither of which belongs in `npm test`
+ * or CI. The feeds, and each one's `robots.txt` position, are in `lib/news/feeds.ts`.
  *
- *     GNEWS_API_KEY=... ROLODECK_INGEST_DATABASE_URL=... ROLODECK_OWNER_ID=... npm run ingest:news
+ *     ROLODECK_INGEST_DATABASE_URL=... ROLODECK_OWNER_ID=... npm run ingest:news
  *
- * Exits non-zero when any company could not be searched for, or when it searched zero Kept
- * Company Profiles at all. See `newsRunFailed`.
+ * Exits non-zero when not one feed could be read. A feed that failed beside one that was read is
+ * named in the output, and a run that matched nothing is not a failure. See `newsRunFailed`.
  */
 async function main(): Promise<void> {
-  // Both read before anything is fetched, so a missing key or owner fails on the first line.
-  const client = createGNewsClient({ apiKey: readGNewsApiKey() });
+  // Read before anything is fetched, so a missing owner fails on the first line.
   const ownerId = readOwnerId();
 
   const report = await fetchNewsForKeptProfiles(await getIngestDb(), {
     ownerId,
-    client,
+    feeds: NEWS_FEEDS,
+    client: createNewsFeedClient(),
   });
 
   console.log(summariseNewsRun(report));
 
   if (newsRunFailed(report)) {
     throw new Error(
-      report.companies === 0
-        ? "News searched zero Kept Company Profiles. Either nothing is Kept yet, or " +
-            "readKeptCompaniesForNews has changed shape."
-        : `News could not be fetched for ${report.failures.length} of ${report.companies} ` +
-            "companies. See the failures above.",
+      `News could not read any of its ${report.feeds.length} ${report.feeds.length === 1 ? "feed" : "feeds"}. ` +
+        "See the failures above.",
     );
   }
 }

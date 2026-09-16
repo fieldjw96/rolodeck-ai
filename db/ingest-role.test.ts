@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import { INGEST_ROLE } from "../lib/ingest/env";
-import type { GNewsClient } from "../lib/news/gnews";
+import type { NewsFeedClient } from "../lib/news/feed-fetch";
 import { fetchNewsForKeptProfiles } from "../lib/news/run";
 import type { EventInput } from "./event-input";
 import { persistEvents } from "./events";
@@ -486,7 +486,7 @@ describe("what ingest does, as the ingest role", () => {
     expect(await scratch.db.select().from(eventAttendances)).toHaveLength(1);
   });
 
-  it("searches News for Kept Company Profiles only, without being able to read swipes", async () => {
+  it("stores News for Kept Company Profiles only, without being able to read swipes", async () => {
     const ramp = await companyProfile("Ramp");
     const mercury = await companyProfile("Mercury");
     await companyProfile("Quiet Co");
@@ -497,42 +497,34 @@ describe("what ingest does, as the ingest role", () => {
       { userId: SOMEONE_ELSE, profileId: theirs, decision: "keep" },
     ]);
 
-    const searched: string[] = [];
-    const client: GNewsClient = {
-      search: async (company) => {
-        searched.push(company);
-        return {
-          totalArticles: 1,
-          articles: [
-            {
-              id: "a1",
-              title: `${company} raises a round`,
-              description: null,
-              content: "",
-              url: `https://news.example/${company.toLowerCase()}`,
-              image: null,
-              publishedAt: "2026-09-01T12:00:00Z",
-              lang: "en",
-              source: {
-                id: "s1",
-                name: "TechCrunch",
-                url: "https://tc.example",
-              },
-            },
-          ],
-        };
-      },
+    const client: NewsFeedClient = {
+      get: async () =>
+        '<rss version="2.0"><channel><item>' +
+        "<title>Ramp raises a round</title>" +
+        "<link>https://news.example/ramp</link>" +
+        "<pubDate>Tue, 01 Sep 2026 12:00:00 GMT</pubDate>" +
+        "</item></channel></rss>",
     };
 
     await scratch.as("rolodeck_ingest");
     const report = await fetchNewsForKeptProfiles(scratch.db, {
       ownerId: JACK,
+      feeds: [
+        {
+          name: "wire",
+          publication: "The Wire",
+          url: "https://news.example/feed.xml",
+        },
+      ],
       client,
     });
     await scratch.reset();
 
-    expect(searched).toEqual(["Ramp"]);
-    expect(report).toMatchObject({ companies: 1, inserted: 1, failures: [] });
+    expect(report).toMatchObject({
+      companies: 1,
+      inserted: 1,
+      feeds: [{ feed: "wire", articles: 1, rejections: [] }],
+    });
 
     const stored = await scratch.db.select().from(newsItems);
     expect(stored.map((row) => [row.profileId, row.ownerId])).toEqual([
