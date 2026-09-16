@@ -1,9 +1,13 @@
-import { beforeAll, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { profileInputSchema } from "../../db/profile-input";
 import { readCompanyFixture, type CompanyFixture } from "../testing/fixtures";
 import { toProfileProvenance, type ScrapedProfile } from "./scraped-profile";
-import { parseCompanyPage, parseCompanyPages } from "./yc-company-page";
+import {
+  parseCompanyPage,
+  parseCompanyPages,
+  type CompanyPage,
+} from "./yc-company-page";
 
 /**
  * Every fixture under `db/fixtures/` was captured with `curl` from the URL its `.meta.json`
@@ -14,12 +18,18 @@ import { parseCompanyPage, parseCompanyPages } from "./yc-company-page";
  * - `yc-razorpay` — a description several thousand characters long.
  * - `yc-buxfer`   — a blank long description, so the one-liner is what a Profile gets, and a
  *                   team of one, which is the bottom of the stage ladder.
- * - `yc-dropbox`  — a real page that lists no industries at all, so there is no `sector`.
+ * - `yc-dropbox`  — a real page that lists no industries at all, so its sector is `other`
+ *                   rather than the company rejected, attributed `enriched`.
  * - `yc-lawdingo` — a real page with no team size, so there is no `stage` to derive, and the
  *                   Profile's stage is `not-stated` rather than the company rejected.
  */
-const CLEAN = ["yc-stripe", "yc-razorpay", "yc-buxfer", "yc-lawdingo"] as const;
-const REJECTED = ["yc-dropbox"] as const;
+const CLEAN = [
+  "yc-stripe",
+  "yc-razorpay",
+  "yc-buxfer",
+  "yc-lawdingo",
+  "yc-dropbox",
+] as const;
 
 const fixtures = new Map<string, CompanyFixture>();
 
@@ -40,9 +50,13 @@ const parsed = (slug: string): ScrapedProfile => {
 };
 
 beforeAll(async () => {
-  for (const slug of [...CLEAN, ...REJECTED]) {
+  for (const slug of CLEAN) {
     fixtures.set(slug, await readCompanyFixture(slug));
   }
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
 });
 
 /**
@@ -114,16 +128,45 @@ describe("parseCompanyPage, against captured pages", () => {
     expect(input.stage).toBe("pre-seed");
   });
 
-  it("rejects a page that lists no industries, naming sector", () => {
-    const result = parseCompanyPage(
-      fixture("yc-dropbox").html,
-      fixture("yc-dropbox").capture,
-    );
+  it("keeps a page that lists no industries, its sector `other` rather than rejected", () => {
+    const { input, attribution } = parsed("yc-dropbox");
 
-    expect(result.success).toBe(false);
-    if (result.success) return;
-    expect(result.rejection.field).toBe("sector");
-    expect(result.rejection.reason.length).toBeGreaterThan(0);
+    expect(input.name).toBe("Dropbox");
+    expect(input.sector).toBe("other");
+    // The page stated nothing; this pipeline chose `other`. See docs/adr/0015, which this
+    // applies to `sector` the same way it already applies to `stage`.
+    expect(attribution.sector).toEqual({
+      ...fixture("yc-dropbox").capture,
+      provenance: "enriched",
+    });
+  });
+
+  it("logs a distinct event for an absent tag than for one it does not recognise", () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    parseCompanyPage(fixture("yc-dropbox").html, fixture("yc-dropbox").capture);
+    const absentEvent = (
+      JSON.parse(logSpy.mock.calls[0]![0] as string) as { event: string }
+    ).event;
+
+    logSpy.mockClear();
+
+    parseCompanyPage(
+      pageWith({
+        name: "Sprocket",
+        tags: ["Underwater Basket Weaving"],
+        one_liner: "Baskets.",
+        team_size: 10,
+      }),
+      CAPTURE,
+    );
+    const unrecognisedEvent = (
+      JSON.parse(logSpy.mock.calls[0]![0] as string) as { event: string }
+    ).event;
+
+    expect(absentEvent).toBe("sector_absent");
+    expect(unrecognisedEvent).toBe("sector_mapped_to_other");
+    expect(absentEvent).not.toBe(unrecognisedEvent);
   });
 
   it("keeps a page with no team size, its stage `not-stated` rather than guessed", () => {
@@ -175,6 +218,15 @@ describe("provenance", () => {
       ...fixture("yc-stripe").capture,
       provenance: "enriched",
     });
+  });
+
+  it("narrows an absent tag's sector to enriched, and a stated one's to scraped", () => {
+    expect(toProfileProvenance(parsed("yc-dropbox").attribution).sector).toBe(
+      "enriched",
+    );
+    expect(toProfileProvenance(parsed("yc-stripe").attribution).sector).toBe(
+      "scraped",
+    );
   });
 
   it("records no website provenance when the page lists no website", () => {
@@ -335,14 +387,23 @@ describe("parseCompanyPage, against a source that has changed shape", () => {
 
 describe("parseCompanyPages", () => {
   it("reports how many candidates were rejected, and the field that failed each", () => {
-    const batch = parseCompanyPages(
-      [...CLEAN, ...REJECTED].map((slug) => fixture(slug)),
-    );
+    // No captured fixture is rejected any longer: a company with no sector or no stage is now
+    // kept. A candidate with neither a long description nor a one-liner still has nothing to
+    // show on a card, and rejecting it is still right — that is the one way left to fail here.
+    const noDescription: CompanyPage = {
+      html: pageWith({ name: "Sprocket", tags: ["Robotics"], team_size: 10 }),
+      capture: CAPTURE,
+    };
+
+    const batch = parseCompanyPages([
+      ...CLEAN.map((slug) => fixture(slug)),
+      noDescription,
+    ]);
 
     expect(batch.profiles).toHaveLength(CLEAN.length);
-    expect(batch.rejections).toHaveLength(REJECTED.length);
+    expect(batch.rejections).toHaveLength(1);
     expect(batch.rejections.map((rejection) => rejection.field)).toEqual([
-      "sector",
+      "description",
     ]);
   });
 

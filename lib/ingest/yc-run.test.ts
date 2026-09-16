@@ -23,9 +23,9 @@ const TODAY = "2026-09-16";
 
 /**
  * The five YC company pages already committed for `yc-company-page.test.ts`, served by a client
- * that stands in for the network. Four parse, `yc-lawdingo` among them with its stage
- * `not-stated` for want of a team size (docs/adr/0015); `yc-dropbox` lists no tags and is
- * rejected on `sector`.
+ * that stands in for the network. All five parse: `yc-lawdingo`'s stage is `not-stated` for want
+ * of a team size (docs/adr/0015), and `yc-dropbox` lists no tags, so its sector is `other`
+ * (docs/adr/0015 applied to sector — see Ticket #161).
  */
 const SLUGS = ["stripe", "razorpay", "buxfer", "dropbox", "lawdingo"];
 
@@ -101,17 +101,12 @@ describe("fetchCompanyProfiles", () => {
 
     expect(batch.profiles.map((profile) => profile.input.name).sort()).toEqual([
       "Buxfer",
+      "Dropbox",
       "Lawdingo",
       "Razorpay",
       "Stripe",
     ]);
     expect(batch.failures).toEqual([
-      {
-        kind: "parse",
-        url: pageUrl("dropbox"),
-        field: "sector",
-        reason: expect.any(String),
-      },
       {
         kind: "fetch",
         url: pageUrl("gone"),
@@ -153,21 +148,21 @@ describe("persistYcProfiles, against a real database", () => {
     const second = await persistYcProfiles(scratch.db, batch.profiles);
 
     expect(first).toEqual({
-      inserted: 4,
+      inserted: 5,
       updated: 0,
       rejected: 0,
       rejections: [],
     });
     expect(second).toEqual({
       inserted: 0,
-      updated: 4,
+      updated: 5,
       rejected: 0,
       rejections: [],
     });
 
     const rows = await scratch.db.select().from(profiles);
 
-    expect(rows).toHaveLength(4);
+    expect(rows).toHaveLength(5);
     expect(new Set(rows.map((row) => row.source))).toEqual(
       new Set([YC_SOURCE]),
     );
@@ -176,10 +171,14 @@ describe("persistYcProfiles, against a real database", () => {
       "enriched",
       "enriched",
       "enriched",
+      "enriched",
     ]);
     expect(rows.find((row) => row.name === "Lawdingo")?.stage).toBe(
       "not-stated",
     );
+    const dropbox = rows.find((row) => row.name === "Dropbox");
+    expect(dropbox?.sector).toBe("other");
+    expect(dropbox?.provenance.sector).toBe("enriched");
   });
 });
 
@@ -196,8 +195,8 @@ describe("runYcIngest", () => {
       false,
     );
     expect(run.selection.pages).toHaveLength(6);
-    expect(run.report.inserted).toBe(4);
-    expect(run.batch.failures).toHaveLength(2);
+    expect(run.report.inserted).toBe(5);
+    expect(run.batch.failures).toHaveLength(1);
     expect(ycRunFailure(run)).toBeUndefined();
 
     const again = await runYcIngest(
@@ -206,7 +205,7 @@ describe("runYcIngest", () => {
       TODAY,
     );
 
-    expect(again.report).toMatchObject({ inserted: 0, updated: 4 });
+    expect(again.report).toMatchObject({ inserted: 0, updated: 5 });
   });
 
   it("throws, before fetching any company page, when the sitemap cannot be read", async () => {
@@ -283,20 +282,39 @@ describe("ycRunFailure", () => {
 
 describe("summariseYcRun", () => {
   it("names every failed page by URL, and the field a rejected one stopped on", async () => {
+    // No committed fixture fails to parse any longer, so a page missing `name` — the one field
+    // the payload schema still requires unconditionally — stands in for the parse-failure case.
+    const brokenPage = `<div data-page="${JSON.stringify({
+      props: { company: { tags: ["Fintech"], team_size: 10 } },
+    }).replace(/"/g, "&quot;")}"></div>`;
+
+    const client: YcClient = {
+      get: async (url) => {
+        if (url === pageUrl("stripe")) {
+          const stripe = fixtures.find((f) => f.slug === "yc-stripe");
+          if (stripe === undefined)
+            throw new Error("yc-stripe fixture missing");
+          return stripe.html;
+        }
+        if (url === pageUrl("broken")) return brokenPage;
+        throw new Error(`${url} answered 404`);
+      },
+    };
+
     const batch = await fetchCompanyProfiles(
-      fixtureClient(),
-      entries(["stripe", "dropbox", "gone"]),
+      client,
+      entries(["stripe", "broken", "gone"]),
       TODAY,
     );
 
     const summary = summariseYcRun({
       sitemap: {
-        companies: entries(["stripe", "dropbox", "gone"]),
+        companies: entries(["stripe", "broken", "gone"]),
         excluded: 110,
         unusableLastmod: [pageUrl("gone")],
       },
       selection: {
-        pages: entries(["stripe", "dropbox", "gone"]),
+        pages: entries(["stripe", "broken", "gone"]),
         recent: 1,
         recentOverflow: 0,
         recentSince: "2026-09-15",
@@ -317,7 +335,9 @@ describe("summariseYcRun", () => {
       "Picked 3 pages: 1 changed since 2026-09-15, 2 from the rotation starting at #42",
     );
     expect(summary).toContain("Parsed 1, failed 2.");
-    expect(summary).toContain(`${pageUrl("dropbox")} rejected on sector:`);
+    expect(summary).toContain(
+      `${pageUrl("broken")} rejected on props.company.name:`,
+    );
     expect(summary).toContain(
       `${pageUrl("gone")} could not be fetched: ${pageUrl("gone")} answered 404`,
     );
