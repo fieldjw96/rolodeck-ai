@@ -111,6 +111,7 @@ describe("ingest's credential boundary", () => {
         "scripts/ingest-news.ts",
         "scripts/ingest-sec-form-d.ts",
         "scripts/ingest-seed.ts",
+        "scripts/ingest-ycombinator.ts",
       ]),
     );
   });

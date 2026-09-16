@@ -50,6 +50,17 @@ export function readCompanyFixtures(
   return Promise.all(slugs.map(readCompanyFixture));
 }
 
+export type SitemapFixture = {
+  readonly xml: string;
+  readonly capture: Capture;
+};
+
+/** Y Combinator's whole company sitemap, as `/companies/sitemap.xml` served it. */
+export async function readYcSitemapFixture(): Promise<SitemapFixture> {
+  const { text, capture } = await readFixture("yc-sitemap", "xml");
+  return { xml: text, capture };
+}
+
 export type AcceleratorFixture = {
   readonly slug: string;
   readonly html: string;

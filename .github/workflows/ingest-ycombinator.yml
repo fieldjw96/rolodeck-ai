@@ -1,0 +1,28 @@
+# Daily: each run fetches one bounded window of YC's company sitemap, and the window advances a
+# day at a time, so a weekly schedule would leave six windows in seven unvisited. See
+# lib/ingest/yc-sitemap.ts and README.md's "Scheduled runs" for the full list.
+
+name: Ingest - Y Combinator
+
+on:
+  schedule:
+    - cron: "40 8 * * *" # 08:40 UTC daily
+  workflow_dispatch: {}
+
+concurrency:
+  group: ingest-ycombinator
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  ingest:
+    uses: ./.github/workflows/ingest-run.yml
+    with:
+      source-name: ycombinator
+      npm-script: ingest:ycombinator
+    secrets:
+      ROLODECK_INGEST_DATABASE_URL: ${{ secrets.ROLODECK_INGEST_DATABASE_URL }}
+      ROLODECK_OWNER_ID: ${{ secrets.ROLODECK_OWNER_ID }}
