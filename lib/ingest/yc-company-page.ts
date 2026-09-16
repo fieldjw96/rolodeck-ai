@@ -4,12 +4,15 @@ import {
   NOT_STATED_STAGE,
   parseProfileInput,
   type IngestRejection,
+  type Sector,
 } from "../../db/profile-input";
+import { logLine } from "../observability/log";
 import { issueField } from "../zod/issues";
 import { decodeEntities } from "./entities";
 import {
   attribute,
   type Capture,
+  type FieldProvenance,
   type ScrapedProfile,
   type ScrapedProfileResult,
 } from "./scraped-profile";
@@ -80,6 +83,18 @@ function rejected(
 }
 
 /**
+ * A page that lists no industry tag at all still needs a sector: `other` is what
+ * `SECTOR_VALUES` carries for exactly this, per its own comment in `db/profile-input.ts`. This
+ * is not the same event `sectorFromRawText` logs for a raw value it does not recognise — a
+ * company that stated nothing is not evidence the taxonomy is missing a member, and counting it
+ * the same way would pollute the signal that decides when `SECTOR_VALUES` should grow.
+ */
+function sectorForAbsentTag(): Sector {
+  logLine({ level: "info", event: "sector_absent" });
+  return "other";
+}
+
+/**
  * Parses one company page. Returns the validated record, or a rejection naming the single
  * field that stopped it — whether that field was missing from the page, was not the type the
  * page used to hold, or failed `profileInputSchema` once extracted.
@@ -126,9 +141,13 @@ export function parseCompanyPage(
     description:
       trimmed(company.long_description) ?? trimmed(company.one_liner),
     // YC's `tags` are its industry labels, most general first, which is what `sector` means
-    // here. A page that lists none has no sector, and is rejected for it; one that does is
-    // mapped onto the controlled vocabulary. See `lib/ingest/sector.ts`.
-    sector: rawSector === undefined ? undefined : sectorFromRawText(rawSector),
+    // here. One that states a tag is mapped onto the controlled vocabulary; one that lists none
+    // is kept with sector `other` rather than thrown away. See `lib/ingest/sector.ts` and
+    // `sectorForAbsentTag` above.
+    sector:
+      rawSector === undefined
+        ? sectorForAbsentTag()
+        : sectorFromRawText(rawSector),
     // Derived from headcount, never stated by the page: a YC page carries batch, founding
     // year, status and team size, and no funding round at all. A page with no usable team
     // size yields no stage to derive, and the company is kept with its stage `not-stated`
@@ -148,6 +167,10 @@ export function parseCompanyPage(
   }
 
   const scraped = attribute(capture, "scraped");
+  // The page stated a tag and it was mapped onto the vocabulary: `scraped`. The page stated
+  // none and the pipeline chose `other`: `enriched`, same reasoning as `stage` below.
+  const sectorProvenance: FieldProvenance =
+    rawSector === undefined ? attribute(capture, "enriched") : scraped;
 
   return {
     success: true,
@@ -156,7 +179,7 @@ export function parseCompanyPage(
       attribution: {
         name: scraped,
         description: scraped,
-        sector: scraped,
+        sector: sectorProvenance,
         // Derived from headcount, or `not-stated` for want of one: either way the page did not
         // state it. See above.
         stage: attribute(capture, "enriched"),
