@@ -1,6 +1,7 @@
 # The one place a scheduled ingest workflow's steps are written. Ticket #138: six Sources
 # needed a schedule, and each caller workflow in this directory (ingest-sec-form-d.yml,
-# ingest-accelerator-batches.yml, ingest-show-hn.yml, ingest-events.yml, ingest-news.yml)
+# ingest-accelerator-batches.yml, ingest-show-hn.yml, ingest-events.yml, ingest-news.yml,
+# ingest-ycombinator.yml)
 # differs only in its cron, its concurrency group and which npm script it runs — everything
 # below is shared so a fix to how a failure is reported lands once, not five times.
 #
