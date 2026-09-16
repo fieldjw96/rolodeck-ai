@@ -156,23 +156,36 @@ export function parseYcSitemap(xml: string): YcSitemap {
 }
 
 /**
+ * At most this many of a run's pages are ones YC changed since yesterday.
+ *
+ * The recent lane spans two days, but it takes yesterday's pages before today's, so what it has to
+ * hold is one day's changes, not two: a page dated yesterday is in its last run and goes first,
+ * and a page dated today that does not fit is first in line tomorrow. See `selectCompanyPages`.
+ *
+ * In the sitemap captured on 2026-09-16, the busiest day bar three was 2026-09-10, with 138 pages;
+ * the next were 107 and 101, and the 20 days to the capture averaged under 50. 200 holds the
+ * busiest with 62 over. It does not hold the three, days on which YC re-dated much of the sitemap
+ * at once: 2198 pages on 2026-03-21, and 563 and 421 on 2025-12-31 and 2025-12-30. No daily bound
+ * could. On such a day the run names how many did not fit, and the
+ * rotation reaches them.
+ */
+export const RECENT_PAGES_PER_RUN = 200;
+
+/**
+ * The rest of a run walks the whole sitemap in slug order, one window a day: 6226 pages at 250 a
+ * day is 25 days.
+ */
+export const ROTATION_PAGES_PER_RUN = 250;
+
+/**
  * How many company pages one run fetches at most.
  *
  * The sitemap listed 6226 company pages on 2026-09-16. At one request a second that is 6226
  * seconds, over 100 minutes, for a single run — not a shape a scheduled run should have, and
- * not a load to put on YC's site every day. 400 pages is under seven minutes at the same rate.
+ * not a load to put on YC's site every day. 200 + 250 = 450 pages is seven and a half minutes at
+ * the same rate.
  */
-export const MAX_PAGES_PER_RUN = 400;
-
-/**
- * Of those, at most this many are pages YC changed since yesterday. On 2026-09-16 YC's own
- * `lastmod` put 88 pages on that day and 94 on the one before, so this covers an ordinary day's
- * changes — a new batch's companies among them — with room over.
- */
-export const RECENT_PAGES_PER_RUN = 150;
-
-/** The rest walk the whole sitemap in slug order, one window a day. */
-export const ROTATION_PAGES_PER_RUN = MAX_PAGES_PER_RUN - RECENT_PAGES_PER_RUN;
+export const MAX_PAGES_PER_RUN = RECENT_PAGES_PER_RUN + ROTATION_PAGES_PER_RUN;
 
 /** How far back "changed recently" reaches: yesterday and today, so a daily run misses nothing. */
 const RECENT_WINDOW_DAYS = 1;
@@ -183,6 +196,11 @@ export type CompanyPageSelection = {
   readonly pages: readonly YcCompanyEntry[];
   /** How many of `pages` were picked because their `lastmod` is on or after `recentSince`. */
   readonly recent: number;
+  /**
+   * How many more pages changed on or after `recentSince` than the recent lane could hold. Zero on
+   * an ordinary day; not zero means pages YC changed are waiting on the rotation instead.
+   */
+  readonly recentOverflow: number;
   readonly recentSince: string;
   /** Where in the slug-ordered list today's rotation window began, counting from zero. */
   readonly rotationStart: number;
@@ -204,9 +222,13 @@ const byString = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
  * Which company pages a run on `today` fetches. Deterministic: the same sitemap and the same day
  * always give the same pages, in the same order. Two lanes:
  *
- * 1. **Recently changed.** Every page whose `lastmod` is yesterday or today, newest first and then
- *    by slug, up to `RECENT_PAGES_PER_RUN`. That is where a newly listed company, or one whose
- *    page YC just updated, shows up the day after.
+ * 1. **Recently changed.** Every page whose `lastmod` is yesterday or today, oldest day first and
+ *    then by slug, up to `RECENT_PAGES_PER_RUN`. That is where a newly listed company, or one whose
+ *    page YC just updated, shows up. Oldest first because a page dated yesterday is in the lane for
+ *    the last time, while one dated today will be again tomorrow, at the front. So every page
+ *    changed on a day with no more than `RECENT_PAGES_PER_RUN` changes is fetched by the next
+ *    day's run at the latest, however busy that next day is. Pages that do not fit are counted
+ *    in `recentOverflow`.
  * 2. **Rotation.** All company pages in slug order, and a window of `ROTATION_PAGES_PER_RUN` of
  *    them starting at `(days since 1970-01-01) × ROTATION_PAGES_PER_RUN`, modulo the number of
  *    pages, wrapping at the end. Successive days' windows are contiguous, so daily runs walk the
@@ -228,14 +250,14 @@ export function selectCompanyPages(
     .toISOString()
     .slice(0, 10);
 
-  const recent = companies
+  const changed = companies
     .filter(
       (company) => company.lastmod !== null && company.lastmod >= recentSince,
     )
     .sort(
-      (a, b) => byString(b.lastmod!, a.lastmod!) || byString(a.slug, b.slug),
-    )
-    .slice(0, RECENT_PAGES_PER_RUN);
+      (a, b) => byString(a.lastmod!, b.lastmod!) || byString(a.slug, b.slug),
+    );
+  const recent = changed.slice(0, RECENT_PAGES_PER_RUN);
 
   const bySlug = [...companies].sort((a, b) => byString(a.slug, b.slug));
   const rotationStart =
@@ -259,6 +281,7 @@ export function selectCompanyPages(
   return {
     pages: [...recent, ...rotation],
     recent: recent.length,
+    recentOverflow: changed.length - recent.length,
     recentSince,
     rotationStart,
   };

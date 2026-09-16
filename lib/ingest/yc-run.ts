@@ -38,7 +38,7 @@ export type YcPageBatch = {
 
 /**
  * Fetches and parses each page in turn. A page that will not fetch, or that `parseCompanyPage`
- * rejects, is counted with its URL and carried on past: one dead company page in four hundred
+ * rejects, is counted with its URL and carried on past: one dead company page in hundreds
  * should cost one Profile, not the run.
  */
 export async function fetchCompanyProfiles(
@@ -167,6 +167,15 @@ export function summariseYcRun({
   lines.push(
     `Picked ${selection.pages.length} pages: ${selection.recent} changed since ${selection.recentSince}, ` +
       `${selection.pages.length - selection.recent} from the rotation starting at #${selection.rotationStart} in slug order.`,
+  );
+
+  if (selection.recentOverflow > 0) {
+    lines.push(
+      `  ${selection.recentOverflow} more pages changed since ${selection.recentSince} than the recent lane holds; the rotation reaches them.`,
+    );
+  }
+
+  lines.push(
     `Parsed ${batch.profiles.length}, failed ${batch.failures.length}.`,
   );
 

@@ -247,6 +247,7 @@ function runOf(pages: number, parsed: number, written: IngestReport): YcRun {
     selection: {
       pages: picked,
       recent: 0,
+      recentOverflow: 0,
       recentSince: "2026-09-15",
       rotationStart: 0,
     },
@@ -297,6 +298,7 @@ describe("summariseYcRun", () => {
       selection: {
         pages: entries(["stripe", "lawdingo", "gone"]),
         recent: 1,
+        recentOverflow: 0,
         recentSince: "2026-09-15",
         rotationStart: 42,
       },
@@ -321,5 +323,19 @@ describe("summariseYcRun", () => {
     );
     expect(summary).toContain("Wrote 1 new Profiles and updated 0.");
     expect(summary).toContain("rejected on website: Invalid URL");
+    expect(summary).not.toContain("than the recent lane holds");
+  });
+
+  it("says how many recently changed pages did not fit the recent lane", () => {
+    const run = runOf(2, 2, report({ inserted: 2 }));
+
+    expect(
+      summariseYcRun({
+        ...run,
+        selection: { ...run.selection, recent: 2, recentOverflow: 1998 },
+      }),
+    ).toContain(
+      "1998 more pages changed since 2026-09-15 than the recent lane holds; the rotation reaches them.",
+    );
   });
 });

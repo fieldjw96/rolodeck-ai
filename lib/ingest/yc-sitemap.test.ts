@@ -348,20 +348,58 @@ describe("selectCompanyPages", () => {
     );
   });
 
-  it("picks pages changed since yesterday first, newest first, up to its share", () => {
+  it("picks pages changed since yesterday first, oldest day first, up to its share", () => {
     const selection = selectCompanyPages(sitemap.companies, TODAY);
     const recent = selection.pages.slice(0, selection.recent);
 
+    // 94 pages dated 2026-09-15 and 88 dated 2026-09-16 in the capture: all of them fit.
     expect(selection.recentSince).toBe("2026-09-15");
-    expect(selection.recent).toBeGreaterThan(0);
-    expect(selection.recent).toBeLessThanOrEqual(RECENT_PAGES_PER_RUN);
+    expect(selection.recent).toBe(94 + 88);
+    expect(selection.recentOverflow).toBe(0);
 
     for (const page of recent) {
       expect(page.lastmod! >= "2026-09-15").toBe(true);
     }
 
     const dates = recent.map((page) => page.lastmod!);
-    expect(dates).toEqual([...dates].sort().reverse());
+    expect(dates).toEqual([...dates].sort());
+  });
+
+  /** The capture as the sitemap would have stood on `day`: nothing dated after it. */
+  const asOf = (day: string): YcCompanyEntry[] =>
+    sitemap.companies.filter(
+      (company) => company.lastmod !== null && company.lastmod <= day,
+    );
+
+  it("fetches every page changed on the capture's busiest ordinary day by the next day's run", () => {
+    // 2026-09-10 had 138 changed pages and 2026-09-11 had 88: 226 between them, more than the
+    // lane holds. Taking the older day first is what keeps all 138 of 2026-09-10's.
+    const busiest = sitemap.companies.filter(
+      (company) => company.lastmod === "2026-09-10",
+    );
+    const selection = selectCompanyPages(asOf("2026-09-11"), "2026-09-11");
+    const picked = new Set(
+      selection.pages.slice(0, selection.recent).map((page) => page.slug),
+    );
+
+    expect(busiest).toHaveLength(138);
+    expect(busiest.length).toBeLessThanOrEqual(RECENT_PAGES_PER_RUN);
+    expect(busiest.filter((company) => !picked.has(company.slug))).toEqual([]);
+    expect(selection.recent).toBe(RECENT_PAGES_PER_RUN);
+    expect(selection.recentOverflow).toBe(138 + 88 - RECENT_PAGES_PER_RUN);
+  });
+
+  it("counts the pages a mass re-dating leaves out of the recent lane, rather than dropping them silently", () => {
+    // YC re-dated 2198 pages on 2026-03-21. No daily bound holds that.
+    const sitemapThen = asOf("2026-03-21");
+    const changed = sitemapThen.filter(
+      (company) => company.lastmod! >= "2026-03-20",
+    ).length;
+    const selection = selectCompanyPages(sitemapThen, "2026-03-21");
+
+    expect(changed).toBeGreaterThanOrEqual(2198);
+    expect(selection.recent).toBe(RECENT_PAGES_PER_RUN);
+    expect(selection.recentOverflow).toBe(changed - RECENT_PAGES_PER_RUN);
   });
 
   it("makes progress: successive days' rotation windows are contiguous, and walk the whole sitemap", () => {

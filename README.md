@@ -248,10 +248,12 @@ page, which is the whole reason these are committed rather than generated.
 `npm run ingest:ycombinator` runs the Source live, writing under the slug `ycombinator`. It reads
 `https://www.ycombinator.com/companies/sitemap.xml` (`lib/ingest/yc-sitemap.ts`) for every
 `/companies/<slug>` page and its `lastmod`, skipping the `/companies/industry/` listings, then
-fetches at most 400 pages a run at one request a second through `lib/ingest/yc-fetch.ts`, the
-only YC module that touches the network. Which 400 is deterministic: pages YC changed since
-yesterday first, then a window of the whole sitemap in slug order that advances each day, so
-daily runs walk all ~6200 companies in about 25 days rather than re-fetching the same ones. A
+fetches at most 450 pages a run at one request a second through `lib/ingest/yc-fetch.ts`, the
+only YC module that touches the network. Which 450 is deterministic: up to 200 pages YC changed
+since yesterday, yesterday's before today's so a day's changes are all fetched by the next run
+unless YC re-dated more than 200 at once, then a window of 250 of the whole sitemap in slug order
+that advances each day, so daily runs walk all ~6200 companies in about 25 days rather than
+re-fetching the same ones. A
 page that fails to fetch or parse is named by URL and skipped; a sitemap that cannot be read, or
 a run where every page failed, exits non-zero. `db/fixtures/yc-sitemap.xml` is the whole
 sitemap as captured, and refreshes the same way:
