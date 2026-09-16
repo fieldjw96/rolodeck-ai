@@ -1,5 +1,6 @@
 import { persistProfiles, type ProfileCandidate } from "../db/ingest";
 import { closeIngestDb, getIngestDb } from "../db/ingest-connection";
+import { wroteNothing } from "../lib/ingest/form-d-run";
 import {
   parseShowHnPosts,
   showHnSearchResponseSchema,
@@ -15,9 +16,11 @@ import {
  *
  *     ROLODECK_INGEST_DATABASE_URL=... ROLODECK_OWNER_ID=... npm run source:show-hn
  *
- * Exits non-zero when nothing new was inserted — a run that finds zero companies HN has not
- * shown this pipeline before is either a quiet day or a source that has changed shape, and
- * either way it should be visible in a Run's own exit code rather than read as a silent no-op.
+ * Exits non-zero when the run wrote no Profiles at all, by the same inserted-plus-updated rule
+ * every other Source fails on (`wroteNothing`, `lib/ingest/form-d-run.ts`): a source that has
+ * changed shape writes nothing and reports success, and a week whose companies were all seen
+ * before is a healthy re-run, not a failure — see `docs/adr/0008` on why `inserted === 0` alone
+ * would cry wolf on that second case.
  */
 
 const ALGOLIA_URL =
@@ -56,7 +59,7 @@ async function main(): Promise<void> {
     provenance: toProfileProvenance(profile.attribution),
   }));
 
-  const report = await persistProfiles(getIngestDb(), {
+  const report = await persistProfiles(await getIngestDb(), {
     source: "show-hn",
     candidates,
   });
@@ -74,9 +77,10 @@ async function main(): Promise<void> {
     console.log(`  rejected (${rejection.field}): ${rejection.reason}`);
   }
 
-  if (report.inserted === 0) {
+  if (wroteNothing(report)) {
     throw new Error(
-      "Inserted no new Profiles. Either Show HN has nothing new today, or this source has changed shape.",
+      "show-hn wrote no Profiles. Either Show HN has nothing new today, or this source has " +
+        "changed shape.",
     );
   }
 }

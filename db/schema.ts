@@ -48,9 +48,9 @@ export const nameKeyOf = (value: SQL): SQL =>
  *
  * `.existing()` because Drizzle cannot say what matters about it — that it is not a superuser,
  * cannot create roles, is a member of nothing, and holds grants on four tables only — so
- * migration `0008_ingest_role` creates it by hand, grants it exactly that, and refuses to finish
- * if the role turns out to be any broader. Declared here so the policies below are part of the
- * schema Drizzle diffs rather than SQL it has never heard of.
+ * migrations `0008_ingest_role` and `0009_ingest_update_columns` create and grant it by hand, and
+ * `db/testing/ingest-role-check.sql` fails the tests if the role is any broader. Declared here so
+ * the policies below are part of the schema Drizzle diffs rather than SQL it has never heard of.
  */
 export const ingestRole = pgRole("rolodeck_ingest").existing();
 
