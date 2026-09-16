@@ -5,87 +5,129 @@ import {
   type NewsCandidate,
 } from "../../db/news";
 import type { IngestRejection } from "../../db/profile-input";
-import { parseGNewsResponse, type GNewsClient } from "./gnews";
+import type { NewsFeedClient } from "./feed-fetch";
+import { parseNewsFeed, type NewsArticle, type NewsFeed } from "./feeds";
 import { NEWS_DISPLAY_THRESHOLD, scoreNewsMatch } from "./match";
 
 /**
- * One News run: ask the provider about every Kept Company Profile, score what comes back, store
- * all of it. Everything `scripts/ingest-news.ts` does that is worth testing, with the database
- * and the provider both passed in.
+ * One News run: read every feed, score every article in them against every Kept Company
+ * Profile, store all of it. Everything `scripts/ingest-news.ts` does that is worth testing, with
+ * the database, the feeds and the client that fetches them all passed in.
  */
 
-/** A company the run could not get News for, and why. The run carries on past it. */
-export type NewsRunFailure = {
-  readonly company: string;
-  readonly reason: string;
-};
+/** What became of one feed this run: how many articles it gave, or why it gave none. */
+export type NewsFeedOutcome =
+  | {
+      readonly feed: string;
+      readonly articles: number;
+      /** Items skipped for an element that did not validate. */
+      readonly rejections: readonly IngestRejection[];
+    }
+  | { readonly feed: string; readonly failure: string };
 
 export type NewsRunReport = {
-  /** How many Kept Company Profiles were searched for. */
+  /** How many Kept Company Profiles every article was scored against. */
   readonly companies: number;
-  /** How many articles validated, across every company, before storing. */
-  readonly articles: number;
+  /** One per feed, in the order they were read. */
+  readonly feeds: readonly NewsFeedOutcome[];
+  /** Articles times Kept Company Profiles: each pair is one scored candidate. */
+  readonly candidates: number;
   /** How many of those scored at or above `NEWS_DISPLAY_THRESHOLD`. */
   readonly shown: number;
   readonly inserted: number;
   readonly updated: number;
-  readonly failures: readonly NewsRunFailure[];
-  /** Articles, or stored candidates, that were skipped for a field that did not validate. */
+  /** Candidates skipped on the way into `news_items` for a field that did not validate. */
   readonly rejections: readonly IngestRejection[];
 };
 
+const feedFailed = (
+  outcome: NewsFeedOutcome,
+): outcome is Extract<NewsFeedOutcome, { failure: string }> =>
+  "failure" in outcome;
+
 /**
- * Fetches, scores and stores News for `ownerId`'s Kept Company Profiles.
+ * Fetches every feed, and scores and stores what they carry for `ownerId`'s Kept Company
+ * Profiles.
  *
  * Kept comes from `readKeptCompaniesForNews`, which asks the one function the ingest role may
  * call about `swipes` rather than reading the table, since this runs as that role — see
- * docs/adr/0013. A Company Profile that is unswiped or Passed is never searched for — which also
- * keeps the provider's daily quota spent on companies the owner has said are worth it.
+ * docs/adr/0013. A Company Profile that is unswiped or Passed is never scored against.
  *
- * Never throws for a provider problem. A search that fails, or a response that has changed
- * shape, is a failure naming the company and the reason, and the next company is still
- * searched: one 429 should cost one company's News, not the run. A database error does throw,
- * since nothing after it could be written either.
+ * Every article is scored against every Kept Company Profile with `scoreNewsMatch`, and every
+ * pair is stored, including the ones scoring zero, per docs/adr/0010: an article about two Kept
+ * companies is stored once for each, which is what `news_items.profile_id` means.
+ *
+ * Every feed is read even when nothing is Kept, so a run proves its feeds still parse on the days
+ * it has nobody to match them against.
+ *
+ * Never throws for a feed problem. A feed that cannot be fetched, no longer parses, or has every
+ * one of its items rejected is a failure naming the feed and the reason, and the next feed is
+ * still read. A database error does
+ * throw, since nothing after it could be written either.
  */
 export async function fetchNewsForKeptProfiles(
   db: Database,
-  { ownerId, client }: { ownerId: string; client: GNewsClient },
+  {
+    ownerId,
+    feeds,
+    client,
+  }: {
+    ownerId: string;
+    feeds: readonly NewsFeed[];
+    client: NewsFeedClient;
+  },
 ): Promise<NewsRunReport> {
   const kept = await readKeptCompaniesForNews(db, ownerId);
 
-  let articles = 0;
-  let shown = 0;
-  let inserted = 0;
-  let updated = 0;
-  const failures: NewsRunFailure[] = [];
-  const rejections: IngestRejection[] = [];
+  const outcomes: NewsFeedOutcome[] = [];
+  const articles: NewsArticle[] = [];
 
-  for (const profile of kept) {
-    let raw: unknown;
+  for (const feed of feeds) {
+    let body: string;
 
     try {
-      raw = await client.search(profile.name);
+      body = await client.get(feed.url);
     } catch (error) {
-      failures.push({
-        company: profile.name,
-        reason: error instanceof Error ? error.message : String(error),
+      outcomes.push({
+        feed: feed.name,
+        failure: error instanceof Error ? error.message : String(error),
       });
       continue;
     }
 
-    const parsed = parseGNewsResponse(raw);
+    const parsed = parseNewsFeed(feed, body);
 
     if (!parsed.success) {
-      failures.push({
-        company: profile.name,
-        reason: `the response changed shape at ${parsed.rejection.field}: ${parsed.rejection.reason}`,
+      outcomes.push({
+        feed: feed.name,
+        failure: `rejected on ${parsed.rejection.field}: ${parsed.rejection.reason}`,
       });
       continue;
     }
 
-    rejections.push(...parsed.rejections);
+    // Items to read and not one that validated is a feed that changed shape, not a quiet day.
+    const firstRejection = parsed.rejections[0];
 
-    const candidates: NewsCandidate[] = parsed.articles.map((article) => ({
+    if (parsed.articles.length === 0 && firstRejection !== undefined) {
+      outcomes.push({
+        feed: feed.name,
+        failure:
+          `rejected all ${parsed.rejections.length} of its items, the first on ` +
+          `${firstRejection.field}: ${firstRejection.reason}`,
+      });
+      continue;
+    }
+
+    outcomes.push({
+      feed: feed.name,
+      articles: parsed.articles.length,
+      rejections: parsed.rejections,
+    });
+    articles.push(...parsed.articles);
+  }
+
+  const candidates: NewsCandidate[] = kept.flatMap((profile) =>
+    articles.map((article) => ({
       profileId: profile.id,
       title: article.title,
       description: article.description,
@@ -93,56 +135,61 @@ export async function fetchNewsForKeptProfiles(
       publishedAt: article.publishedAt,
       sourceName: article.sourceName,
       confidence: scoreNewsMatch(profile, article),
-    }));
+    })),
+  );
 
-    articles += candidates.length;
-    shown += candidates.filter(
-      (candidate) => candidate.confidence >= NEWS_DISPLAY_THRESHOLD,
-    ).length;
-
-    const report = await persistNewsItems(db, { ownerId, candidates });
-
-    inserted += report.inserted;
-    updated += report.updated;
-    rejections.push(...report.rejections);
-  }
+  const stored = await persistNewsItems(db, { ownerId, candidates });
 
   return {
     companies: kept.length,
-    articles,
-    shown,
-    inserted,
-    updated,
-    failures,
-    rejections,
+    feeds: outcomes,
+    candidates: candidates.length,
+    shown: candidates.filter(
+      (candidate) => candidate.confidence >= NEWS_DISPLAY_THRESHOLD,
+    ).length,
+    inserted: stored.inserted,
+    updated: stored.updated,
+    rejections: stored.rejections,
   };
 }
 
 /**
- * Whether the run should exit non-zero: any company the provider could not answer for, or zero
- * Kept Company Profiles searched at all. A run that asked about companies and found no articles
- * is not a failure — a two-person startup can go a month unreported — but a run that asked about
- * nobody is exactly the silent failure this Ticket's Sources are held to elsewhere: a broken
- * `readKeptCompaniesForNews`, or Jack having Kept nothing, both report success today and
- * shouldn't. A spent quota or a revoked key already fails via `failures`.
+ * Whether the run should exit non-zero: when not one feed was read. A run that read its feeds and
+ * matched nothing is not a failure — until Jack Keeps a Company Profile there is nothing to match
+ * against, and a two-person startup can go a month unreported after that — but a run that read no
+ * feed at all has checked nothing. A feed that failed beside one that did not is named in the
+ * summary rather than failing the run.
  */
 export function newsRunFailed(report: NewsRunReport): boolean {
-  return report.failures.length > 0 || report.companies === 0;
+  return report.feeds.every(feedFailed);
 }
 
-/** What the run did, in the order an operator wants to read it. */
+/** What the run did, feed by feed and then in total, in the form every ingest script prints. */
 export function summariseNewsRun(report: NewsRunReport): string {
-  const lines = [
-    `Searched GNews for ${report.companies} Kept Company ${report.companies === 1 ? "Profile" : "Profiles"}.`,
-    `  ${report.articles} articles, ${report.shown} at or above the display threshold of ${NEWS_DISPLAY_THRESHOLD}.`,
-    `Stored ${report.inserted} new and updated ${report.updated}.`,
-  ];
+  const lines: string[] = [];
 
-  for (const failure of report.failures) {
-    lines.push(`  failed for ${failure.company}: ${failure.reason}`);
+  for (const outcome of report.feeds) {
+    if (feedFailed(outcome)) {
+      lines.push(`${outcome.feed}: failed, ${outcome.failure}`);
+      continue;
+    }
+
+    lines.push(
+      `${outcome.feed}: read ${outcome.articles} ${outcome.articles === 1 ? "article" : "articles"}.`,
+    );
+
+    // Named, not counted, for the reason `summariseRun` gives in `lib/ingest/form-d-run.ts`.
+    for (const rejection of outcome.rejections) {
+      lines.push(`  rejected on ${rejection.field}: ${rejection.reason}`);
+    }
   }
 
-  // Named, not counted, for the reason `summariseRun` gives in `lib/ingest/form-d-run.ts`.
+  lines.push(
+    `Scored against ${report.companies} Kept Company ${report.companies === 1 ? "Profile" : "Profiles"}: ` +
+      `${report.candidates} candidates, ${report.shown} at or above the display threshold of ${NEWS_DISPLAY_THRESHOLD}.`,
+    `Stored ${report.inserted} new and updated ${report.updated}.`,
+  );
+
   for (const rejection of report.rejections) {
     lines.push(`  rejected on ${rejection.field}: ${rejection.reason}`);
   }

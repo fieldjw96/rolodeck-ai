@@ -30,9 +30,6 @@ on:
       # never runs for them so an empty value never matters.
       SEC_EDGAR_CONTACT:
         required: false
-      # Only ingest-news reads this; unset for every other caller.
-      GNEWS_API_KEY:
-        required: false
 
 jobs:
   run:
@@ -55,7 +52,6 @@ jobs:
           ROLODECK_INGEST_DATABASE_URL: ${{ secrets.ROLODECK_INGEST_DATABASE_URL }}
           ROLODECK_OWNER_ID: ${{ secrets.ROLODECK_OWNER_ID }}
           SEC_EDGAR_CONTACT: ${{ secrets.SEC_EDGAR_CONTACT }}
-          GNEWS_API_KEY: ${{ secrets.GNEWS_API_KEY }}
         run: |
           set -o pipefail
           npm run ${{ inputs.npm-script }} 2>&1 | tee /tmp/ingest-output.log

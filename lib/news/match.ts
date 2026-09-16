@@ -20,8 +20,8 @@ export type MatchSubject = {
   readonly sector: string;
 };
 
-/** The two things about an article the rule reads. The body is not available on GNews's free
- * plan, so the rule is written against what every plan returns. */
+/** The two things about an article the rule reads. A feed item carries a headline and a
+ * standfirst and not the body, so the rule is written against those. */
 export type MatchArticle = {
   readonly title: string;
   readonly description: string | null;
