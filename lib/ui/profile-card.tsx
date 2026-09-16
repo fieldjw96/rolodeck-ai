@@ -1,4 +1,4 @@
-import { NOT_STATED_STAGE } from "../../db/profile-input";
+import { NOT_STATED_STAGE } from "../../db/not-stated-stage";
 import styles from "./profile-card.module.css";
 
 type ProfileCardProps = {

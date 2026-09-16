@@ -1,6 +1,9 @@
 import { z } from "zod";
 
 import { issueField } from "../lib/zod/issues";
+import { NOT_STATED_STAGE } from "./not-stated-stage";
+
+export { NOT_STATED_STAGE };
 
 /**
  * The funding stages a Source can state or a pipeline can derive, and so the ones an owner can
@@ -14,9 +17,6 @@ export const STATED_STAGE_VALUES = [
   "series-b-plus",
   "growth",
 ] as const;
-
-/** The stage of a Company Profile whose Source neither stated one nor gave us one to derive. */
-export const NOT_STATED_STAGE = "not-stated";
 
 /**
  * The fixed set of values a Company Profile's `stage` can hold. `not-stated` is deliberate, for
