@@ -16,7 +16,8 @@ import {
  * `db/fixtures/yc-sitemap.xml` is YC's whole company sitemap, captured with `curl` from the URL its
  * `.meta.json` sibling records and committed byte-for-byte. On that day it held 6336 entries:
  * 6226 company pages, each with a `YYYY-MM-DD` `lastmod`, and 110 `/companies/industry/<slug>`
- * listings with no `lastmod` at all.
+ * listings with no `lastmod` at all. A company entry with an absent or malformed `lastmod` is
+ * exercised by editing named entries of that capture in the test, not by committing an edited copy.
  */
 let fixture: SitemapFixture;
 let sitemap: YcSitemap;
@@ -44,11 +45,49 @@ describe("the captured sitemap fixture", () => {
     expect(fixture.xml).toContain(
       "<url><loc>https://www.ycombinator.com/companies/stripe</loc><lastmod>",
     );
-    expect(fixture.xml).toContain(
+
+    // Every entry the capture serves without a lastmod, and it is all 110 industry listings.
+    // No company entry in it lacks one, or has one that is not a bare date: YC's live sitemap
+    // still said so when this was re-checked on 2026-09-16.
+    const undated = fixture.xml.match(/<url><loc>[^<]*<\/loc><\/url>/g) ?? [];
+    expect(undated).toHaveLength(110);
+    expect(undated).toContain(
       "<url><loc>https://www.ycombinator.com/companies/industry/fintech</loc></url>",
     );
+    expect(
+      undated.filter((entry) => !entry.includes("/companies/industry/")),
+    ).toEqual([]);
   });
 });
+
+/**
+ * The capture as served, with the named company entries' `<lastmod>` replaced. Every other byte
+ * is the committed fixture's. No real capture of this sitemap has a company entry whose lastmod
+ * is absent or malformed, and committing an edited copy as a fixture would be a fixture that
+ * tests the editing rather than the source, so the edit is made here, where it is visible.
+ */
+function captureWithLastmod(
+  xml: string,
+  replacements: Readonly<Record<string, string | undefined>>,
+): string {
+  let edited = xml;
+
+  for (const [slug, lastmod] of Object.entries(replacements)) {
+    const entry = new RegExp(
+      `<url><loc>https://www\\.ycombinator\\.com/companies/${slug}</loc><lastmod>[^<]*</lastmod></url>`,
+    );
+    const before = edited;
+    edited = edited.replace(
+      entry,
+      url(`https://www.ycombinator.com/companies/${slug}`, lastmod),
+    );
+
+    // A slug the capture does not date would make this a no-op and the test vacuous.
+    expect(edited, slug).not.toBe(before);
+  }
+
+  return edited;
+}
 
 describe("parseYcSitemap, against the captured sitemap", () => {
   it("returns every company page and excludes every industry listing", () => {
@@ -65,8 +104,67 @@ describe("parseYcSitemap, against the captured sitemap", () => {
     );
 
     expect(stripe?.url).toBe("https://www.ycombinator.com/companies/stripe");
-    expect(stripe?.lastmod).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(stripe?.lastmod).toBe("2026-03-25");
     expect(sitemap.unusableLastmod).toEqual([]);
+  });
+
+  it("does not let an industry entry's absent lastmod reach unusableLastmod", () => {
+    expect(
+      sitemap.unusableLastmod.filter((entry) => entry.includes("/industry")),
+    ).toEqual([]);
+    expect(sitemap.companies.every((company) => company.lastmod !== null)).toBe(
+      true,
+    );
+  });
+
+  it("keeps a company entry whose lastmod is absent or malformed, with lastmod null, and names it", () => {
+    const edited = parseYcSitemap(
+      captureWithLastmod(fixture.xml, {
+        stripe: undefined,
+        dropbox: "last tuesday",
+        razorpay: "2026-02-31",
+      }),
+    );
+
+    expect(edited.companies).toHaveLength(6226);
+    expect(edited.excluded).toBe(110);
+    expect(edited.unusableLastmod).toEqual(
+      expect.arrayContaining([
+        "https://www.ycombinator.com/companies/stripe",
+        "https://www.ycombinator.com/companies/dropbox",
+        "https://www.ycombinator.com/companies/razorpay",
+      ]),
+    );
+    expect(edited.unusableLastmod).toHaveLength(3);
+
+    for (const slug of ["stripe", "dropbox", "razorpay"]) {
+      expect(
+        edited.companies.find((company) => company.slug === slug)?.lastmod,
+      ).toBeNull();
+    }
+
+    // Undated, those pages still reach a run: never the recent lane, but in the rotation.
+    const undated = new Set(["stripe", "dropbox", "razorpay"]);
+    const days = Math.ceil(6226 / ROTATION_PAGES_PER_RUN);
+    const reached = new Set<string>();
+
+    for (let day = 0; day < days; day += 1) {
+      const date = new Date(Date.UTC(2026, 8, 16 + day))
+        .toISOString()
+        .slice(0, 10);
+      const selection = selectCompanyPages(edited.companies, date);
+
+      for (const page of selection.pages.slice(0, selection.recent)) {
+        expect(undated.has(page.slug)).toBe(false);
+      }
+      for (const page of selection.pages) {
+        if (undated.has(page.slug)) {
+          reached.add(page.slug);
+        }
+      }
+    }
+
+    expect([...reached].sort()).toEqual(["dropbox", "razorpay", "stripe"]);
   });
 
   it("returns only /companies/ followed by exactly one non-empty segment", () => {
