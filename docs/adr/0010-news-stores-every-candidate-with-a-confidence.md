@@ -4,6 +4,9 @@ status: accepted
 
 # News stores every candidate article with a confidence, and filters on read
 
+Amended by docs/adr/0015: News now reads publisher feeds rather than the GNews API. The decision
+to store every candidate with a confidence and filter on read stands.
+
 News is articles about a Kept Company Profile. Finding them means searching a news provider by
 company name, and a company name is a poor search key: "Mercury" is a bank, a planet, an
 element and an insurer, and a provider has no idea which one Jack Kept. So every article comes
