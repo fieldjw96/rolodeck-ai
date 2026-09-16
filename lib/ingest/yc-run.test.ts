@@ -292,7 +292,8 @@ describe("summariseYcRun", () => {
       get: async (url) => {
         if (url === pageUrl("stripe")) {
           const stripe = fixtures.find((f) => f.slug === "yc-stripe");
-          if (stripe === undefined) throw new Error("yc-stripe fixture missing");
+          if (stripe === undefined)
+            throw new Error("yc-stripe fixture missing");
           return stripe.html;
         }
         if (url === pageUrl("broken")) return brokenPage;
