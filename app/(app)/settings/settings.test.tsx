@@ -73,6 +73,28 @@ describe("Settings", () => {
     expect(screen.getByLabelText("Area")).toHaveValue("Bay Area");
   });
 
+  it("offers every stated Stage and never `not-stated`, which is not a stage to prefer", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => jsonResponse(200, EMPTY_BODY)),
+    );
+
+    render(<Settings />);
+    await screen.findByRole("checkbox", { name: "seed" });
+
+    const stages = within(screen.getByRole("group", { name: "Stages" }));
+
+    expect(
+      stages
+        .getAllByRole("checkbox")
+        .map((box) => box.parentElement?.textContent),
+    ).toEqual(["pre-seed", "seed", "series-a", "series-b-plus", "growth"]);
+    expect(
+      screen.queryByRole("checkbox", { name: "not-stated" }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/not.stated/i)).not.toBeInTheDocument();
+  });
+
   it("shows an explicit error when the load fails, rather than staying blank", async () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     vi.stubGlobal(

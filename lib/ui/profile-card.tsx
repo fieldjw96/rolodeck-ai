@@ -1,3 +1,4 @@
+import { NOT_STATED_STAGE } from "../../db/profile-input";
 import styles from "./profile-card.module.css";
 
 type ProfileCardProps = {
@@ -50,7 +51,15 @@ export function ProfileCard({
         </div>
         <div className={styles.field}>
           <dt className={styles.fieldLabel}>Stage</dt>
-          <dd className={styles.fieldValue}>{stage}</dd>
+          {/* A stage the Source never stated reads as that, in words and set apart, rather
+              than as a slug that looks like one more stage. See docs/adr/0015. */}
+          {stage === NOT_STATED_STAGE ? (
+            <dd className={`${styles.fieldValue} ${styles.notStated}`}>
+              Not stated
+            </dd>
+          ) : (
+            <dd className={styles.fieldValue}>{stage}</dd>
+          )}
         </div>
         {location === null || location === undefined ? null : (
           <div className={styles.field}>

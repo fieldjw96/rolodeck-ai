@@ -23,8 +23,9 @@ const TODAY = "2026-09-16";
 
 /**
  * The five YC company pages already committed for `yc-company-page.test.ts`, served by a client
- * that stands in for the network. Three parse; `yc-dropbox` lists no tags and is rejected on
- * `sector`, and `yc-lawdingo` has no team size and is rejected on `stage` (docs/adr/0007).
+ * that stands in for the network. Four parse, `yc-lawdingo` among them with its stage
+ * `not-stated` for want of a team size (docs/adr/0015); `yc-dropbox` lists no tags and is
+ * rejected on `sector`.
  */
 const SLUGS = ["stripe", "razorpay", "buxfer", "dropbox", "lawdingo"];
 
@@ -100,6 +101,7 @@ describe("fetchCompanyProfiles", () => {
 
     expect(batch.profiles.map((profile) => profile.input.name).sort()).toEqual([
       "Buxfer",
+      "Lawdingo",
       "Razorpay",
       "Stripe",
     ]);
@@ -108,12 +110,6 @@ describe("fetchCompanyProfiles", () => {
         kind: "parse",
         url: pageUrl("dropbox"),
         field: "sector",
-        reason: expect.any(String),
-      },
-      {
-        kind: "parse",
-        url: pageUrl("lawdingo"),
-        field: "stage",
         reason: expect.any(String),
       },
       {
@@ -157,21 +153,21 @@ describe("persistYcProfiles, against a real database", () => {
     const second = await persistYcProfiles(scratch.db, batch.profiles);
 
     expect(first).toEqual({
-      inserted: 3,
+      inserted: 4,
       updated: 0,
       rejected: 0,
       rejections: [],
     });
     expect(second).toEqual({
       inserted: 0,
-      updated: 3,
+      updated: 4,
       rejected: 0,
       rejections: [],
     });
 
     const rows = await scratch.db.select().from(profiles);
 
-    expect(rows).toHaveLength(3);
+    expect(rows).toHaveLength(4);
     expect(new Set(rows.map((row) => row.source))).toEqual(
       new Set([YC_SOURCE]),
     );
@@ -179,7 +175,11 @@ describe("persistYcProfiles, against a real database", () => {
       "enriched",
       "enriched",
       "enriched",
+      "enriched",
     ]);
+    expect(rows.find((row) => row.name === "Lawdingo")?.stage).toBe(
+      "not-stated",
+    );
   });
 });
 
@@ -196,8 +196,8 @@ describe("runYcIngest", () => {
       false,
     );
     expect(run.selection.pages).toHaveLength(6);
-    expect(run.report.inserted).toBe(3);
-    expect(run.batch.failures).toHaveLength(3);
+    expect(run.report.inserted).toBe(4);
+    expect(run.batch.failures).toHaveLength(2);
     expect(ycRunFailure(run)).toBeUndefined();
 
     const again = await runYcIngest(
@@ -206,7 +206,7 @@ describe("runYcIngest", () => {
       TODAY,
     );
 
-    expect(again.report).toMatchObject({ inserted: 0, updated: 3 });
+    expect(again.report).toMatchObject({ inserted: 0, updated: 4 });
   });
 
   it("throws, before fetching any company page, when the sitemap cannot be read", async () => {
@@ -285,18 +285,18 @@ describe("summariseYcRun", () => {
   it("names every failed page by URL, and the field a rejected one stopped on", async () => {
     const batch = await fetchCompanyProfiles(
       fixtureClient(),
-      entries(["stripe", "lawdingo", "gone"]),
+      entries(["stripe", "dropbox", "gone"]),
       TODAY,
     );
 
     const summary = summariseYcRun({
       sitemap: {
-        companies: entries(["stripe", "lawdingo", "gone"]),
+        companies: entries(["stripe", "dropbox", "gone"]),
         excluded: 110,
         unusableLastmod: [pageUrl("gone")],
       },
       selection: {
-        pages: entries(["stripe", "lawdingo", "gone"]),
+        pages: entries(["stripe", "dropbox", "gone"]),
         recent: 1,
         recentOverflow: 0,
         recentSince: "2026-09-15",
@@ -317,7 +317,7 @@ describe("summariseYcRun", () => {
       "Picked 3 pages: 1 changed since 2026-09-15, 2 from the rotation starting at #42",
     );
     expect(summary).toContain("Parsed 1, failed 2.");
-    expect(summary).toContain(`${pageUrl("lawdingo")} rejected on stage:`);
+    expect(summary).toContain(`${pageUrl("dropbox")} rejected on sector:`);
     expect(summary).toContain(
       `${pageUrl("gone")} could not be fetched: ${pageUrl("gone")} answered 404`,
     );

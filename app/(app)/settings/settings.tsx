@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 
-import { SECTOR_VALUES, STAGE_VALUES } from "../../../db/profile-input";
+import { SECTOR_VALUES, STATED_STAGE_VALUES } from "../../../db/profile-input";
 import { StateNotice } from "../../../lib/ui/state-notice";
 import styles from "./settings.module.css";
 
@@ -112,8 +112,9 @@ function toggled(set: Set<string>, value: string): Set<string> {
 /**
  * Lets the owner set the four things the ranking Ticket will read: `sectors`, `stages`,
  * `area` and `excluded_sectors`. Sectors and stages are chosen from the controlled lists —
- * `SECTOR_VALUES` and `STAGE_VALUES`, the same ones a Company Profile is ranked against —
- * rather than typed freely, per the Ticket.
+ * `SECTOR_VALUES` and `STATED_STAGE_VALUES`, the same ones a Company Profile is ranked against —
+ * rather than typed freely, per the Ticket. `not-stated` is not offered: it marks a Source's
+ * silence, and is not a stage to prefer. See docs/adr/0015.
  *
  * A Sector checked as stated is unchecked as excluded, and the reverse, so the one rule the
  * server enforces (`db/user-profile-input.ts`) cannot even be expressed in the form.
@@ -272,7 +273,7 @@ export function Settings() {
         <fieldset className={styles.fieldset}>
           <legend className={styles.legend}>Stages</legend>
           <div className={styles.checkboxGrid}>
-            {STAGE_VALUES.map((stage) => (
+            {STATED_STAGE_VALUES.map((stage) => (
               <label key={stage} className={styles.checkboxLabel}>
                 <input
                   type="checkbox"

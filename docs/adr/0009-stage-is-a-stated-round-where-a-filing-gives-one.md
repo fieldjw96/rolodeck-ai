@@ -4,6 +4,10 @@ status: accepted
 
 # `stage` is a stated round where a filing gives one, and the headcount band only where none does
 
+_Amended by docs/adr/0015: both derivations and the SAFE reasoning below stand, but a filing
+with neither a named round nor a headcount is now kept with its stage `not-stated` rather than
+rejected, and funds, investing vehicles and real estate are rejected naming `industryGroup`._
+
 docs/adr/0007 decided `stage` for a Y Combinator page, where no funding round is stated
 anywhere, by deriving it from team size and attributing it `enriched`. It said plainly that
 headcount is a poor proxy, and that a later Ticket finding a real funding source could replace

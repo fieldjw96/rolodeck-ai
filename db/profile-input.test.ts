@@ -76,6 +76,12 @@ describe("profileInputSchema", () => {
     expect(parsed.website).toBeUndefined();
   });
 
+  it("accepts `not-stated` as a Company Profile's stage", () => {
+    expect(
+      profileInputSchema.parse({ ...VALID_INPUT, stage: "not-stated" }).stage,
+    ).toBe("not-stated");
+  });
+
   it.each(MALFORMED_PAYLOADS)(
     "rejects a payload with $description, naming the offending field",
     ({ payload, field }) => {

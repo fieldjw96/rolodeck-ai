@@ -1,4 +1,4 @@
-import { STAGE_VALUES, type Stage } from "../../db/profile-input";
+import type { StatedStage } from "../../db/profile-input";
 
 /**
  * The two ways this project decides a Profile's `stage`, side by side because the difference
@@ -13,6 +13,10 @@ import { STAGE_VALUES, type Stage } from "../../db/profile-input";
  *
  * Neither function attributes anything itself — provenance is the caller's to record, because
  * only the caller knows which of the two it used. See docs/adr/0009.
+ *
+ * Where neither yields a stage the caller records `not-stated`, attributed `enriched`, and keeps
+ * the company. Neither function returns that marker itself: each answers only whether its own
+ * rule found a stage. See docs/adr/0015.
  */
 
 /**
@@ -25,16 +29,16 @@ const STAGE_BY_MINIMUM_TEAM_SIZE = [
   [25, "series-a"],
   [5, "seed"],
   [1, "pre-seed"],
-] as const satisfies ReadonlyArray<readonly [number, Stage]>;
+] as const satisfies ReadonlyArray<readonly [number, StatedStage]>;
 
 /**
  * A stage from a headcount, or nothing at all. A source with no usable team size — zero
- * employees, or a page that stopped carrying the number — yields no stage, and the candidate
- * is rejected naming `stage` rather than filled in with a guess.
+ * employees, or a page that stopped carrying the number — yields no stage, rather than one
+ * filled in with a guess.
  */
 export function stageFromTeamSize(
   teamSize: number | null | undefined,
-): Stage | undefined {
+): StatedStage | undefined {
   if (typeof teamSize !== "number" || !Number.isFinite(teamSize)) {
     return undefined;
   }
@@ -55,7 +59,20 @@ export function stageFromTeamSize(
 const ROUND_PATTERN =
   /\b(pre[-\s]?seed|series\s+seed|seed|series\s+a|series\s+[b-j])\b/gi;
 
-function stageOfRound(match: string): Stage {
+/**
+ * Rounds from least to most advanced, which is what "the most advanced wins" below compares.
+ * Kept here rather than read off `STAGE_VALUES`, whose order carries no meaning.
+ */
+const ROUND_LADDER = [
+  "pre-seed",
+  "seed",
+  "series-a",
+  "series-b-plus",
+] as const satisfies readonly StatedStage[];
+
+type Round = (typeof ROUND_LADDER)[number];
+
+function stageOfRound(match: string): Round {
   const normalised = match.toLowerCase().replace(/[\s-]+/g, " ");
 
   if (normalised === "pre seed") return "pre-seed";
@@ -76,19 +93,19 @@ function stageOfRound(match: string): Stage {
  */
 export function stageFromRoundName(
   description: string | null | undefined,
-): Stage | undefined {
+): StatedStage | undefined {
   if (typeof description !== "string") {
     return undefined;
   }
 
-  let best: Stage | undefined;
+  let best: Round | undefined;
 
   for (const [match] of description.matchAll(ROUND_PATTERN)) {
     const stage = stageOfRound(match);
 
     if (
       best === undefined ||
-      STAGE_VALUES.indexOf(stage) > STAGE_VALUES.indexOf(best)
+      ROUND_LADDER.indexOf(stage) > ROUND_LADDER.indexOf(best)
     ) {
       best = stage;
     }

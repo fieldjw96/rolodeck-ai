@@ -194,13 +194,13 @@ describe("fetchCaliforniaFormDProfiles", () => {
       today: "2026-09-09",
     });
 
-    expect(batch.profiles.map((profile) => profile.input.name)).toEqual(
-      CALIFORNIAN_WITH_A_ROUND.map(([, name]) => name),
-    );
-    expect(batch.filtered).toBe(1);
-    expect(batch.rejections.map((rejection) => rejection.field)).toEqual([
-      "stage",
+    // Krina names no round and is still a Profile, its stage `not-stated`. See docs/adr/0015.
+    expect(batch.profiles.map((profile) => profile.input.name)).toEqual([
+      ...CALIFORNIAN_WITH_A_ROUND.map(([, name]) => name),
+      "Krina AI, Inc.",
     ]);
+    expect(batch.filtered).toBe(1);
+    expect(batch.rejections).toEqual([]);
   });
 
   it("stamps every Profile with the filing's own URL and the capture date", async () => {
@@ -258,7 +258,7 @@ describe("fetchCaliforniaFormDProfiles", () => {
     expect(
       edgar.calls.filter((call) => call.url.startsWith("https://efts")),
     ).toHaveLength(3);
-    expect(batch.profiles).toHaveLength(3);
+    expect(batch.profiles).toHaveLength(4);
   });
 
   it("reads no more filings than it was asked for", async () => {

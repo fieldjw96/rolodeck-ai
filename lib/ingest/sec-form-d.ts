@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import {
+  NOT_STATED_STAGE,
   parseProfileInput,
   type IngestRejection,
   type Stage,
@@ -88,11 +89,39 @@ const formDSchema = z.looseObject({
 type FormD = z.infer<typeof formDSchema>;
 
 /**
+ * The Form D industry groups whose issuer holds assets rather than building a product: a
+ * pooled investment fund, an investing vehicle, a piece of real estate. Such an issuer is not a
+ * company at a funding stage, and a Deck of startups has nothing to say about it. Judge a group
+ * not listed here against that rule rather than by resemblance to what is.
+ *
+ * Form D files every real-estate answer under one heading, and each is a property or the vehicle
+ * that holds one, so all five are here — `Construction` included, which on a Form D is a
+ * development being financed, not a builder raising to grow.
+ *
+ * Matched exactly, after trimming and case-folding, against the filing's `industryGroupType`.
+ * Of a sample of 25 Californian filings in the week to 2026-09-15, 19 fell under this list; see
+ * docs/adr/0015.
+ */
+export const ASSET_HOLDING_INDUSTRY_GROUPS = [
+  "Pooled Investment Fund",
+  "Investing",
+  "Commercial",
+  "Construction",
+  "REITS & Finance",
+  "Residential",
+  "Other Real Estate",
+] as const;
+
+const ASSET_HOLDING = new Set(
+  ASSET_HOLDING_INDUSTRY_GROUPS.map((group) => group.toLowerCase()),
+);
+
+/**
  * One captured filing. `teamSize` is the one thing a Form D does not carry and docs/adr/0007
  * needs: it is here so that a pipeline which learns a company's headcount elsewhere can still
  * get a stage out of a filing that names no round. Nothing in the live fetch supplies it
- * today, and a filing with neither a named round nor a headcount is rejected naming `stage`,
- * exactly as adr/0007 requires. See docs/adr/0009.
+ * today, and a filing with neither a named round nor a headcount becomes a Profile whose stage
+ * is `not-stated`. See docs/adr/0009 and docs/adr/0015.
  */
 export type FormDFiling = {
   readonly xml: string;
@@ -213,11 +242,15 @@ type DerivedStage = { readonly stage: Stage; readonly provenance: Provenance };
  *
  * Where the filing names no round, adr/0007's derivation is what is left, and it stays
  * `enriched`. Per-field provenance is what lets the two live in one column honestly.
+ *
+ * Where neither gives a stage — most often a filing whose only security is a SAFE, which
+ * adr/0009 declines to read as a round — the stage is `not-stated`. That too is `enriched`: the
+ * filing did not say it, this pipeline wrote the marker. See docs/adr/0015.
  */
 function deriveStage(
   filing: FormD,
   teamSize: number | undefined,
-): DerivedStage | undefined {
+): DerivedStage {
   const named = stageFromRoundName(
     filing.offeringData.typesOfSecuritiesOffered?.descriptionOfOtherType,
   );
@@ -226,11 +259,10 @@ function deriveStage(
     return { stage: named, provenance: "scraped" };
   }
 
-  const inferred = stageFromTeamSize(teamSize);
-
-  return inferred === undefined
-    ? undefined
-    : { stage: inferred, provenance: "enriched" };
+  return {
+    stage: stageFromTeamSize(teamSize) ?? NOT_STATED_STAGE,
+    provenance: "enriched",
+  };
 }
 
 /**
@@ -295,17 +327,17 @@ export function parseFormDFiling({
     );
   }
 
-  const derived = deriveStage(filing, teamSize);
-
-  // Rejected here rather than left to `profileInputSchema`, so that the reason names both ways
-  // a stage could have been had and says that neither was. adr/0007's rule, on this Source.
-  if (derived === undefined) {
+  // A fund, an investing vehicle or a property is not a company, however it is raising. See
+  // `ASSET_HOLDING_INDUSTRY_GROUPS`.
+  if (ASSET_HOLDING.has(sector.toLowerCase())) {
     return rejected(
-      "stage",
-      "the filing named no round, and no team size was supplied to derive one from",
-      filing.offeringData.typesOfSecuritiesOffered ?? null,
+      "industryGroup",
+      `the issuer's industry group, ${JSON.stringify(sector)}, holds assets rather than building a product`,
+      filing.offeringData.industryGroup ?? null,
     );
   }
+
+  const derived = deriveStage(filing, teamSize);
 
   const input = parseProfileInput({
     name: trimmed(filing.primaryIssuer.entityName),
@@ -339,7 +371,8 @@ export function parseFormDFiling({
         description: attribute(capture, "enriched"),
         sector: scraped,
         // `scraped` when the filing named its round, `enriched` when adr/0007's headcount
-        // proxy stood in for one. Both reach the same column, saying different things.
+        // proxy stood in for one or neither did and the stage is `not-stated`. All reach the
+        // same column, saying different things.
         stage: attribute(capture, derived.provenance),
         website: null,
         // The filing's own sworn address, stated rather than derived.
