@@ -66,19 +66,47 @@ jobs:
       # a step before the script ran — checkout, setup-node, npm ci — is what failed instead;
       # that is still worth a summary saying so, rather than this step itself failing on a
       # missing file and burying the real cause in the job's raw log.
+      # GitHub masks secrets in the job log but not in the step summary, so a driver error that
+      # printed a connection string would land unmasked on the run page. That is a secrecy
+      # problem and it is solved here by redacting credentials, not by only admitting lines
+      # whose wording is already known.
+      #
+      # An allowlist of known-good phrases was the previous answer and it lost real failures: a
+      # Source that phrased one its own way — "failed," from News, "could not be fetched" from
+      # YC — matched nothing and vanished from the summary, while a partial failure that did not
+      # fail the job left the summary looking clean. Each Source's own docstring promises such a
+      # line is named in the output. Selection below is therefore broad on the failure side, and
+      # nothing is ever dropped without the summary saying how much.
       - name: Record what this run did
         if: always()
         run: |
-          # Only the count lines go to the summary. GitHub masks secrets in the job log but not
-          # in the step summary, so a driver error that ever printed a connection string would
-          # land unmasked on the run page. The full output, masked, stays in the log above.
+          LINE_CAP=200
           {
             echo "### ${{ inputs.source-name }}"
             echo ""
             echo '```'
             if [ -f /tmp/ingest-output.log ]; then
-              grep -iE 'inserted|updated|rejected on|wrote|stored|searched|companies|events|profiles|failed for' /tmp/ingest-output.log \
-                || echo "(nothing matched: see the Run step's log for what happened)"
+              # Credentials in any URI, and any `password=`, before anything is shown.
+              redacted=$(sed -E \
+                -e 's#([a-zA-Z][a-zA-Z0-9+.-]*://)[^:/@[:space:]]+:[^@[:space:]]+@#\1***:***@#g' \
+                -e 's#([Pp][Aa][Ss][Ss][Ww][Oo][Rr][Dd]=)[^[:space:]&]+#\1***#g' \
+                /tmp/ingest-output.log)
+
+              # What the run did, plus anything that went wrong. A Source's own wording is not
+              # trusted to match, so the second half is deliberately wide.
+              selected=$(printf '%s\n' "$redacted" | grep -iE \
+                'inserted|updated|wrote|stored|searched|companies|events|profiles|rejected|skipped|fail|error|refus|denied|could not|unable|timed out|429' \
+                || true)
+              total=$(printf '%s\n' "$selected" | grep -c . || true)
+
+              if [ "$total" -eq 0 ]; then
+                echo "(nothing matched: see the Run step's log for what happened)"
+              else
+                printf '%s\n' "$selected" | head -n "$LINE_CAP"
+                if [ "$total" -gt "$LINE_CAP" ]; then
+                  echo "... and $((total - LINE_CAP)) more matching line(s); see the Run step's log."
+                fi
+              fi
             else
               echo "(no output: a step before the script ran did not complete)"
             fi
