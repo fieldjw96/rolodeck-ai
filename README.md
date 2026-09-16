@@ -221,9 +221,12 @@ stay on the server. Run that one yourself after `npm run build`.
 
 `lib/ingest/yc-company-page.ts` turns the HTML of one Y Combinator company page into a
 validated `ProfileInput`, or into a rejection naming the single field that stopped it. It
-parses and nothing else: it does not fetch, and it does not write. Fetching, and discovering
-which companies exist, is a separate concern — YC's directory listing is client-rendered and
-cannot be scraped with a plain GET.
+parses and nothing else: it does not fetch, and it does not write. Discovering which companies
+exist, and fetching them, is the `ycombinator` Source below. YC's directory listing at
+`/companies` is client-rendered, so a plain GET of it holds no companies, and `robots.txt`
+disallows `/companies?*`, every URL that pages through it. Neither applies to a company page
+itself: a plain GET of `/companies/<slug>` returns the whole record, and YC publishes a sitemap
+of every one.
 
 Every field it produces carries provenance per field: the source URL, the capture date, and
 whether the value was `scraped` or `enriched`. `stage` is the one `enriched` field, because a
@@ -241,6 +244,21 @@ and write a `db/fixtures/yc-<slug>.meta.json` beside it recording `sourceUrl` an
 `capturedAt`, which is where provenance comes from: the HTML does not carry either. Do not
 hand-write a fixture. A parser tested against invented markup proves nothing about the real
 page, which is the whole reason these are committed rather than generated.
+
+`npm run ingest:ycombinator` runs the Source live, writing under the slug `ycombinator`. It reads
+`https://www.ycombinator.com/companies/sitemap.xml` (`lib/ingest/yc-sitemap.ts`) for every
+`/companies/<slug>` page and its `lastmod`, skipping the `/companies/industry/` listings, then
+fetches at most 400 pages a run at one request a second through `lib/ingest/yc-fetch.ts`, the
+only YC module that touches the network. Which 400 is deterministic: pages YC changed since
+yesterday first, then a window of the whole sitemap in slug order that advances each day, so
+daily runs walk all ~6200 companies in about 25 days rather than re-fetching the same ones. A
+page that fails to fetch or parse is named by URL and skipped; a sitemap that cannot be read, or
+a run where every page failed, exits non-zero. `db/fixtures/yc-sitemap.xml` is the whole
+sitemap as captured, and refreshes the same way:
+
+```
+curl https://www.ycombinator.com/companies/sitemap.xml -o db/fixtures/yc-sitemap.xml
+```
 
 `lib/ingest/show-hn.ts` reads the same way from Algolia's Hacker News Search API instead of a
 scraped page — free, keyed, and JSON, so nothing here is scraped or parsed out of markup. A
@@ -339,11 +357,14 @@ the links fill in on the next run once it is.
 
 ### Scheduled runs
 
-The six Sources above are on a schedule in `.github/workflows/`, not run by hand. `ingest-sec-form-d.yml`,
+The seven Sources above are on a schedule in `.github/workflows/`, not run by hand. `ingest-sec-form-d.yml`,
 `ingest-accelerator-batches.yml` (South Park Commons and AngelPad) and `ingest-show-hn.yml` run
 weekly, Monday mornings UTC: company Sources change slowly, and EDGAR and Show HN are public
 services `lib/ingest/throttle.ts` already asks this project to be polite to. `ingest-events.yml`
-and `ingest-news.yml` run daily, since the Diary and News go stale by definition. All five are
+and `ingest-news.yml` run daily, since the Diary and News go stale by definition.
+`ingest-ycombinator.yml` runs daily too, though YC changes no faster than the other company
+Sources: each run fetches one bounded window of its sitemap, and the window only advances a day
+at a time. All six are
 GitHub-hosted runners calling one shared workflow, `ingest-run.yml`, which runs the same `npm
 run <script>` documented above and authenticates with the `ROLODECK_INGEST_DATABASE_URL` Actions
 secret from "Ingest's credential" — never `SUPABASE_SECRET_KEY`. Each workflow's own
