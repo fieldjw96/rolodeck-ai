@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { citiesInArea, isBayArea } from "./bay-area";
+import { citiesInArea, eventCityOf, isBayArea } from "./bay-area";
 
 describe("citiesInArea", () => {
   it("lists the cities isBayArea accepts for the Bay Area", () => {
@@ -39,5 +39,21 @@ describe("isBayArea", () => {
 
   it("answers false for a bare state with no city stated", () => {
     expect(isBayArea("CA")).toBe(false);
+  });
+});
+
+describe("eventCityOf", () => {
+  it("reads a bare city with no comma as the city itself, unlike a Profile's cityOf", () => {
+    expect(eventCityOf("San Francisco")).toBe("san francisco");
+  });
+
+  it("reads everything before the first comma when there is one", () => {
+    expect(eventCityOf("Santa Clara, CA")).toBe("santa clara");
+    expect(eventCityOf("Oakland, California, USA")).toBe("oakland");
+  });
+
+  it("trims and case-folds either shape", () => {
+    expect(eventCityOf("  San Jose  ")).toBe("san jose");
+    expect(eventCityOf("  Palo Alto , CA")).toBe("palo alto");
   });
 });

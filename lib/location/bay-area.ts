@@ -139,6 +139,12 @@ const BAY_AREA_CITIES: ReadonlySet<string> = new Set([
  * first comma. A location with no comma at all — a bare state, the fallback
  * `lib/ingest/sec-form-d.ts` writes when a filing states no city — has no city to check, and
  * is answered `false` rather than guessed at.
+ *
+ * An Event's `location` is not a Profile's: Techmeme states plenty of bare cities with no
+ * comma at all — "San Francisco", "London" — and those name a city same as "City, ST" does.
+ * There is no bare-state fallback for an Event to be confused with, so the Diary's own
+ * `eventCityOf` below reads a bare string as the city rather than as "no city", deliberately
+ * disagreeing with this function.
  */
 function cityOf(location: string): string | undefined {
   const [city, rest] = location.split(",", 2);
@@ -173,4 +179,15 @@ export function isBayArea(location: string | null): boolean {
  */
 export function citiesInArea(area: string): readonly string[] {
   return area.trim().toLowerCase() === "bay area" ? [...BAY_AREA_CITIES] : [];
+}
+
+/**
+ * An Event's `location` city, for the Diary. Unlike `cityOf`, a bare string with no comma is
+ * the city itself rather than "no city": see the note on `cityOf` for why an Event has no
+ * bare-state case to guard against. `db/events.ts` reproduces this in SQL as
+ * `eventLocationCity`, and `db/events.test.ts` holds the two to the same answers, the way
+ * `db/deck-ranking.test.ts` does for `cityOf`.
+ */
+export function eventCityOf(location: string): string {
+  return location.split(",", 1)[0]!.trim().toLowerCase();
 }
