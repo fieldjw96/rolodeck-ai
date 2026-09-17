@@ -27,6 +27,7 @@ import path from "node:path";
 
 import { z } from "zod";
 
+import { parseEnv } from "../lib/env/parse-env";
 import {
   describeLateSource,
   judgeFreshness,
@@ -48,8 +49,9 @@ const environmentSchema = z.object({
   GITHUB_REPOSITORY: z.string().regex(/^[^/]+\/[^/]+$/, {
     error: "must be owner/name, as GitHub Actions sets it",
   }),
-  /** Set by Actions; defaulted so the script runs against github.com from a laptop too. */
+  /** Both set by Actions; defaulted so the script runs against github.com from a laptop too. */
   GITHUB_API_URL: z.url().default("https://api.github.com"),
+  GITHUB_SERVER_URL: z.url().default("https://github.com"),
 });
 
 /**
@@ -59,12 +61,10 @@ const environmentSchema = z.object({
  * response is ignored rather than refused.
  */
 const workflowSchema = z.object({
-  id: z.number(),
   /** `active`, `disabled_manually` or `disabled_inactivity` — the last is what inactivity does. */
   state: z.string().min(1),
   /** Offsets as well as `Z`: the workflows endpoint returns both. */
   created_at: z.iso.datetime({ offset: true }),
-  html_url: z.url(),
 });
 
 const runsSchema = z.object({
@@ -168,7 +168,9 @@ async function fetchSourceHistory(
     workflowState: workflow.state,
     workflowCreatedAt: new Date(workflow.created_at),
     lastSuccessAt: latest === undefined ? null : new Date(latest.updated_at),
-    runsUrl: workflow.html_url,
+    // Built rather than taken from the workflow's own `html_url`, which points at the YAML file
+    // on the default branch. A reader following this link wants the run history.
+    runsUrl: `${environment.GITHUB_SERVER_URL}/${environment.GITHUB_REPOSITORY}/actions/workflows/${file}`,
   };
 }
 
@@ -242,13 +244,23 @@ async function report(
 }
 
 async function main(): Promise<void> {
-  const environment = environmentSchema.parse({
-    GITHUB_TOKEN: process.env.GITHUB_TOKEN,
-    GITHUB_REPOSITORY: process.env.GITHUB_REPOSITORY,
-    ...(process.env.GITHUB_API_URL === undefined
-      ? {}
-      : { GITHUB_API_URL: process.env.GITHUB_API_URL }),
-  });
+  // `parseEnv` rather than a bare `parse`: it reports the variable's name and what is wrong with
+  // it and never its value, and one of these is a token. The two optional variables are omitted
+  // rather than passed as undefined, so their defaults apply off a runner.
+  const environment = parseEnv(
+    environmentSchema,
+    {
+      GITHUB_TOKEN: process.env.GITHUB_TOKEN,
+      GITHUB_REPOSITORY: process.env.GITHUB_REPOSITORY,
+      ...(process.env.GITHUB_API_URL === undefined
+        ? {}
+        : { GITHUB_API_URL: process.env.GITHUB_API_URL }),
+      ...(process.env.GITHUB_SERVER_URL === undefined
+        ? {}
+        : { GITHUB_SERVER_URL: process.env.GITHUB_SERVER_URL }),
+    },
+    "The ingest freshness check",
+  );
 
   const sources = ingestSources(await readWorkflowFiles());
 

@@ -225,7 +225,7 @@ export function lateSourceIssueBody(report: LateSourceReport): string {
     report.workflowState === "active"
       ? ""
       : `\n\nGitHub reports this workflow's state as \`${report.workflowState}\`, so it is not ` +
-        "being scheduled at all. Re-enable it from the Actions tab.\n";
+        "being scheduled at all. Re-enable it from the Actions tab.";
 
   return [
     `${describeLateSource(report)}${disabled}`,
