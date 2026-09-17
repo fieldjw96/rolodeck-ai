@@ -1,0 +1,59 @@
+# Ticket #165: notices a Source that never ran, not just one that ran and failed.
+#
+# `ingest-run.yml` opens an issue when a run fails. Nothing opened one when a run never
+# happened, and GitHub's own documentation says scheduled workflows are best-effort: delayed
+# under load, occasionally dropped, and disabled outright after a period of repository
+# inactivity, which would stop every Source at once with no signal of any kind.
+#
+# Deliberately thin. It checks out, installs, and runs one npm script; which Sources exist, how
+# often each should run, whether one is late, and what the issue says all live in the repository
+# as tested TypeScript — `lib/ingest/workflow-schedules.ts`, `lib/ingest/freshness.ts` and
+# `scripts/check-ingest-freshness.ts`. Untested logic in a workflow file is what left the
+# failure-reporting step in `ingest-run.yml` silently broken for as long as it was, and this
+# file's own guarantees are asserted in `scripts/ingest-freshness-workflow.test.ts`.
+#
+# This is itself a scheduled workflow, so whatever would silence every Source would silence it
+# too. That is accepted rather than solved here. It is partly self-healing — the rule is "has it
+# succeeded since its last scheduled occurrence", so a check that misses a day reports the same
+# Source the next time it runs, with the gap intact — but it cannot detect its own absence.
+
+name: Ingest freshness
+
+on:
+  # 16:10 UTC daily. The latest ingest cron is Monday 09:30, and a Source is given six hours of
+  # grace for GitHub's scheduling delay (`SCHEDULE_GRACE_MS`), so 15:30 is the earliest this can
+  # run and still reach a verdict on every Source the same day. Off the hour, because on-the-hour
+  # is where the scheduler's own queue is deepest.
+  schedule:
+    - cron: "10 16 * * *"
+  workflow_dispatch: {}
+
+concurrency:
+  group: ingest-freshness
+  cancel-in-progress: false
+
+# Exactly what the check needs and nothing else: the repository to read the workflow files and
+# run the script, Actions to read each Source's run history, issues to report a late one.
+permissions:
+  contents: read
+  actions: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          # Nothing after checkout needs git credentials, and leaving the job token persisted
+          # makes it readable to `npm ci`'s install scripts. Same reasoning as `ingest-run.yml`.
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Check every ingest Source has run since it was due
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: npm run check:ingest-freshness
