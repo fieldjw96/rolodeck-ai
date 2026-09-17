@@ -1,7 +1,8 @@
-import { and, asc, eq, sql, type SQL } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, or, sql, type SQL } from "drizzle-orm";
 import { z } from "zod";
 
 import { readOwnerId } from "../lib/ingest/env";
+import { citiesInArea } from "../lib/location/bay-area";
 import { issueField } from "../lib/zod/issues";
 import type { Database } from "./connection";
 import { eventInputSchema, type EventInput } from "./event-input";
@@ -14,6 +15,7 @@ import {
   profiles,
   swipes,
 } from "./schema";
+import { readUserProfile } from "./user-profile";
 
 /**
  * The Diary: the one write path into `events` and `event_attendances`, and the one read path
@@ -213,12 +215,36 @@ export type DiaryEvent = {
 };
 
 /**
- * The reader's own Events in date order, soonest first, with past ones left out unless asked
- * for. An Event is past once its last day is before `today`, so a three-day conference stays
- * in the Diary until it is over.
+ * `location`'s city as `eventCityOf` reads it in `lib/location/bay-area.ts`: lower-cased and
+ * trimmed, and everything before the first comma when there is one — but, unlike a Company
+ * Profile's `locationCity` in `db/deck.ts`, the whole string when there is not, since a bare
+ * city is exactly how Techmeme states plenty of real ones. `split_part` on a string with no
+ * comma already returns the whole string as its first field, so no `case` is needed here the
+ * way `locationCity` needs one.
+ */
+const eventLocationCity = sql`lower(regexp_replace(split_part(${events.location}, ',', 1), '^[[:space:]]+|[[:space:]]+$', '', 'g'))`;
+
+/**
+ * The reader's own Events in their area, in date order, soonest first, with past ones left out
+ * unless asked for. An Event is past once its last day is before `today`, so a three-day
+ * conference stays in the Diary until it is over.
  *
- * Every Event is returned whether or not anyone is known to attend it: attendance only ever
- * marks an Event, it never decides whether one is shown.
+ * "Their area" is `userProfiles.area`, read through `readUserProfile` so an owner who has never
+ * saved one still gets its "Bay Area" default rather than an unfiltered Diary — unlike the
+ * Deck, which ranks and so treats a never-saved User Profile as stating nothing at all. An
+ * Event is filtered out only when its `location` states a city and that city is outside every
+ * city `citiesInArea` lists for the area; a `location` of null is always kept, per the Ticket,
+ * since a Source that states no location is not a Source that stated a distant one. An area
+ * `citiesInArea` has no list for — including one nobody has ever typed, or the empty string —
+ * filters nothing at all, matching `citiesInArea`'s own contract.
+ *
+ * This is deliberately unlike `db/deck.ts`, which ranks a Company Profile by area rather than
+ * hiding it: see docs/adr/0011. An unranked Company Profile is still worth a swipe; an Event on
+ * another continent is not something the reader can do anything about, so the Diary filters
+ * instead.
+ *
+ * Every Event that survives the area filter is returned whether or not anyone is known to
+ * attend it: attendance only ever marks an Event, it never decides whether one is shown.
  *
  * Ownership is written into the `where` clause, the attendance join and the swipe join, as well
  * as being carried by RLS underneath — see CLAUDE.md on RLS as a backstop, never the only
@@ -235,6 +261,9 @@ export async function readDiary(
   /** The reader's Kept Company Profiles that attend the Event on the current row. */
   const keptAttendees = (selection: SQL) =>
     sql`select ${selection} from ${eventAttendances} inner join ${profiles} on ${profiles.id} = ${eventAttendances.profileId} inner join ${swipes} on ${swipes.profileId} = ${profiles.id} where ${eventAttendances.eventId} = ${events.id} and ${profiles.ownerId} = ${userId} and ${swipes.userId} = ${userId} and ${swipes.decision} = 'keep'`;
+
+  const userProfile = await readUserProfile(db, userId);
+  const areaCities = citiesInArea(userProfile.area);
 
   return db
     .select({
@@ -258,6 +287,12 @@ export async function readDiary(
         includePast
           ? undefined
           : sql`coalesce(${events.endDate}, ${events.startDate}) >= ${today}::date`,
+        areaCities.length === 0
+          ? undefined
+          : or(
+              isNull(events.location),
+              inArray(eventLocationCity, [...areaCities]),
+            ),
       ),
     )
     .orderBy(asc(events.startDate), asc(events.name), asc(events.id));

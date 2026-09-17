@@ -2,6 +2,7 @@
 import { count, eq } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
+import { citiesInArea, eventCityOf } from "../lib/location/bay-area";
 import type { EventInput } from "./event-input";
 import {
   diaryQuerySchema,
@@ -11,9 +12,16 @@ import {
 } from "./events";
 import { recordSwipe } from "./deck";
 import { asUser } from "./rls";
-import { eventAttendances, events, profiles, swipes } from "./schema";
+import {
+  eventAttendances,
+  events,
+  profiles,
+  swipes,
+  userProfiles,
+} from "./schema";
 import { createScratchDb, type ScratchDb } from "./testing/scratch-db";
 import { SEEDED_PROVENANCE } from "./testing/seed-profiles";
+import { writeUserProfile } from "./user-profile";
 
 const JACK = "11111111-1111-1111-1111-111111111111";
 const SOMEONE_ELSE = "22222222-2222-2222-2222-222222222222";
@@ -45,6 +53,36 @@ const DEMO_DAY: EventInput = {
   name: "Demo Day",
   startDate: "2026-11-01",
   url: "https://example.com/demo-day",
+  attendees: [],
+};
+
+/** A "City, ST" Bay Area location, the other shape Techmeme states. */
+const SANTA_CLARA_EXPO: EventInput = {
+  externalId: "santa-clara-expo@example.com",
+  name: "Santa Clara Robotics Expo",
+  startDate: "2026-09-28",
+  location: "Santa Clara, CA",
+  url: "https://example.com/santa-clara-expo",
+  attendees: [],
+};
+
+/** A bare, out-of-area city — the shape Techmeme states for `London` itself. */
+const LONDON_TALK: EventInput = {
+  externalId: "london-talk@example.com",
+  name: "London Fintech Talk",
+  startDate: "2026-09-25",
+  location: "London",
+  url: "https://example.com/london-talk",
+  attendees: [],
+};
+
+/** A "City, ST" out-of-area location. */
+const AUSTIN_MIXER: EventInput = {
+  externalId: "austin-mixer@example.com",
+  name: "Austin Founders Mixer",
+  startDate: "2026-09-22",
+  location: "Austin, TX",
+  url: "https://example.com/austin-mixer",
   attendees: [],
 };
 
@@ -119,6 +157,7 @@ beforeEach(async () => {
   await scratch.db.delete(events);
   await scratch.db.delete(swipes);
   await scratch.db.delete(profiles);
+  await scratch.db.delete(userProfiles);
 });
 
 describe("persistEvents", () => {
@@ -464,6 +503,122 @@ describe("reading the Diary", () => {
     await persistEvents(scratch.db, { source: "luma", events: [SUMMIT] });
 
     await expect(diary()).resolves.toEqual([]);
+  });
+});
+
+describe("filtering the Diary by area", () => {
+  const names = (read: Awaited<ReturnType<typeof diary>>) =>
+    read.map((event) => event.name).sort();
+
+  it("keeps a bare Bay Area city and a 'City, ST' one, by default", async () => {
+    // Nothing saved to `user_profiles`: the never-saved default is "Bay Area" itself.
+    await persistEvents(scratch.db, {
+      source: "techmeme-events",
+      events: [SUMMIT, SANTA_CLARA_EXPO],
+    });
+
+    expect(names(await diary())).toEqual(
+      ["Santa Clara Robotics Expo", "Sprocket Summit"].sort(),
+    );
+  });
+
+  it("hides a bare out-of-area city and a 'City, ST' one, by default", async () => {
+    await persistEvents(scratch.db, {
+      source: "techmeme-events",
+      events: [SUMMIT, LONDON_TALK, AUSTIN_MIXER],
+    });
+
+    expect(names(await diary())).toEqual(["Sprocket Summit"]);
+  });
+
+  it("keeps an Event with no stated location, regardless of area", async () => {
+    await persistEvents(scratch.db, {
+      source: "luma",
+      events: [DEMO_DAY, LONDON_TALK],
+    });
+
+    expect(names(await diary())).toEqual(["Demo Day"]);
+  });
+
+  it("filters nothing for an owner whose area is unrecognised", async () => {
+    await writeUserProfile(scratch.db, JACK, {
+      sectors: [],
+      stages: [],
+      area: "New York",
+      excluded_sectors: [],
+    });
+    await persistEvents(scratch.db, {
+      source: "luma",
+      events: [SUMMIT, LONDON_TALK],
+    });
+
+    expect(names(await diary())).toEqual(
+      ["London Fintech Talk", "Sprocket Summit"].sort(),
+    );
+  });
+
+  it("filters nothing for an owner whose area is empty", async () => {
+    // Not a shape `writeUserProfile`'s own boundary allows in; written directly, as the
+    // superuser, the way `citiesInArea`'s own contract for free text has to hold regardless.
+    await scratch.db.insert(userProfiles).values({
+      userId: JACK,
+      sectors: [],
+      stages: [],
+      area: "",
+      excludedSectors: [],
+    });
+    await persistEvents(scratch.db, {
+      source: "luma",
+      events: [SUMMIT, LONDON_TALK],
+    });
+
+    expect(names(await diary())).toEqual(
+      ["London Fintech Talk", "Sprocket Summit"].sort(),
+    );
+  });
+});
+
+describe("matching an Event's location to the area in Postgres", () => {
+  const LOCATIONS: (string | undefined)[] = [
+    "San Francisco",
+    "  Palo Alto , CA",
+    "SAN JOSE, CA",
+    "St. Helena, CA",
+    "Oakland, California, USA",
+    "Los Angeles, CA",
+    "London",
+    "New York, NY",
+    "CA",
+    undefined,
+  ];
+
+  it("agrees with eventCityOf and citiesInArea on every location", async () => {
+    await persistEvents(scratch.db, {
+      source: "techmeme-events",
+      events: LOCATIONS.map((location, index) => ({
+        externalId: `located-${index}@example.com`,
+        name: `Located ${index}`,
+        startDate: "2026-10-01",
+        location,
+        url: "https://example.com/located",
+        attendees: [],
+      })),
+    });
+
+    const bayAreaCities = citiesInArea("Bay Area");
+    const expected = LOCATIONS.map((location, index) => ({
+      inArea:
+        location === undefined || bayAreaCities.includes(eventCityOf(location)),
+      name: `Located ${index}`,
+    }))
+      .filter((row) => row.inArea)
+      .map((row) => row.name)
+      .sort();
+
+    // Nothing saved to `user_profiles`: the never-saved default is "Bay Area" itself.
+    const read = await diary();
+
+    expect(read.map((event) => event.name).sort()).toEqual(expected);
   });
 });
 
