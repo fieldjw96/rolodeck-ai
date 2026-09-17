@@ -346,16 +346,26 @@ to write unless the answer is `rolodeck_ingest`.
 
 ### The Diary's events Sources
 
-Events come from two named Sources, each a parser under `lib/ingest/` tested offline against a
-capture in `db/fixtures/`: `techmeme-events` reads Techmeme's own iCalendar feed, and
-`luma-bond-ai-sf` reads the schema.org JSON-LD on Bond AI's Bay Area calendar on Luma, whose
-hosting organisations are the Diary's Attendance. `persistEvents` in `db/events.ts` is the one
-write path into `events` and `event_attendances`, idempotent on `(owner_id, source,
-external_id)`, and it matches each attendee to Company Profiles on `name_key`.
+Events come from named Sources, each tested offline against a capture in `db/fixtures/`.
+`techmeme-events` reads Techmeme's own iCalendar feed, which lists conferences and so states no
+attendance. The rest are Luma calendars, where the Diary's Attendance comes from: one parser,
+`parseLumaCalendar` in `lib/ingest/luma-calendar.ts`, reads the schema.org JSON-LD every Luma
+calendar publishes, and the calendars read are the entries in `LUMA_CALENDARS` — `luma-bond-ai-sf`,
+`luma-ai-events-sf`, `luma-silicon-valley-ai-hub` and `luma-frontier-tower-sf`. Each is its own
+Source slug, so one calendar going stale cannot hide behind another; that module's header says why
+each is read and states the rule for adding another. An Event's hosting organisations are its
+stated Attendance, and nothing else is: a company named only in an Event's prose is not an
+attendee.
 
-`npm run ingest:events` fetches both live and writes through `ROLODECK_INGEST_DATABASE_URL`, like the Profile
-Sources. Run those first: an attendee only links to a Company Profile already in the Deck, and
-the links fill in on the next run once it is.
+`persistEvents` in `db/events.ts` is the one write path into `events` and `event_attendances`,
+idempotent on `(owner_id, source, external_id)`, and it matches each attendee to Company Profiles
+on `name_key`.
+
+`npm run ingest:events` fetches every Source live and writes through
+`ROLODECK_INGEST_DATABASE_URL`, like the Profile Sources. Run those first: an attendee only links
+to a Company Profile already in the Deck, and the links fill in on the next run once it is. The
+run prints, per Source, how many Events stated a hosting company and how many of those linked, so
+a calendar naming companies nobody has Kept reads differently from one naming none at all.
 
 ### Scheduled runs
 

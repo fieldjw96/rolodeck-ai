@@ -3,7 +3,7 @@ import { z } from "zod";
 import { parseEventInput, type EventInput } from "../../db/event-input";
 import type { IngestRejection } from "../../db/profile-input";
 import { issueField } from "../zod/issues";
-import type { EventBatch } from "./luma-bond-ai-sf";
+import type { EventBatch } from "./luma-calendar";
 
 /**
  * Parses Techmeme's event calendar, as the iCalendar feed it publishes, into validated Events.
