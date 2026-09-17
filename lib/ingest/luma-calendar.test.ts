@@ -60,9 +60,8 @@ describe("LUMA_CALENDARS", () => {
     // Per ADR 0008, the slug is part of an Event's identity: changing it would orphan every row
     // this Source has already written rather than update it.
     expect(
-      LUMA_CALENDARS.find(
-        (calendar) => calendar.source === "luma-bond-ai-sf",
-      )?.url,
+      LUMA_CALENDARS.find((calendar) => calendar.source === "luma-bond-ai-sf")
+        ?.url,
     ).toBe("https://luma.com/genai-sf");
   });
 
@@ -81,7 +80,9 @@ describe("LUMA_CALENDARS", () => {
   it("records the URL it was captured from against every calendar", () => {
     for (const { source, url } of LUMA_CALENDARS) {
       expect(captureOf(source).capture.sourceUrl).toBe(url);
-      expect(captureOf(source).capture.capturedAt).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(captureOf(source).capture.capturedAt).toMatch(
+        /^\d{4}-\d{2}-\d{2}$/,
+      );
     }
   });
 });

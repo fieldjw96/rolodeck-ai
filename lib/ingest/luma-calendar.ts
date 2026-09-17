@@ -22,8 +22,8 @@ import { issueField } from "../zod/issues";
  */
 
 /**
- * One named Luma calendar: its own Source slug, the page it is read from, and the community
- * whose calendar it is.
+ * One named Luma calendar: its own Source slug and the page it is read from. Whose calendar it
+ * is, and why it is read, is the comment on each entry below.
  *
  * Each calendar is a Source in its own right rather than a page folded into a shared one, so
  * ADR 0008's identity rules hold per calendar and one going stale cannot be hidden by another
@@ -34,8 +34,6 @@ import { issueField } from "../zod/issues";
 export type LumaCalendar = {
   readonly source: string;
   readonly url: string;
-  /** The community, in its own words on the page. Used in what a run prints. */
-  readonly community: string;
 };
 
 /**
@@ -76,7 +74,6 @@ export const LUMA_CALENDARS: readonly LumaCalendar[] = [
     // started as. The slug is unchanged because rows already carry it.
     source: "luma-bond-ai-sf",
     url: "https://luma.com/genai-sf",
-    community: "Bond AI, San Francisco and the Bay Area",
   },
   {
     // "SF Bay Area AI & other startup events worth your attendance", a curated calendar run by
@@ -85,7 +82,6 @@ export const LUMA_CALENDARS: readonly LumaCalendar[] = [
     // it the densest statement of company attendance of the four.
     source: "luma-ai-events-sf",
     url: "https://luma.com/ai-sf",
-    community: "AI Events - San Francisco",
   },
   {
     // A community space in Menlo Park that hosts other organisations' Events at 135
@@ -94,7 +90,6 @@ export const LUMA_CALENDARS: readonly LumaCalendar[] = [
     // it is in a room on a date.
     source: "luma-silicon-valley-ai-hub",
     url: "https://luma.com/svaihub",
-    community: "Silicon Valley AI Hub, Menlo Park",
   },
   {
     // "A 16-floor nexus for frontier tech in SF" at 995 Market Street. A company running a
@@ -105,7 +100,6 @@ export const LUMA_CALENDARS: readonly LumaCalendar[] = [
     // inferred from it.
     source: "luma-frontier-tower-sf",
     url: "https://luma.com/frontiertower",
-    community: "Frontier Tower, San Francisco",
   },
 ];
 
@@ -123,7 +117,10 @@ const placeSchema = z.looseObject({
   "@type": z.string(),
   name: z.string().nullish(),
   address: z
-    .union([z.string(), z.looseObject({ addressLocality: z.string().nullish() })])
+    .union([
+      z.string(),
+      z.looseObject({ addressLocality: z.string().nullish() }),
+    ])
     .nullish(),
 });
 

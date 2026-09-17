@@ -30,9 +30,9 @@ const report = (over: Partial<EventIngestReport> = {}): EventIngestReport => ({
 
 describe("counting what a Source stated", () => {
   it("counts the Events naming a host, not the hosts", () => {
-    expect(
-      eventsStatingAHost([event(["Sprocket", "Widget"]), event([])]),
-    ).toBe(1);
+    expect(eventsStatingAHost([event(["Sprocket", "Widget"]), event([])])).toBe(
+      1,
+    );
   });
 
   it("counts a host twice when two companies host one Event", () => {
@@ -98,10 +98,12 @@ describe("summariseEventSource", () => {
     const summary = summariseEventSource({
       source: "luma-bond-ai-sf",
       events: [event(["Wasmer"])],
-      rejections: [{ field: "itemListElement.0.item.name", reason: "nope" }],
+      rejections: [
+        { field: "itemListElement.0.item.name", reason: "nope", raw: {} },
+      ],
       report: report({
         inserted: 1,
-        rejections: [{ field: "startDate", reason: "also nope" }],
+        rejections: [{ field: "startDate", reason: "also nope", raw: {} }],
       }),
     });
 
@@ -133,8 +135,8 @@ describe("a Source that went quiet", () => {
   });
 
   it("carries a reason for something thrown that was not an Error", () => {
-    expect(failedSourceRejection("luma-svaihub", "just a string").reason).toContain(
-      "just a string",
-    );
+    expect(
+      failedSourceRejection("luma-svaihub", "just a string").reason,
+    ).toContain("just a string");
   });
 });
