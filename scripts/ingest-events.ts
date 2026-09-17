@@ -3,6 +3,7 @@ import { closeIngestDb, getIngestDb } from "../db/ingest-connection";
 import type { IngestRejection } from "../db/profile-input";
 import { createAcceleratorClient } from "../lib/ingest/accelerator-fetch";
 import {
+  describeFailedSources,
   failedSourceRejection,
   noEventsRejection,
   summariseEventSource,
@@ -117,18 +118,19 @@ async function main(): Promise<void> {
       runs.push({ source, report });
     } catch (error: unknown) {
       const rejection = failedSourceRejection(source, error);
-      console.error(`  rejected on ${rejection.field}: ${rejection.reason}`);
+      console.error(rejection.reason);
       failures.push(rejection);
     }
   }
 
-  const empty = [
-    ...emptySources(runs),
-    ...failures.map((rejection) => rejection.field),
+  const empty = emptySources(runs);
+  const problems = [
+    ...(empty.length > 0 ? [describeEmptySources(empty, "Events")] : []),
+    ...(failures.length > 0 ? [describeFailedSources(failures)] : []),
   ];
 
-  if (empty.length > 0) {
-    throw new Error(describeEmptySources(empty, "Events"));
+  if (problems.length > 0) {
+    throw new Error(problems.join("\n"));
   }
 }
 

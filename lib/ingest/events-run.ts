@@ -59,6 +59,9 @@ export function noEventsRejection(
  * A Source whose fetch, parse or write threw, as a rejection naming it. One Source being down
  * is not a reason to skip the rest of the run, so the loop records this and carries on; the
  * exit code is settled at the end.
+ *
+ * "Failed" rather than "could not be fetched" because this covers the write too: a Source whose
+ * page arrived and whose rows would not go in has still not ingested anything this run.
  */
 export function failedSourceRejection(
   source: string,
@@ -66,11 +69,25 @@ export function failedSourceRejection(
 ): IngestRejection {
   return {
     field: source,
-    reason: `${source} could not be read: ${
+    reason: `${source} failed this run: ${
       error instanceof Error ? error.message : String(error)
     }`,
     raw: error,
   };
+}
+
+/**
+ * The error message for a run where at least one Source threw, kept apart from
+ * `describeEmptySources` because "wrote no Events" and "threw" are different things and a run
+ * that hit both should say both.
+ */
+export function describeFailedSources(
+  failures: readonly IngestRejection[],
+): string {
+  return (
+    `${failures.map((failure) => failure.field).join(", ")} failed this run. ` +
+    "The other Sources ran; see the reasons above."
+  );
 }
 
 /**

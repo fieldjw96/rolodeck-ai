@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import type { EventInput } from "../../db/event-input";
 import type { EventIngestReport } from "../../db/events";
 import {
+  describeFailedSources,
   eventsStatingAHost,
   failedSourceRejection,
   hostsStated,
@@ -138,5 +139,15 @@ describe("a Source that went quiet", () => {
     expect(
       failedSourceRejection("luma-svaihub", "just a string").reason,
     ).toContain("just a string");
+  });
+
+  it("names every Source that could not be read, and says the others ran", () => {
+    const message = describeFailedSources([
+      failedSourceRejection("luma-ai-events-sf", new Error("503")),
+      failedSourceRejection("luma-frontier-tower-sf", new Error("timeout")),
+    ]);
+
+    expect(message).toContain("luma-ai-events-sf, luma-frontier-tower-sf");
+    expect(message).toContain("The other Sources ran");
   });
 });

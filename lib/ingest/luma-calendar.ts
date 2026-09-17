@@ -49,6 +49,13 @@ export type LumaCalendar = {
  * a Source's own statement (CONTEXT.md), so a calendar whose Events state only people, or only
  * a community that is not a company, states no attendance however many Events it lists.
  *
+ * Two calendars cross-listing one Event is two Events in the Diary, because `persistEvents` is
+ * idempotent on `(owner_id, source, external_id)` and the Source differs. That is the same cost
+ * ADR 0008 already accepts for a company two Sources both found, and for the same reason:
+ * reconciling two Sources' accounts of one thing is its own decision, not a thing to do inside
+ * "write the row". As captured, exactly one of the 69 Events across these four calendars is
+ * cross-listed.
+ *
  * A note on yield, which the rule deliberately does not make a condition: a calendar that
  * curates other people's Events names a different company each time, and one run by a single
  * venue or community names itself over and over. Both are honest statements and both belong
