@@ -58,11 +58,9 @@ const candidateSchema = z.object({
  */
 const sourceSchema = z.object({
   on: z.looseObject({
-    schedule: z
-      .array(z.object({ cron: z.string().min(1) }))
-      .min(1, {
-        error: "needs at least one schedule.cron to be watched for staleness",
-      }),
+    schedule: z.array(z.object({ cron: z.string().min(1) })).min(1, {
+      error: "needs at least one schedule.cron to be watched for staleness",
+    }),
   }),
   jobs: z.record(
     z.string(),

@@ -10,7 +10,7 @@
 # as tested TypeScript — `lib/ingest/workflow-schedules.ts`, `lib/ingest/freshness.ts` and
 # `scripts/check-ingest-freshness.ts`. Untested logic in a workflow file is what left the
 # failure-reporting step in `ingest-run.yml` silently broken for as long as it was, and this
-# file's own guarantees are asserted in `scripts/ingest-freshness-workflow.test.ts`.
+# file's own guarantees are asserted in `scripts/freshness-workflow.test.ts`.
 #
 # This is itself a scheduled workflow, so whatever would silence every Source would silence it
 # too. That is accepted rather than solved here. It is partly self-healing — the rule is "has it
