@@ -31,12 +31,12 @@ export function eventsStatingAHost(events: readonly EventInput[]): number {
 }
 
 /**
- * How many hosting companies a Source named across the run, counting an Event hosted by two
- * companies twice. This is the count `report.attendances` is measured against: the gap between
- * them is names the Deck does not hold.
+ * How many distinct companies a Source named as hosting across the whole run. Distinct, because
+ * this is the question the Ticket's measurement asks — how much a calendar has to say about
+ * attendance — and a venue's calendar naming itself over thirty Events has said one thing once.
  */
-export function hostsStated(events: readonly EventInput[]): number {
-  return events.reduce((total, event) => total + event.attendees.length, 0);
+export function companiesStated(events: readonly EventInput[]): number {
+  return new Set(events.flatMap((event) => event.attendees)).size;
 }
 
 /**
@@ -101,13 +101,13 @@ export function summariseEventSource({
   rejections,
   report,
 }: EventSourceResult): string {
-  const stated = hostsStated(events);
+  const stated = companiesStated(events);
 
   const lines = [
     `${source}: wrote ${report.inserted} new Events and updated ${report.updated}, ` +
       `linking ${report.attendances} attendances.`,
     `  ${eventsStatingAHost(events)} of ${events.length} Events state a hosting ` +
-      `company, naming ${stated} in all.`,
+      `company, naming ${stated} distinct companies between them.`,
   ];
 
   if (stated === 0) {

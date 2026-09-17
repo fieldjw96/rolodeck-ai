@@ -4,10 +4,10 @@ import { describe, expect, it } from "vitest";
 import type { EventInput } from "../../db/event-input";
 import type { EventIngestReport } from "../../db/events";
 import {
+  companiesStated,
   describeFailedSources,
   eventsStatingAHost,
   failedSourceRejection,
-  hostsStated,
   noEventsRejection,
   summariseEventSource,
 } from "./events-run";
@@ -36,8 +36,10 @@ describe("counting what a Source stated", () => {
     );
   });
 
-  it("counts a host twice when two companies host one Event", () => {
-    expect(hostsStated([event(["Sprocket", "Widget"]), event([])])).toBe(2);
+  it("counts a company once however many of its Events name it", () => {
+    expect(
+      companiesStated([event(["Sprocket"]), event(["Sprocket", "Widget"])]),
+    ).toBe(2);
   });
 });
 
@@ -57,7 +59,7 @@ describe("summariseEventSource", () => {
     expect(summary).toContain("luma-ai-events-sf: wrote 3 new Events");
     expect(summary).toContain("linking 1 attendances");
     expect(summary).toContain("2 of 3 Events state a hosting company");
-    expect(summary).toContain("naming 2 in all");
+    expect(summary).toContain("naming 2 distinct companies between them");
   });
 
   it("says a Source stated hosts the Deck does not hold yet", () => {
