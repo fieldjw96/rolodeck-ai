@@ -339,6 +339,8 @@ function jackProvenance(input: ProfileInput): ProfileProvenance {
     stage: "jack",
     website: input.website === undefined ? null : "jack",
     location: input.location === undefined ? null : "jack",
+    founders: input.founders === undefined ? null : "jack",
+    links: input.links === undefined ? null : "jack",
   };
 }
 

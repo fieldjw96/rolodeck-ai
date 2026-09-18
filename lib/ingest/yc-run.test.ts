@@ -180,6 +180,82 @@ describe("persistYcProfiles, against a real database", () => {
     expect(dropbox?.sector).toBe("other");
     expect(dropbox?.provenance.sector).toBe("enriched");
   });
+
+  it("stores each company's founders and links as the page states them, attributed scraped", async () => {
+    const batch = await fetchCompanyProfiles(
+      fixtureClient(),
+      entries(SLUGS),
+      TODAY,
+    );
+
+    await persistYcProfiles(scratch.db, batch.profiles);
+
+    const rows = await scratch.db.select().from(profiles);
+    const stripe = rows.find((row) => row.name === "Stripe");
+
+    expect(stripe?.founders?.map((founder) => founder.name)).toEqual([
+      "Patrick Collison",
+      "John Collison",
+    ]);
+    expect(stripe?.links).toEqual({
+      linkedin: "https://www.linkedin.com/company/stripe/",
+      twitter: "https://twitter.com/stripe",
+      github: "https://github.com/stripe",
+    });
+    expect(stripe?.provenance.founders).toBe("scraped");
+    expect(stripe?.provenance.links).toBe("scraped");
+
+    // Every company link Lawdingo's page carries is blank: null, with no provenance.
+    const lawdingo = rows.find((row) => row.name === "Lawdingo");
+    expect(lawdingo?.links).toBeNull();
+    expect(lawdingo?.provenance.links).toBeNull();
+  });
+
+  it("replaces founders and links on re-ingest, rather than appending or merging", async () => {
+    const batch = await fetchCompanyProfiles(
+      fixtureClient(),
+      entries(["stripe"]),
+      TODAY,
+    );
+    const stripe = batch.profiles[0]!;
+
+    await persistYcProfiles(scratch.db, batch.profiles);
+
+    // The next run finds a page that states one founder, anew, and only a GitHub link.
+    await persistYcProfiles(scratch.db, [
+      {
+        input: {
+          ...stripe.input,
+          founders: [{ name: "Patrick Collison", role: "CEO" }],
+          links: { github: "https://github.com/stripe" },
+        },
+        attribution: stripe.attribution,
+      },
+    ]);
+
+    const [row] = await scratch.db.select().from(profiles);
+
+    expect(row?.founders).toEqual([{ name: "Patrick Collison", role: "CEO" }]);
+    expect(row?.links).toEqual({ github: "https://github.com/stripe" });
+
+    // And a run whose page stops stating either clears both, provenance with them.
+    const silent = { ...stripe.input };
+    delete silent.founders;
+    delete silent.links;
+    await persistYcProfiles(scratch.db, [
+      {
+        input: silent,
+        attribution: { ...stripe.attribution, founders: null, links: null },
+      },
+    ]);
+
+    const [cleared] = await scratch.db.select().from(profiles);
+
+    expect(cleared?.founders).toBeNull();
+    expect(cleared?.links).toBeNull();
+    expect(cleared?.provenance.founders).toBeNull();
+    expect(cleared?.provenance.links).toBeNull();
+  });
 });
 
 describe("runYcIngest", () => {

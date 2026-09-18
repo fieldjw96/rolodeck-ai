@@ -11,6 +11,8 @@ describe("profileProvenanceSchema", () => {
       stage: "scraped",
       website: "enriched",
       location: "scraped",
+      founders: "scraped",
+      links: "scraped",
     };
 
     expect(profileProvenanceSchema.parse(mixed)).toEqual(mixed);
@@ -24,6 +26,8 @@ describe("profileProvenanceSchema", () => {
       stage: "scraped",
       website: null,
       location: "scraped",
+      founders: "scraped",
+      links: "scraped",
     });
 
     expect(parsed.website).toBeNull();
@@ -39,6 +43,8 @@ describe("profileProvenanceSchema", () => {
       stage: "scraped",
       website: null,
       location: null,
+      founders: null,
+      links: null,
     });
 
     expect(parsed.location).toBeNull();
@@ -52,6 +58,8 @@ describe("profileProvenanceSchema", () => {
       stage: value,
       website: value,
       location: value,
+      founders: value,
+      links: value,
     });
 
     expect(parsed.name).toBe(value);
@@ -65,6 +73,8 @@ describe("profileProvenanceSchema", () => {
       stage: "scraped",
       website: null,
       location: null,
+      founders: null,
+      links: null,
     });
 
     expect(result.success).toBe(false);
@@ -79,6 +89,8 @@ describe("profileProvenanceSchema", () => {
         sector: "scraped",
         website: null,
         location: null,
+        founders: null,
+        links: null,
       }).success,
     ).toBe(false);
   });
@@ -92,7 +104,9 @@ describe("profileProvenanceSchema", () => {
         stage: "scraped",
         website: null,
         location: null,
-        founder: "scraped",
+        founders: null,
+        links: null,
+        funding: "scraped",
       }).success,
     ).toBe(false);
   });
@@ -106,6 +120,8 @@ describe("profileProvenanceSchema", () => {
         stage: "scraped",
         website: null,
         location: null,
+        founders: null,
+        links: null,
       }).success,
     ).toBe(false);
   });

@@ -90,19 +90,67 @@ const nonBlankString = z
     message: "must not be blank",
   });
 
+/**
+ * Restricted to http(s) rather than any URL scheme z.url() would otherwise accept, so a
+ * scraped `javascript:` or `data:` value is rejected here instead of surviving as a link.
+ */
+const httpUrl = z.url({ protocol: /^https?$/ });
+
+/**
+ * One person a Source states is behind the company, as the Source stated them. Only the name
+ * is required: a founder with no stated role, an empty biography, or no links is still a
+ * founder. Stripe's founders have no biography at all, and one of Tailornova's reads exactly
+ * "Retired"; both are stored as stated.
+ *
+ * There is no email address and there will not be. No Source states one, and deriving one
+ * from a name and a domain would be a guess presented as a fact about a real person.
+ */
+export const founderSchema = z.strictObject({
+  name: nonBlankString,
+  role: nonBlankString.optional(),
+  bio: nonBlankString.optional(),
+  linkedin: httpUrl.optional(),
+  twitter: httpUrl.optional(),
+});
+
+export type Founder = z.infer<typeof founderSchema>;
+
+/**
+ * Never empty. "Nobody stated this" and "this company has no founders" are different claims
+ * and only the first is ever true of a Source, so a Source that states no founders leaves the
+ * field absent, and the column null, rather than writing `[]`.
+ */
+export const founderListSchema = z.array(founderSchema).min(1);
+
+/**
+ * The company's own links beyond `website`. At least one: a Source that states none leaves the
+ * field absent, and the column null, for the same reason `founderListSchema` is never empty.
+ */
+export const companyLinksSchema = z
+  .strictObject({
+    linkedin: httpUrl.optional(),
+    twitter: httpUrl.optional(),
+    github: httpUrl.optional(),
+  })
+  .refine((links) => Object.values(links).some((url) => url !== undefined), {
+    message: "must state at least one link, or be absent",
+  });
+
+export type CompanyLinks = z.infer<typeof companyLinksSchema>;
+
 export const profileInputSchema = z.strictObject({
   name: nonBlankString,
   description: nonBlankString,
   sector: sectorSchema,
   stage: stageSchema,
-  // Restricted to http(s) rather than any URL scheme z.url() would otherwise accept, so a
-  // scraped `javascript:` or `data:` value is rejected here instead of surviving as a
-  // Profile's website.
-  website: z.url({ protocol: /^https?$/ }).optional(),
+  website: httpUrl.optional(),
   // A human-readable place — "San Francisco, CA" — not a query result to geocode. Optional
   // because not every Source states one; see docs/adr/0002 on not inventing what a Source
   // never said.
   location: nonBlankString.optional(),
+  // Optional for the same reason: only a Source that states a team, or links, carries them.
+  founders: founderListSchema.optional(),
+  links: companyLinksSchema.optional(),
 });
 
 export type ProfileInput = z.infer<typeof profileInputSchema>;

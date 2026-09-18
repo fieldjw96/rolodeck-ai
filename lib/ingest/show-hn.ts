@@ -6,6 +6,7 @@ import {
   type ProfileInput,
 } from "../../db/profile-input";
 import type {
+  NullableField,
   ProfileProvenance,
   Provenance,
   ProvenancedField,
@@ -57,10 +58,9 @@ export type FieldProvenance = Capture & {
  * Kept nullable for both anyway so this type says the same thing `yc-company-page.ts`'s does.
  */
 export type ProfileAttribution = Readonly<
-  Record<Exclude<ProvenancedField, "website" | "location">, FieldProvenance>
+  Record<Exclude<ProvenancedField, NullableField>, FieldProvenance>
 > & {
-  readonly website: FieldProvenance | null;
-  readonly location: FieldProvenance | null;
+  readonly [Field in NullableField]: FieldProvenance | null;
 };
 
 export type ScrapedProfile = {
@@ -427,6 +427,9 @@ export function parseShowHnPost(
         website: scraped,
         // A Show HN post states no location at all, unlike a filing's own address.
         location: null,
+        // A Show HN post states no team and no company links, and must not guess at either.
+        founders: null,
+        links: null,
       },
     },
   };
@@ -477,5 +480,7 @@ export function toProfileProvenance(
     stage: attribution.stage.provenance,
     website: attribution.website?.provenance ?? null,
     location: attribution.location?.provenance ?? null,
+    founders: attribution.founders?.provenance ?? null,
+    links: attribution.links?.provenance ?? null,
   };
 }

@@ -51,6 +51,8 @@ const candidate = (name: string): ProfileCandidate => ({
     stage: "enriched",
     website: null,
     location: null,
+    founders: null,
+    links: null,
   },
 });
 
@@ -207,6 +209,8 @@ describe("the ingest role itself", () => {
         columns: [
           "created_at",
           "description",
+          "founders",
+          "links",
           "location",
           "name",
           "name_key",

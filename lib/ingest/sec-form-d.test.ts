@@ -266,6 +266,8 @@ describe("where `stage` comes from, and what it is attributed", () => {
       stage: "scraped",
       website: null,
       location: "scraped",
+      founders: null,
+      links: null,
     });
     expect(toProfileProvenance(inferred.profile.attribution).stage).toBe(
       "enriched",

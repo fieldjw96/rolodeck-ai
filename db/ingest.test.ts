@@ -30,6 +30,8 @@ const SCRAPED_EXCEPT_STAGE: ProfileProvenance = {
   stage: "enriched",
   website: "scraped",
   location: "scraped",
+  founders: null,
+  links: null,
 };
 
 const SPROCKET: ProfileInput = {
@@ -157,6 +159,8 @@ describe("persistProfiles", () => {
     expect(row?.provenance).toEqual({
       ...SCRAPED_EXCEPT_STAGE,
       location: null,
+      founders: null,
+      links: null,
     });
     expect(row?.provenance.sector).toBe("scraped");
     expect(row?.provenance.stage).toBe("enriched");
@@ -324,6 +328,8 @@ describe("persistProfiles against a value a human put there", () => {
     stage: "jack",
     website: "jack",
     location: "jack",
+    founders: null,
+    links: null,
   };
 
   /** Sprocket as the next scrape finds it: it raised a round and describes itself anew. */
@@ -588,6 +594,22 @@ describe("persistProfiles rejections", () => {
 
     const rows = await scratch.db.select().from(profiles);
     expect(rows.map((row) => row.name)).toEqual(["Second Co"]);
+  });
+
+  it("rejects founders left unattributed rather than letting the check constraint abort the batch", async () => {
+    const report = await persistProfiles(scratch.db, {
+      source: "yc",
+      candidates: [
+        {
+          input: { ...SPROCKET, founders: [{ name: "Ada Example" }] },
+          provenance: { ...SCRAPED_EXCEPT_STAGE, location: null },
+        },
+        candidateFor({ ...SPROCKET, name: "Second Co" }),
+      ],
+    });
+
+    expect(report.rejections[0]?.field).toBe("provenance.founders");
+    expect(report.inserted).toBe(1);
   });
 
   it("carries the offending record back with the rejection", async () => {

@@ -139,6 +139,9 @@ function parseEntry(
         website: null,
         // Never stated by AngelPad's own page.
         location: null,
+        // This Source states no team and no company links, and must not guess at either.
+        founders: null,
+        links: null,
       },
     },
   };

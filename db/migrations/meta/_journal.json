@@ -71,6 +71,13 @@
       "when": 1789485920970,
       "tag": "0009_ingest_update_columns",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1789750822831,
+      "tag": "0010_company_profile_founders",
+      "breakpoints": true
     }
   ]
 }
