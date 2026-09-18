@@ -210,6 +210,7 @@ describe("the ingest role itself", () => {
           "created_at",
           "description",
           "founders",
+          "founders_sought_at",
           "links",
           "location",
           "name",
