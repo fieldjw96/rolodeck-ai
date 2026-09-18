@@ -78,6 +78,13 @@
       "when": 1789750822831,
       "tag": "0010_company_profile_founders",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1789759127544,
+      "tag": "0011_profile_founders_sought_at",
+      "breakpoints": true
     }
   ]
 }

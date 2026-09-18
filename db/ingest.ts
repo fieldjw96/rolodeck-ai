@@ -113,6 +113,21 @@ const scrapedUnlessHuman = (field: ProvenancedField) =>
   );
 
 /**
+ * Whether the stored row's `founders` came from the team-page enrichment and the incoming
+ * scrape states nobody. Those founders are kept: the Source never stated a team, so its
+ * silence says nothing about the one the company's own site did, and without this every weekly
+ * re-ingest of an accelerator batch would erase them. A Source that does state founders still
+ * replaces them, because filling a gap never outranks what a Source says. See docs/adr/0016.
+ */
+const keepsEnrichedFounders = `(profiles.provenance ->> 'founders' = 'enriched' and excluded.founders is null)`;
+
+/** Whether the stored value of `field` survives this conflict. */
+const storedWins = (field: ProvenancedField) =>
+  field === "founders"
+    ? `(${isHuman(field)} or ${keepsEnrichedFounders})`
+    : isHuman(field);
+
+/**
  * `provenance` is one jsonb column holding every field's entry, so it is rebuilt field by
  * field with the same rule rather than replaced: each entry travels with the value it
  * describes, which keeps `profiles_provenance_covers_every_field` true whichever side won.
@@ -121,7 +136,7 @@ const scrapedUnlessHuman = (field: ProvenancedField) =>
 const provenanceUnlessHuman = sql.raw(
   `jsonb_build_object(${PROVENANCED_FIELDS.map(
     (field) =>
-      `'${field}', case when ${isHuman(field)} then profiles.provenance -> '${field}' else excluded.provenance -> '${field}' end`,
+      `'${field}', case when ${storedWins(field)} then profiles.provenance -> '${field}' else excluded.provenance -> '${field}' end`,
   ).join(", ")})`,
 );
 
@@ -221,8 +236,11 @@ export async function persistProfiles(
             website: scrapedUnlessHuman("website"),
             location: scrapedUnlessHuman("location"),
             // Replaced whole, never appended to or merged: a re-ingest states the team as the
-            // Source now states it, so a founder the page dropped is dropped here too.
-            founders: scrapedUnlessHuman("founders"),
+            // Source now states it, so a founder the page dropped is dropped here too. The one
+            // exception is a team the company's own site stated and this Source never has.
+            founders: sql.raw(
+              `case when ${storedWins("founders")} then profiles.founders else excluded.founders end`,
+            ),
             links: scrapedUnlessHuman("links"),
             provenance: provenanceUnlessHuman,
           },

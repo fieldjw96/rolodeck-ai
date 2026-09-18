@@ -28,6 +28,8 @@
     "ingest:seed": "tsx scripts/ingest-seed.ts",
     "ingest:events": "tsx scripts/ingest-events.ts",
     "ingest:news": "tsx scripts/ingest-news.ts",
+    "ingest:team-pages:gather": "tsx scripts/ingest-team-pages-gather.ts",
+    "ingest:team-pages:apply": "tsx scripts/ingest-team-pages-apply.ts",
     "measure:profile-duplicates": "tsx scripts/measure-profile-duplicates.ts",
     "smoke": "tsx scripts/smoke.ts"
   },

@@ -144,7 +144,12 @@ const deckColumns = {
   createdAt: profiles.createdAt,
 };
 
-export type DeckProfile = Omit<Profile, "ownerId" | "source" | "nameKey">;
+// `foundersSoughtAt` records what ingest did, not anything about the company, so the Deck
+// neither reads nor shows it. See docs/adr/0016.
+export type DeckProfile = Omit<
+  Profile,
+  "ownerId" | "source" | "nameKey" | "foundersSoughtAt"
+>;
 
 export type DeckPage = {
   profiles: DeckProfile[];
