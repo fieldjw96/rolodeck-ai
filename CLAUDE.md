@@ -64,10 +64,21 @@ check is green, the second-agent review Gate has approved it, and the branch is 
 with `main`. Those rules are enforced by a GitHub branch ruleset rather than by the
 supervisor, so they cannot be got wrong by a bug in ours.
 
-Three paths are the exception and always need Jack's own approval, listed in
-`.github/CODEOWNERS`: `.github/workflows/`, because it is the Gate itself; `db/migrations/`,
-because reverting a commit does not unmake a schema change; and CODEOWNERS, because a rule
-must not be editable by what it constrains.
+Three paths are singled out in `.github/CODEOWNERS`: `.github/workflows/`, because it is the
+Gate itself; `db/migrations/`, because reverting a commit does not unmake a schema change; and
+CODEOWNERS, because a rule should not be editable by what it constrains.
+
+**Those three are advisory, not enforced, and a Run must not read them as a gate it cannot
+pass.** The ruleset's only bypass actor is the repository admin role, and Runs act as Jack, who
+holds it. Worse, the rule they would otherwise trigger is unsatisfiable: GitHub does not let
+anyone approve their own pull request, and a Run's pull request is authored by Jack, so his
+code-owner approval on it is impossible rather than merely absent. rolodeck-ai#147 changed a
+workflow and merged without him seeing it.
+
+What they mean in practice is that a change to one of these paths is worth saying so plainly in
+the pull request, because nothing will stop it. Making them real would mean the Runs having a
+GitHub identity of their own; that was considered on 2026-09-18 and deliberately not done, on
+the grounds that this is a single-player repo and every commit in it is Jack's anyway.
 
 See ADR 0012, which supersedes ADR 0001. The `agent-harness` ADRs that ADR 0001 referred to
 are archived along with that repo; `foreman` replaced it.
