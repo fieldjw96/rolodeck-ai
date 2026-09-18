@@ -477,3 +477,94 @@ describe("the Deck", () => {
     expect(pass.textContent).not.toBe(keep.textContent);
   });
 });
+
+describe("the card's tabs in the Deck", () => {
+  const withFounders = {
+    ...acme,
+    website: "https://acme.example",
+    founders: [{ name: "Ada Quinn", role: "CEO" }],
+    links: null,
+  };
+
+  it("opens every Profile on Company, whichever tab the last one was left on", async () => {
+    stubFetch({
+      "GET /api/profiles": {
+        profiles: [withFounders, globex],
+        next_cursor: null,
+      },
+      [`POST /api/profiles/${acme.id}/keep`]: {
+        profile_id: acme.id,
+        decision: "keep",
+        decided_at: new Date().toISOString(),
+      },
+    });
+
+    render(<Deck />);
+
+    await screen.findByRole("heading", { name: "Acme" });
+    fireEvent.click(screen.getByRole("tab", { name: "Contact" }));
+    expect(screen.getByRole("tabpanel")).toHaveAccessibleName("Contact");
+
+    fireEvent.click(screen.getByRole("button", { name: "Keep" }));
+    await screen.findByRole("heading", { name: "Globex" });
+
+    expect(screen.getByRole("tab", { name: "Company" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    expect(screen.getByRole("tabpanel")).toHaveAccessibleName("Company");
+  });
+
+  it("changes tab from the arrow keys without Keeping or Passing anything", async () => {
+    const fetchMock = stubFetch({
+      "GET /api/profiles": {
+        profiles: [withFounders, globex],
+        next_cursor: null,
+      },
+    });
+
+    render(<Deck />);
+
+    await screen.findByRole("heading", { name: "Acme" });
+    const company = screen.getByRole("tab", { name: "Company" });
+    company.focus();
+
+    fireEvent.keyDown(company, { key: "ArrowRight" });
+    fireEvent.keyDown(screen.getByRole("tab", { name: "Team" }), {
+      key: "ArrowLeft",
+    });
+
+    expect(company).toHaveFocus();
+    expect(screen.getByRole("heading", { name: "Acme" })).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("still Keeps from the arrow key once focus has left the tabs", async () => {
+    const fetchMock = stubFetch({
+      "GET /api/profiles": {
+        profiles: [withFounders, globex],
+        next_cursor: null,
+      },
+      [`POST /api/profiles/${acme.id}/keep`]: {
+        profile_id: acme.id,
+        decision: "keep",
+        decided_at: new Date().toISOString(),
+      },
+    });
+
+    render(<Deck />);
+
+    await screen.findByRole("heading", { name: "Acme" });
+    fireEvent.click(screen.getByRole("tab", { name: "Team" }));
+
+    fireEvent.keyDown(window, { key: "ArrowRight" });
+
+    expect(
+      await screen.findByRole("heading", { name: "Globex" }),
+    ).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith(
+      `/api/profiles/${acme.id}/keep`,
+      expect.objectContaining({ method: "POST" }),
+    );
+  });
+});

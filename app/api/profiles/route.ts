@@ -23,6 +23,8 @@ function toJson(profile: DeckProfile) {
     stage: profile.stage,
     website: profile.website,
     location: profile.location,
+    founders: profile.founders,
+    links: profile.links,
     provenance: profile.provenance,
     created_at: profile.createdAt.toISOString(),
   };

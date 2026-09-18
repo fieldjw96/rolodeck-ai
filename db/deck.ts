@@ -127,7 +127,8 @@ export const pagingQuerySchema = z.object({
  * The Profile as the Deck deals it. `owner_id` is left out because it is always the reader;
  * `source` and `name_key` because they are ingest's bookkeeping — which pipeline wrote the row
  * and what it deduplicates on — and say nothing about the company on the card. `founders` and
- * `links` are not dealt yet: nothing on the card displays them until the card's own Ticket.
+ * `links` are dealt as stored, null where the Source stated none, for the card's Team and
+ * Contact tabs.
  */
 const deckColumns = {
   id: profiles.id,
@@ -137,14 +138,13 @@ const deckColumns = {
   stage: profiles.stage,
   website: profiles.website,
   location: profiles.location,
+  founders: profiles.founders,
+  links: profiles.links,
   provenance: profiles.provenance,
   createdAt: profiles.createdAt,
 };
 
-export type DeckProfile = Omit<
-  Profile,
-  "ownerId" | "source" | "nameKey" | "founders" | "links"
->;
+export type DeckProfile = Omit<Profile, "ownerId" | "source" | "nameKey">;
 
 export type DeckPage = {
   profiles: DeckProfile[];

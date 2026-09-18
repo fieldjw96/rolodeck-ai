@@ -79,3 +79,220 @@
   font-weight: var(--weight-normal);
   color: var(--color-text-muted);
 }
+
+/*
+ * The full card, as the Deck renders it: a header, the founder strip, then three tabs. Every
+ * block wraps rather than clips, and the card's height follows whichever panel is open.
+ */
+
+.header {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.displayName {
+  font-size: var(--text-3xl);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-tight);
+}
+
+/* The Company panel's full description, where the header carries only its first sentence. */
+.longDescription {
+  line-height: var(--leading-normal);
+  overflow-wrap: anywhere;
+}
+
+.tagline {
+  font-size: var(--text-lg);
+  font-style: italic;
+  line-height: var(--leading-snug);
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+}
+
+/* The people behind the company, above the tabs so they show whichever tab is open. */
+.strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+}
+
+.stack {
+  display: flex;
+  flex-wrap: wrap;
+  list-style: none;
+}
+
+/* Each circle overlaps the one before by a fifth of its width. */
+.stackItem + .stackItem {
+  margin-inline-start: calc(var(--space-7) / -5);
+}
+
+.stackItem .initials {
+  border: 2px solid var(--color-surface);
+}
+
+.headcount {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.initials {
+  display: inline-flex;
+  flex: none;
+  width: var(--space-7);
+  height: var(--space-7);
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-pill);
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-tight);
+}
+
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.tab {
+  min-height: var(--space-7);
+  padding: var(--space-1) var(--space-4);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+.tab:hover {
+  border-color: var(--color-accent);
+}
+
+.tab[aria-selected="true"] {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+}
+
+.panel {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.panel[hidden] {
+  display: none;
+}
+
+.figures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-6);
+}
+
+.figure {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.figureValue {
+  font-size: var(--text-xl);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-snug);
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  list-style: none;
+}
+
+.chip {
+  display: inline-block;
+  max-width: 100%;
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-muted);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+}
+
+.linkChip {
+  text-decoration: none;
+}
+
+.linkChip:hover {
+  border-color: var(--color-accent-border);
+  color: var(--color-accent);
+}
+
+.people {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  list-style: none;
+}
+
+.person {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.personText,
+.contact {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.contact {
+  gap: var(--space-2);
+}
+
+.personName {
+  font-weight: var(--weight-semibold);
+  overflow-wrap: anywhere;
+}
+
+.personRole {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.personBio {
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  overflow-wrap: anywhere;
+}
+
+.absent {
+  font-size: var(--text-sm);
+  font-style: italic;
+  color: var(--color-text-muted);
+}

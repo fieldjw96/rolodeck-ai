@@ -138,7 +138,9 @@ describe("GET /api/profiles", () => {
     expect(Object.keys(profile ?? {}).sort()).toEqual([
       "created_at",
       "description",
+      "founders",
       "id",
+      "links",
       "location",
       "name",
       "provenance",
