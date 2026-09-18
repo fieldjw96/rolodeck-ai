@@ -18,7 +18,9 @@ _Avoid_: card, entry, listing, and the bare word Profile
 
 **Founder**:
 A person a Source states is behind a Company Profile, stored as that Source stated them: name,
-and where stated, role, biography and links. Never an email address. Founders are the subject
+and where stated, role, biography and links. Never an email address. Where the Source states
+nobody, a Founder may instead be read from the company's own site, attributed `enriched`, and
+only if the page states their name verbatim. See `docs/adr/0016`. Founders are the subject
 of the product and never its users, and not entities of their own: someone who founded two
 companies is two Founders.
 _Avoid_: team member, contact, person
