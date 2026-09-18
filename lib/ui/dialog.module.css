@@ -1,0 +1,51 @@
+/* A modal dialog. The panel scrolls on its own, so a card taller than the screen scrolls
+   inside the dialog and the page behind never moves, sideways or otherwise. */
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  overflow: hidden;
+  background: var(--color-shadow);
+  animation: fade-in var(--transition-fast);
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: 100%;
+  max-width: var(--measure);
+  max-height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--space-3);
+  background: var(--color-canvas);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-raised);
+}
+
+.close {
+  align-self: flex-end;
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-pill);
+}
+
+.close:hover {
+  background: var(--color-surface-muted);
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
