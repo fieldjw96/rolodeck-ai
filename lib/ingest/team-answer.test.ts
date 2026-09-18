@@ -1,10 +1,7 @@
 // @vitest-environment node
 import { beforeAll, describe, expect, it } from "vitest";
 
-import {
-  readTeamPageFixture,
-  type TeamPageFixture,
-} from "../testing/fixtures";
+import { readTeamPageFixture, type TeamPageFixture } from "../testing/fixtures";
 import { pageStates, parseTeamAnswer } from "./team-answer";
 import { visibleText } from "./team-page";
 
@@ -94,10 +91,7 @@ describe("parseTeamAnswer", () => {
   });
 
   it("rejects an answer that is not JSON, saying so", () => {
-    const result = parseTeamAnswer(
-      '```json\n{"founders":[]}\n```',
-      text,
-    );
+    const result = parseTeamAnswer('```json\n{"founders":[]}\n```', text);
 
     expect(result).toMatchObject({
       success: false,
@@ -108,15 +102,25 @@ describe("parseTeamAnswer", () => {
 
   it.each([
     ["an email address", { name: REAL, email: "jl@example.com" }, "founders.0"],
-    ["a photo", { name: REAL, image: "https://example.com/j.png" }, "founders.0"],
+    [
+      "a photo",
+      { name: REAL, image: "https://example.com/j.png" },
+      "founders.0",
+    ],
     ["a blank name", { name: "  " }, "founders.0.name"],
     ["a missing name", { role: "CEO" }, "founders.0.name"],
-  ])("rejects a person carrying %s, naming the field", (_label, person, field) => {
-    const result = parseTeamAnswer(JSON.stringify({ founders: [person] }), text);
+  ])(
+    "rejects a person carrying %s, naming the field",
+    (_label, person, field) => {
+      const result = parseTeamAnswer(
+        JSON.stringify({ founders: [person] }),
+        text,
+      );
 
-    expect(result.success).toBe(false);
-    expect(!result.success && result.rejection.field).toContain(field);
-  });
+      expect(result.success).toBe(false);
+      expect(!result.success && result.rejection.field).toContain(field);
+    },
+  );
 
   it("rejects an answer with keys beyond the team", () => {
     expect(

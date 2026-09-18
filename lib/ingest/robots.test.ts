@@ -41,13 +41,15 @@ describe("parseRobots", () => {
   });
 
   it("refuses this client by name even where * is allowed", () => {
-    const text = "User-agent: rolodeck-ai\nDisallow: /\n\nUser-agent: *\nAllow: /\n";
+    const text =
+      "User-agent: rolodeck-ai\nDisallow: /\n\nUser-agent: *\nAllow: /\n";
 
     expect(parseRobots(text, TOKEN).allows("/")).toBe(false);
   });
 
   it("applies consecutive user-agent lines to one group", () => {
-    const text = "User-agent: googlebot\nUser-agent: rolodeck-ai\nDisallow: /team\n";
+    const text =
+      "User-agent: googlebot\nUser-agent: rolodeck-ai\nDisallow: /team\n";
 
     expect(parseRobots(text, TOKEN).allows("/team")).toBe(false);
     expect(parseRobots(text, TOKEN).allows("/about")).toBe(true);

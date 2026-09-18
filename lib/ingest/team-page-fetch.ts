@@ -58,12 +58,18 @@ export type TeamSiteClientOptions = {
 };
 
 type Hop =
-  | { readonly kind: "response"; readonly url: URL; readonly response: Response }
+  | {
+      readonly kind: "response";
+      readonly url: URL;
+      readonly response: Response;
+    }
   | { readonly kind: "disallowed" }
   | { readonly kind: "failed"; readonly reason: string };
 
 /** Why a request may not be made: `robots.txt` refused it, or could not be read at all. */
-type Refusal = { readonly kind: "disallowed" } | { readonly kind: "failed"; readonly reason: string };
+type Refusal =
+  | { readonly kind: "disallowed" }
+  | { readonly kind: "failed"; readonly reason: string };
 
 export function createTeamSiteClient({
   fetch = globalThis.fetch,
@@ -142,7 +148,10 @@ export function createTeamSiteClient({
       return { kind: "response", url, response };
     }
 
-    return { kind: "failed", reason: `redirected more than ${MAX_REDIRECTS} times` };
+    return {
+      kind: "failed",
+      reason: `redirected more than ${MAX_REDIRECTS} times`,
+    };
   };
 
   /**
@@ -215,7 +224,11 @@ export function createTeamSiteClient({
       const { response, url } = hop;
 
       if (!response.ok) {
-        return { kind: "failed", url: raw, reason: `answered ${response.status}` };
+        return {
+          kind: "failed",
+          url: raw,
+          reason: `answered ${response.status}`,
+        };
       }
 
       const type = response.headers.get("content-type") ?? "";

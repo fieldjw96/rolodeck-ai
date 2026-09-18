@@ -5,7 +5,11 @@ import { ACCELERATOR_USER_AGENT } from "./accelerator-fetch";
 import { createTeamSiteClient } from "./team-page-fetch";
 import type { Throttle } from "./throttle";
 
-type Route = { status: number; body?: string; headers?: Record<string, string> };
+type Route = {
+  status: number;
+  body?: string;
+  headers?: Record<string, string>;
+};
 
 const html = (body: string): Route => ({
   status: 200,
@@ -50,7 +54,10 @@ function fakeWeb(routes: Record<string, Route | Error>) {
 describe("the team site client", () => {
   it("reads robots.txt before anything else on the host, and sends an honest User-Agent", async () => {
     const web = fakeWeb({
-      "https://acme.dev/robots.txt": { status: 200, body: "User-agent: *\nAllow: /\n" },
+      "https://acme.dev/robots.txt": {
+        status: 200,
+        body: "User-agent: *\nAllow: /\n",
+      },
       "https://acme.dev/about": html("<h1>Team</h1>"),
     });
 
@@ -124,7 +131,10 @@ describe("the team site client", () => {
 
   it("follows a redirect to www on the same site, reading that host's robots.txt first", async () => {
     const web = fakeWeb({
-      "https://acme.dev/": { status: 301, headers: { location: "https://www.acme.dev/" } },
+      "https://acme.dev/": {
+        status: 301,
+        headers: { location: "https://www.acme.dev/" },
+      },
       "https://www.acme.dev/": html("home"),
     });
 

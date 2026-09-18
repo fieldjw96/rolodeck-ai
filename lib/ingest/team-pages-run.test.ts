@@ -54,7 +54,10 @@ describe("gatherTeamPages", () => {
         "https://one.dev/",
         '<p>Welcome</p><a href="/team">Team</a><a href="https://x.com/one">X</a>',
       ),
-      "https://one.dev/team": page("https://one.dev/team", "<p>Ada Lovelace, founder</p>"),
+      "https://one.dev/team": page(
+        "https://one.dev/team",
+        "<p>Ada Lovelace, founder</p>",
+      ),
       "https://two.dev/": { kind: "disallowed", url: "https://two.dev/" },
     });
 
@@ -78,7 +81,10 @@ describe("gatherTeamPages", () => {
       "robots-disallowed",
       "not-found",
     ]);
-    expect(gathered[0]!.pages).toEqual(["https://one.dev/", "https://one.dev/team"]);
+    expect(gathered[0]!.pages).toEqual([
+      "https://one.dev/",
+      "https://one.dev/team",
+    ]);
     expect(gathered[0]!.text).toContain("Ada Lovelace, founder");
     expect(gathered[2]!.reason).toBe("answered 404");
   });
@@ -89,13 +95,23 @@ describe("applyTeamAnswers", () => {
     const items = [
       work(1, {}),
       work(2, { outcome: "robots-disallowed", pages: [], text: "" }),
-      work(3, { outcome: "not-found", reason: "answered 404", pages: [], text: "" }),
+      work(3, {
+        outcome: "not-found",
+        reason: "answered 404",
+        pages: [],
+        text: "",
+      }),
       work(4, { text: "We make widgets." }),
       work(5, {}),
       work(6, {}),
     ];
     const answers = new Map([
-      [id(1), JSON.stringify({ founders: [{ name: "Ada Lovelace" }, { name: "Invented Person" }] })],
+      [
+        id(1),
+        JSON.stringify({
+          founders: [{ name: "Ada Lovelace" }, { name: "Invented Person" }],
+        }),
+      ],
       [id(4), '{"founders":[]}'],
       [id(5), "Here are the founders: Ada Lovelace"],
     ]);
@@ -158,10 +174,13 @@ describe("teamPagesRunFailed", () => {
   it("passes a run that read its quota and found nobody, and one with nothing to take", () => {
     expect(
       teamPagesRunFailed(
-        applyTeamAnswers([work(1, {}), work(2, {})], new Map([
-          [id(1), '{"founders":[]}'],
-          [id(2), '{"founders":[]}'],
-        ])).report,
+        applyTeamAnswers(
+          [work(1, {}), work(2, {})],
+          new Map([
+            [id(1), '{"founders":[]}'],
+            [id(2), '{"founders":[]}'],
+          ]),
+        ).report,
       ),
     ).toBe(false);
     expect(teamPagesRunFailed(reportOf([]))).toBe(false);

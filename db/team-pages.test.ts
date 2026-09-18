@@ -106,8 +106,14 @@ beforeEach(async () => {
 
 describe("selectTeamPageCandidates", () => {
   it("takes Profiles with a website and no founders, never-read first, then oldest attempt", async () => {
-    const recent = await profile({ name: "Recent", soughtAt: new Date(NOW.getTime() - 40 * DAY) });
-    const oldest = await profile({ name: "Oldest", soughtAt: new Date(NOW.getTime() - 90 * DAY) });
+    const recent = await profile({
+      name: "Recent",
+      soughtAt: new Date(NOW.getTime() - 40 * DAY),
+    });
+    const oldest = await profile({
+      name: "Oldest",
+      soughtAt: new Date(NOW.getTime() - 90 * DAY),
+    });
     const never = await profile({ name: "Never" });
     await profile({ name: "Stated", founders: [{ name: "Ada Lovelace" }] });
     await profile({ name: "Siteless", website: null });
@@ -128,7 +134,10 @@ describe("selectTeamPageCandidates", () => {
   });
 
   it(`leaves a site read within ${TEAM_PAGE_RETRY_AFTER_DAYS} days alone, and stops at the bound`, async () => {
-    await profile({ name: "Yesterday", soughtAt: new Date(NOW.getTime() - DAY) });
+    await profile({
+      name: "Yesterday",
+      soughtAt: new Date(NOW.getTime() - DAY),
+    });
     await profile({ name: "A" });
     await profile({ name: "B" });
 
@@ -151,13 +160,20 @@ describe("recordTeamPageResults", () => {
     await scratch.as("rolodeck_ingest");
     const { updated } = await recordTeamPageResults(scratch.db, {
       ownerId: JACK,
-      results: [{ profileId: id, founders: [{ name: "Joachim Lohse", role: "CEO & Founder" }] }],
+      results: [
+        {
+          profileId: id,
+          founders: [{ name: "Joachim Lohse", role: "CEO & Founder" }],
+        },
+      ],
       at: NOW,
     });
 
     const row = await read(id);
     expect(updated).toBe(1);
-    expect(row.founders).toEqual([{ name: "Joachim Lohse", role: "CEO & Founder" }]);
+    expect(row.founders).toEqual([
+      { name: "Joachim Lohse", role: "CEO & Founder" },
+    ]);
     expect(row.provenance.founders).toBe("enriched");
     expect(row.provenance.name).toBe("scraped");
     expect(row.foundersSoughtAt).toEqual(NOW);
@@ -175,12 +191,21 @@ describe("recordTeamPageResults", () => {
     });
 
     expect(updated).toBe(0);
-    expect(await read(looked)).toMatchObject({ founders: null, foundersSoughtAt: NOW });
-    expect(await read(never)).toMatchObject({ founders: null, foundersSoughtAt: null });
+    expect(await read(looked)).toMatchObject({
+      founders: null,
+      foundersSoughtAt: NOW,
+    });
+    expect(await read(never)).toMatchObject({
+      founders: null,
+      foundersSoughtAt: null,
+    });
   });
 
   it("never touches a Profile that already states founders, whatever the page said", async () => {
-    const id = await profile({ name: "Stated", founders: [{ name: "Ada Lovelace" }] });
+    const id = await profile({
+      name: "Stated",
+      founders: [{ name: "Ada Lovelace" }],
+    });
 
     await scratch.as("rolodeck_ingest");
     const { updated } = await recordTeamPageResults(scratch.db, {
@@ -206,7 +231,10 @@ describe("recordTeamPageResults", () => {
       at: NOW,
     });
 
-    expect(await read(id)).toMatchObject({ founders: null, foundersSoughtAt: null });
+    expect(await read(id)).toMatchObject({
+      founders: null,
+      foundersSoughtAt: null,
+    });
   });
 });
 
@@ -236,7 +264,10 @@ describe("a Source re-ingesting a Profile the enrichment filled", () => {
     });
 
     process.env.ROLODECK_OWNER_ID = JACK;
-    await persistProfiles(scratch.db, { source: "angelpad", candidates: [candidate()] });
+    await persistProfiles(scratch.db, {
+      source: "angelpad",
+      candidates: [candidate()],
+    });
 
     const row = await read(id);
     expect(row.founders).toEqual([{ name: "Joachim Lohse" }]);

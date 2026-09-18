@@ -103,7 +103,9 @@ export async function gatherTeamPage(
     outcome: "read",
     pages: pages.map((page) => page.url),
     text: pages
-      .map((page) => `[${page.url}]\n${page.text.slice(0, MAX_PAGE_TEXT_LENGTH)}`)
+      .map(
+        (page) => `[${page.url}]\n${page.text.slice(0, MAX_PAGE_TEXT_LENGTH)}`,
+      )
       .join("\n\n")
       .slice(0, MAX_TEXT_LENGTH),
   };
@@ -176,7 +178,9 @@ export function applyTeamAnswers(
 
     if (item.outcome === "not-found") {
       notFound += 1;
-      notFoundReasons.push(`${item.name}: ${item.website} ${item.reason ?? "could not be read"}`);
+      notFoundReasons.push(
+        `${item.name}: ${item.website} ${item.reason ?? "could not be read"}`,
+      );
       attempted(null);
       continue;
     }
