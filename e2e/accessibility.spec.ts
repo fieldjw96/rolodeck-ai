@@ -201,7 +201,7 @@ test("/news has no critical or serious accessibility violations", async ({
   await page.context().close();
 });
 
-test("Tab reaches Deck, Watchlist, News, Diary, Settings, Sign out, Pass and Keep on /deck, in DOM order, each with a visible focus outline", async ({
+test("Tab reaches Deck, Watchlist, News, Diary, Settings, Sign out, the card's tabs, Pass and Keep on /deck, in DOM order, each with a visible focus outline", async ({
   browser,
   app,
 }) => {
@@ -239,6 +239,12 @@ test("Tab reaches Deck, Watchlist, News, Diary, Settings, Sign out, Pass and Kee
   await page.keyboard.press("Tab");
   await expect(focused).toHaveRole("button");
   await expect(focused).toHaveAccessibleName("Sign out");
+  await expectVisibleFocusOutline(focused);
+
+  // The card's tabs are one stop, on the selected tab: the arrow keys move between them.
+  await page.keyboard.press("Tab");
+  await expect(focused).toHaveRole("tab");
+  await expect(focused).toHaveAccessibleName("Company");
   await expectVisibleFocusOutline(focused);
 
   await page.keyboard.press("Tab");

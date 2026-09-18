@@ -220,7 +220,6 @@ function FullCard({
           id={panelId(tab)}
           aria-labelledby={tabId(tab)}
           hidden={tab !== selected}
-          tabIndex={0}
           className={styles.panel}
         >
           {tab === "company" ? (
