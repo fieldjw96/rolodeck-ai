@@ -424,6 +424,36 @@ is "has it succeeded since its last occurrence", a check that misses a day repor
 Source the next day with the gap intact rather than reset — but closing that properly needs a
 watcher that does not depend on GitHub's scheduler at all.
 
+### Filling a missing team from the company's own site
+
+Y Combinator is the only Source that states a team, so Company Profiles from the other Sources
+have an empty Team tab. `ingest-team-pages.yml` runs daily at 10:40 UTC and fills that gap from
+the company's own site. It is not a Source: it creates no Company Profile, it only updates one
+whose `founders` is null, and it never touches one whose Source stated a team. See
+docs/adr/0016. It runs in three steps:
+
+```
+ROLODECK_INGEST_DATABASE_URL=... ROLODECK_OWNER_ID=... npm run ingest:team-pages:gather
+# a model writes one JSON answer per company into $TEAM_PAGES_DIR/answers/
+ROLODECK_INGEST_DATABASE_URL=... ROLODECK_OWNER_ID=... npm run ingest:team-pages:apply
+```
+
+The gather step takes up to `TEAM_PAGE_CANDIDATES_PER_RUN` Profiles with a website and no
+founders, never-read first and then oldest attempt. For each one it reads `robots.txt` before
+anything else on that host, and obeys it. It then reads the homepage and at most two same-site
+pages that look like a team page, never a link off the site, at one request a second per host.
+The model step is `anthropics/claude-code-action` with the existing `CLAUDE_CODE_OAUTH_TOKEN`.
+It holds no database credential and can neither run a shell nor fetch anything. The apply step
+passes every answer through a strict schema and drops any person whose full name the page text
+does not state verbatim. It writes what survives attributed `enriched`, and records every
+attempt in `founders_sought_at` so a site is not read again for 30 days.
+
+The job summary gives the counts: candidates taken, skipped on `robots.txt`, pages not found,
+companies whose page named nobody, people dropped for not appearing in the page, and profiles
+updated. A run that updates nothing is a success, because most early companies have no team
+page. A run where every candidate failed to fetch fails, and opens an "Ingest failure:
+team-pages" issue. It is not a Source, so `ingest-freshness.yml` does not watch it.
+
 ## News
 
 News is articles about the Company Profiles you Kept, read from the RSS feeds publishers offer
