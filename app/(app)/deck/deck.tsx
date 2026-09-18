@@ -259,7 +259,10 @@ export function Deck() {
               decidedRef.current,
             ),
           );
-        } else if (current.status === "dealing" && current.nextCursor === cursor) {
+        } else if (
+          current.status === "dealing" &&
+          current.nextCursor === cursor
+        ) {
           commit(stateAfter([], page, decidedRef.current));
         }
       })

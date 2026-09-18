@@ -135,7 +135,7 @@ function stubSwipes(pages: Record<string, unknown>, held: string[] = []) {
       const at = open.findIndex((request) => request.url === url);
 
       if (at === -1) {
-        throw new Error(`no pending POST ${url}`);
+        throw new Error(`no pending request ${url}`);
       }
 
       const [request] = open.splice(at, 1);
@@ -577,7 +577,10 @@ describe("the Deck", () => {
 
   it("fetches the next page ahead of need, so a swipe across the page boundary does not wait", async () => {
     const swipes = stubSwipes({
-      "GET /api/profiles": { profiles: [acme, globex], next_cursor: "cursor-1" },
+      "GET /api/profiles": {
+        profiles: [acme, globex],
+        next_cursor: "cursor-1",
+      },
       "GET /api/profiles?cursor=cursor-1": {
         profiles: [initech],
         next_cursor: null,
@@ -599,7 +602,9 @@ describe("the Deck", () => {
     fireEvent.click(screen.getByRole("button", { name: "Keep" }));
 
     // Across the boundary, synchronously.
-    expect(screen.getByRole("heading", { name: "Initech" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Initech" }),
+    ).toBeInTheDocument();
   });
 
   it("does not prefetch while more than PREFETCH_AT_REMAINING Profiles are in hand", async () => {
