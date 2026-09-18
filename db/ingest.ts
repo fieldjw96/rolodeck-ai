@@ -10,6 +10,7 @@ import {
   type ProfileInput,
 } from "./profile-input";
 import {
+  NULLABLE_FIELDS,
   PROVENANCED_FIELDS,
   profileProvenanceSchema,
   type ProfileProvenance,
@@ -54,32 +55,26 @@ const candidateSchema = z
     provenance: profileProvenanceSchema,
   })
   /**
-   * `website` and `location` are the two optional Profile fields, so they are the two fields
-   * whose provenance can be null — and each must be null exactly when there is no value to
-   * attribute. The `profiles_provenance_covers_every_field` check constraint refuses the same
-   * row underneath; catching it here is what turns a constraint violation that aborts a batch
-   * into one rejection, named, that the rest of the batch survives.
+   * The nullable Profile fields are the ones whose provenance can be null, and each must be
+   * null exactly when there is no value to attribute. The `profiles_provenance_covers_every_field`
+   * check constraint refuses the same row underneath; catching it here is what turns a
+   * constraint violation that aborts a batch into one rejection, named, that the rest of the
+   * batch survives.
    */
-  .refine(
-    (candidate) =>
-      (candidate.input.website === undefined) ===
-      (candidate.provenance.website === null),
-    {
-      error:
-        "must be null exactly when the Profile has no website, and set when it has one",
-      path: ["provenance", "website"],
-    },
-  )
-  .refine(
-    (candidate) =>
-      (candidate.input.location === undefined) ===
-      (candidate.provenance.location === null),
-    {
-      error:
-        "must be null exactly when the Profile has no location, and set when it has one",
-      path: ["provenance", "location"],
-    },
-  );
+  .superRefine((candidate, context) => {
+    for (const field of NULLABLE_FIELDS) {
+      if (
+        (candidate.input[field] === undefined) !==
+        (candidate.provenance[field] === null)
+      ) {
+        context.addIssue({
+          code: "custom",
+          message: `must be null exactly when the Profile has no ${field}, and set when it has one`,
+          path: ["provenance", field],
+        });
+      }
+    }
+  });
 
 /**
  * Which pipeline is writing. Constrained to a lowercase slug so that `yc`, `YC` and `Yc`
@@ -210,6 +205,8 @@ export async function persistProfiles(
           stage: candidate.input.stage,
           website: candidate.input.website ?? null,
           location: candidate.input.location ?? null,
+          founders: candidate.input.founders ?? null,
+          links: candidate.input.links ?? null,
           provenance: candidate.provenance,
         })
         .onConflictDoUpdate({
@@ -223,6 +220,10 @@ export async function persistProfiles(
             stage: scrapedUnlessHuman("stage"),
             website: scrapedUnlessHuman("website"),
             location: scrapedUnlessHuman("location"),
+            // Replaced whole, never appended to or merged: a re-ingest states the team as the
+            // Source now states it, so a founder the page dropped is dropped here too.
+            founders: scrapedUnlessHuman("founders"),
+            links: scrapedUnlessHuman("links"),
             provenance: provenanceUnlessHuman,
           },
         })

@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import type { IngestRejection, ProfileInput } from "../../db/profile-input";
 import type {
+  NullableField,
   ProfileProvenance,
   Provenance,
   ProvenancedField,
@@ -39,15 +40,14 @@ export type FieldProvenance = Capture & {
 };
 
 /**
- * A field with no value has no provenance: `website` and `location` are the two optional
- * Profile fields, so they are the two entries that can be null here. This mirrors the shape
- * the `profiles` check constraint enforces — see docs/adr/0003.
+ * A field with no value has no provenance: the optional Profile fields, `NULLABLE_FIELDS` in
+ * `db/provenance.ts`, are the entries that can be null here. This mirrors the shape the
+ * `profiles` check constraint enforces — see docs/adr/0003.
  */
 export type ProfileAttribution = Readonly<
-  Record<Exclude<ProvenancedField, "website" | "location">, FieldProvenance>
+  Record<Exclude<ProvenancedField, NullableField>, FieldProvenance>
 > & {
-  readonly website: FieldProvenance | null;
-  readonly location: FieldProvenance | null;
+  readonly [Field in NullableField]: FieldProvenance | null;
 };
 
 export type ScrapedProfile = {
@@ -87,5 +87,7 @@ export function toProfileProvenance(
     stage: attribution.stage.provenance,
     website: attribution.website?.provenance ?? null,
     location: attribution.location?.provenance ?? null,
+    founders: attribution.founders?.provenance ?? null,
+    links: attribution.links?.provenance ?? null,
   };
 }

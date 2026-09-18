@@ -44,6 +44,20 @@ export type CompanyPageResult = ScrapedProfileResult;
  * that disappears or changes type fails here, naming itself, rather than arriving as
  * `undefined` further down.
  */
+/**
+ * One entry in the page's `founders`. Loose for the same reason the company is: the payload
+ * also carries `avatar_thumb_url` and `has_email`, which are deliberately never read. There is
+ * no photograph, and YC states only that an email exists for its own introduction flow, never
+ * the address.
+ */
+const ycFounderSchema = z.looseObject({
+  full_name: z.string(),
+  title: z.string().nullish(),
+  founder_bio: z.string().nullish(),
+  linkedin_url: z.string().nullish(),
+  twitter_url: z.string().nullish(),
+});
+
 const ycCompanySchema = z.looseObject({
   name: z.string(),
   one_liner: z.string().nullish(),
@@ -51,6 +65,10 @@ const ycCompanySchema = z.looseObject({
   tags: z.array(z.string()),
   website: z.string().nullish(),
   team_size: z.number().nullish(),
+  founders: z.array(ycFounderSchema).nullish(),
+  linkedin_url: z.string().nullish(),
+  twitter_url: z.string().nullish(),
+  github_url: z.string().nullish(),
 });
 
 const ycPagePayloadSchema = z.looseObject({
@@ -72,6 +90,45 @@ const DATA_PAGE_PATTERN = /\sdata-page="([^"]*)"/;
 function trimmed(value: string | null | undefined): string | undefined {
   const text = value?.trim();
   return text === undefined || text.length === 0 ? undefined : text;
+}
+
+/**
+ * An object holding only the entries with a value, so that a page's empty string becomes an
+ * absent key rather than a value `profileInputSchema` would reject as blank or not a URL.
+ */
+function stated<T extends Record<string, string | undefined>>(
+  entries: T,
+): Partial<Record<keyof T, string>> {
+  return Object.fromEntries(
+    Object.entries(entries).filter(([, value]) => value !== undefined),
+  ) as Partial<Record<keyof T, string>>;
+}
+
+/**
+ * The founders as the page states them, or undefined when it states none. Never an empty list:
+ * a page with no founders has not said the company has none. See `founderListSchema`.
+ *
+ * Every founder is kept, whatever else they lack. An empty biography, which Stripe's founders
+ * have, is an absent `bio` rather than a reason to drop the founder or the company.
+ */
+function foundersFrom(
+  founders: readonly z.infer<typeof ycFounderSchema>[] | null | undefined,
+): Record<string, string>[] | undefined {
+  if (founders === null || founders === undefined || founders.length === 0) {
+    return undefined;
+  }
+
+  return founders.map((founder) =>
+    stated({
+      // Not trimmed away to nothing silently: a blank name is left in place for
+      // `founderSchema` to reject, naming the field.
+      name: founder.full_name.trim(),
+      role: trimmed(founder.title),
+      bio: trimmed(founder.founder_bio),
+      linkedin: trimmed(founder.linkedin_url),
+      twitter: trimmed(founder.twitter_url),
+    }),
+  );
 }
 
 function rejected(
@@ -160,6 +217,20 @@ export function parseCompanyPage(
     candidate.website = website;
   }
 
+  const founders = foundersFrom(company.founders);
+  if (founders !== undefined) {
+    candidate.founders = founders;
+  }
+
+  const links = stated({
+    linkedin: trimmed(company.linkedin_url),
+    twitter: trimmed(company.twitter_url),
+    github: trimmed(company.github_url),
+  });
+  if (Object.keys(links).length > 0) {
+    candidate.links = links;
+  }
+
   const input = parseProfileInput(candidate);
 
   if (!input.success) {
@@ -186,6 +257,9 @@ export function parseCompanyPage(
         website: input.data.website === undefined ? null : scraped,
         // A YC company page carries no headquarters address at all.
         location: null,
+        // Read from the page as it states them, nothing derived, so `scraped` when present.
+        founders: input.data.founders === undefined ? null : scraped,
+        links: input.data.links === undefined ? null : scraped,
       },
     },
   };

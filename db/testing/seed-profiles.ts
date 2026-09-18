@@ -11,6 +11,8 @@ export const SEEDED_PROVENANCE: ProfileProvenance = {
   stage: "jack",
   website: null,
   location: null,
+  founders: null,
+  links: null,
 };
 
 /** Far enough apart that "newest first" is a fact about the data, not about insert order. */

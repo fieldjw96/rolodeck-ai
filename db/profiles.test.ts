@@ -17,6 +17,8 @@ const MIXED_PROVENANCE: ProfileProvenance = {
   stage: "scraped",
   website: "enriched",
   location: null,
+  founders: null,
+  links: null,
 };
 
 let scratch: ScratchDb;

@@ -48,6 +48,8 @@ describe("measureProfileDuplicates", () => {
           stage: "enriched",
           website: "scraped",
           location: "scraped",
+          founders: null,
+          links: null,
         },
       },
       {
@@ -66,6 +68,8 @@ describe("measureProfileDuplicates", () => {
           stage: "enriched",
           website: "scraped",
           location: "scraped",
+          founders: null,
+          links: null,
         },
       },
     ]);
@@ -101,6 +105,8 @@ describe("measureProfileDuplicates", () => {
           stage: "enriched",
           website: "scraped",
           location: "scraped",
+          founders: null,
+          links: null,
         },
       },
       {
@@ -119,6 +125,8 @@ describe("measureProfileDuplicates", () => {
           stage: "enriched",
           website: "scraped",
           location: "scraped",
+          founders: null,
+          links: null,
         },
       },
     ]);
@@ -150,6 +158,8 @@ describe("measureProfileDuplicates", () => {
           stage: "enriched",
           website: "scraped",
           location: "scraped",
+          founders: null,
+          links: null,
         },
       },
       {
@@ -168,6 +178,8 @@ describe("measureProfileDuplicates", () => {
           stage: "enriched",
           website: "scraped",
           location: "scraped",
+          founders: null,
+          links: null,
         },
       },
       {
@@ -186,6 +198,8 @@ describe("measureProfileDuplicates", () => {
           stage: "enriched",
           website: "scraped",
           location: "scraped",
+          founders: null,
+          links: null,
         },
       },
     ]);
@@ -218,6 +232,8 @@ describe("measureProfileDuplicates", () => {
           stage: "enriched",
           website: "scraped",
           location: "scraped",
+          founders: null,
+          links: null,
         },
       },
       {
@@ -236,6 +252,8 @@ describe("measureProfileDuplicates", () => {
           stage: "enriched",
           website: "scraped",
           location: "scraped",
+          founders: null,
+          links: null,
         },
       },
     ]);
@@ -275,6 +293,8 @@ describe("measureProfileDuplicates", () => {
           stage: "enriched",
           website: "scraped",
           location: "scraped",
+          founders: null,
+          links: null,
         },
       },
       {
@@ -293,6 +313,8 @@ describe("measureProfileDuplicates", () => {
           stage: "enriched",
           website: "scraped",
           location: "scraped",
+          founders: null,
+          links: null,
         },
       },
     ]);
@@ -322,6 +344,8 @@ describe("measureProfileDuplicates", () => {
           stage: "enriched",
           website: "scraped",
           location: "scraped",
+          founders: null,
+          links: null,
         },
       },
     ]);
@@ -358,6 +382,8 @@ describe("measureProfileDuplicates", () => {
           stage: "enriched",
           website: "scraped",
           location: "scraped",
+          founders: null,
+          links: null,
         },
       },
       {
@@ -376,6 +402,8 @@ describe("measureProfileDuplicates", () => {
           stage: "enriched",
           website: "scraped",
           location: "scraped",
+          founders: null,
+          links: null,
         },
       },
     ]);
@@ -422,6 +450,8 @@ describe("measureProfileDuplicates", () => {
           stage: "scraped",
           website: null,
           location: null,
+          founders: null,
+          links: null,
         },
       }),
     ).then(
@@ -468,6 +498,8 @@ describe("measureProfileDuplicates", () => {
         stage: "scraped",
         website: null,
         location: null,
+        founders: null,
+        links: null,
       },
     });
 

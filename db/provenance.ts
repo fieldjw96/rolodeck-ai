@@ -23,15 +23,27 @@ export const PROVENANCED_FIELDS = [
   "stage",
   "website",
   "location",
+  "founders",
+  "links",
 ] as const;
 
 export type ProvenancedField = (typeof PROVENANCED_FIELDS)[number];
 
 /**
- * `website` and `location` are the two nullable Profile fields, so they are the two fields
- * whose provenance can be null: a Profile with no website, or no stated place, has no source
- * to record for it.
+ * The Profile fields nullable enough that their provenance can be null too: a Profile with no
+ * website, no stated place, no stated founders or no links beyond its website has no source to
+ * record for that field. The `profiles_provenance_covers_every_field` check constraint is built
+ * from this list, so a field added here is covered by the same rule.
  */
+export const NULLABLE_FIELDS = [
+  "website",
+  "location",
+  "founders",
+  "links",
+] as const satisfies readonly ProvenancedField[];
+
+export type NullableField = (typeof NULLABLE_FIELDS)[number];
+
 export const profileProvenanceSchema = z.strictObject({
   name: provenanceSchema,
   description: provenanceSchema,
@@ -39,6 +51,8 @@ export const profileProvenanceSchema = z.strictObject({
   stage: provenanceSchema,
   website: provenanceSchema.nullable(),
   location: provenanceSchema.nullable(),
+  founders: provenanceSchema.nullable(),
+  links: provenanceSchema.nullable(),
 });
 
 export type ProfileProvenance = z.infer<typeof profileProvenanceSchema>;

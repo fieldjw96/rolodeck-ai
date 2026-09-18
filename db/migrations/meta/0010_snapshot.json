@@ -1,0 +1,949 @@
+{
+  "id": "00714704-50ca-4d25-b6e1-0141ac815f8a",
+  "prevId": "7f275338-6c2c-46c8-ab0b-11b04079929f",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.event_attendances": {
+      "name": "event_attendances",
+      "schema": "",
+      "columns": {
+        "event_id": {
+          "name": "event_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "profile_id": {
+          "name": "profile_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "event_attendances_profile_id_idx": {
+          "name": "event_attendances_profile_id_idx",
+          "columns": [
+            {
+              "expression": "profile_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "event_attendances_event_id_events_id_fk": {
+          "name": "event_attendances_event_id_events_id_fk",
+          "tableFrom": "event_attendances",
+          "tableTo": "events",
+          "columnsFrom": [
+            "event_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "event_attendances_profile_id_profiles_id_fk": {
+          "name": "event_attendances_profile_id_profiles_id_fk",
+          "tableFrom": "event_attendances",
+          "tableTo": "profiles",
+          "columnsFrom": [
+            "profile_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "event_attendances_event_id_profile_id_pk": {
+          "name": "event_attendances_event_id_profile_id_pk",
+          "columns": [
+            "event_id",
+            "profile_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {
+        "event_attendances_select_own": {
+          "name": "event_attendances_select_own",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "exists (select 1 from \"events\" where \"events\".\"id\" = \"event_attendances\".\"event_id\") and exists (select 1 from \"profiles\" where \"profiles\".\"id\" = \"event_attendances\".\"profile_id\")"
+        },
+        "event_attendances_ingest_select": {
+          "name": "event_attendances_ingest_select",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "rolodeck_ingest"
+          ],
+          "using": "true"
+        },
+        "event_attendances_ingest_insert": {
+          "name": "event_attendances_ingest_insert",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "rolodeck_ingest"
+          ],
+          "withCheck": "true"
+        },
+        "event_attendances_ingest_update": {
+          "name": "event_attendances_ingest_update",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "rolodeck_ingest"
+          ],
+          "using": "true",
+          "withCheck": "true"
+        },
+        "event_attendances_ingest_delete": {
+          "name": "event_attendances_ingest_delete",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": [
+            "rolodeck_ingest"
+          ],
+          "using": "true"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.events": {
+      "name": "events",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "owner_id": {
+          "name": "owner_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "external_id": {
+          "name": "external_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "start_date": {
+          "name": "start_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "end_date": {
+          "name": "end_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "location": {
+          "name": "location",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "url": {
+          "name": "url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "events_owner_id_source_external_id_idx": {
+          "name": "events_owner_id_source_external_id_idx",
+          "columns": [
+            {
+              "expression": "owner_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "source",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "external_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "events_owner_id_start_date_idx": {
+          "name": "events_owner_id_start_date_idx",
+          "columns": [
+            {
+              "expression": "owner_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "start_date",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "events_owner_id_users_id_fk": {
+          "name": "events_owner_id_users_id_fk",
+          "tableFrom": "events",
+          "tableTo": "users",
+          "schemaTo": "auth",
+          "columnsFrom": [
+            "owner_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "events_select_own": {
+          "name": "events_select_own",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "(select auth.uid()) = \"events\".\"owner_id\""
+        },
+        "events_ingest_select": {
+          "name": "events_ingest_select",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "rolodeck_ingest"
+          ],
+          "using": "true"
+        },
+        "events_ingest_insert": {
+          "name": "events_ingest_insert",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "rolodeck_ingest"
+          ],
+          "withCheck": "true"
+        },
+        "events_ingest_update": {
+          "name": "events_ingest_update",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "rolodeck_ingest"
+          ],
+          "using": "true",
+          "withCheck": "true"
+        }
+      },
+      "checkConstraints": {
+        "events_end_date_not_before_start_date": {
+          "name": "events_end_date_not_before_start_date",
+          "value": "\"events\".\"end_date\" is null or \"events\".\"end_date\" >= \"events\".\"start_date\""
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.news_items": {
+      "name": "news_items",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "profile_id": {
+          "name": "profile_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "owner_id": {
+          "name": "owner_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "url": {
+          "name": "url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "published_at": {
+          "name": "published_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_name": {
+          "name": "source_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "confidence": {
+          "name": "confidence",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "fetched_at": {
+          "name": "fetched_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "news_items_profile_id_url_idx": {
+          "name": "news_items_profile_id_url_idx",
+          "columns": [
+            {
+              "expression": "profile_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "url",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "news_items_owner_id_published_at_idx": {
+          "name": "news_items_owner_id_published_at_idx",
+          "columns": [
+            {
+              "expression": "owner_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "published_at",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "news_items_profile_id_profiles_id_fk": {
+          "name": "news_items_profile_id_profiles_id_fk",
+          "tableFrom": "news_items",
+          "tableTo": "profiles",
+          "columnsFrom": [
+            "profile_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "news_items_owner_id_users_id_fk": {
+          "name": "news_items_owner_id_users_id_fk",
+          "tableFrom": "news_items",
+          "tableTo": "users",
+          "schemaTo": "auth",
+          "columnsFrom": [
+            "owner_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "news_items_select_own": {
+          "name": "news_items_select_own",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "(select auth.uid()) = \"news_items\".\"owner_id\""
+        },
+        "news_items_ingest_select": {
+          "name": "news_items_ingest_select",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "rolodeck_ingest"
+          ],
+          "using": "true"
+        },
+        "news_items_ingest_insert": {
+          "name": "news_items_ingest_insert",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "rolodeck_ingest"
+          ],
+          "withCheck": "true"
+        },
+        "news_items_ingest_update": {
+          "name": "news_items_ingest_update",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "rolodeck_ingest"
+          ],
+          "using": "true",
+          "withCheck": "true"
+        }
+      },
+      "checkConstraints": {
+        "news_items_confidence_is_a_proportion": {
+          "name": "news_items_confidence_is_a_proportion",
+          "value": "confidence >= 0 and confidence <= 1"
+        },
+        "news_items_url_is_http": {
+          "name": "news_items_url_is_http",
+          "value": "url ~ '^https?://'"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.profiles": {
+      "name": "profiles",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "owner_id": {
+          "name": "owner_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sector": {
+          "name": "sector",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "stage": {
+          "name": "stage",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "website": {
+          "name": "website",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "location": {
+          "name": "location",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "founders": {
+          "name": "founders",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "links": {
+          "name": "links",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "provenance": {
+          "name": "provenance",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name_key": {
+          "name": "name_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "generated": {
+            "as": "lower(btrim(regexp_replace(name, '[[:space:]]+', ' ', 'g')))",
+            "type": "stored"
+          }
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "profiles_owner_id_source_name_key_idx": {
+          "name": "profiles_owner_id_source_name_key_idx",
+          "columns": [
+            {
+              "expression": "owner_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "source",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "name_key",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "profiles_owner_id_created_at_id_idx": {
+          "name": "profiles_owner_id_created_at_id_idx",
+          "columns": [
+            {
+              "expression": "owner_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            },
+            {
+              "expression": "id",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "profiles_owner_id_users_id_fk": {
+          "name": "profiles_owner_id_users_id_fk",
+          "tableFrom": "profiles",
+          "tableTo": "users",
+          "schemaTo": "auth",
+          "columnsFrom": [
+            "owner_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "profiles_select_own": {
+          "name": "profiles_select_own",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "(select auth.uid()) = \"profiles\".\"owner_id\""
+        },
+        "profiles_ingest_select": {
+          "name": "profiles_ingest_select",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "rolodeck_ingest"
+          ],
+          "using": "true"
+        },
+        "profiles_ingest_insert": {
+          "name": "profiles_ingest_insert",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "rolodeck_ingest"
+          ],
+          "withCheck": "true"
+        },
+        "profiles_ingest_update": {
+          "name": "profiles_ingest_update",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "rolodeck_ingest"
+          ],
+          "using": "true",
+          "withCheck": "true"
+        }
+      },
+      "checkConstraints": {
+        "profiles_provenance_covers_every_field": {
+          "name": "profiles_provenance_covers_every_field",
+          "value": "coalesce(\n  provenance ->> 'name' in ('scraped', 'enriched', 'jack')\n  and provenance ->> 'description' in ('scraped', 'enriched', 'jack')\n  and provenance ->> 'sector' in ('scraped', 'enriched', 'jack')\n  and provenance ->> 'stage' in ('scraped', 'enriched', 'jack')\n  and (website is null) = (provenance ->> 'website' is null)\n  and (website is null or provenance ->> 'website' in ('scraped', 'enriched', 'jack'))\n  and (location is null) = (provenance ->> 'location' is null)\n  and (location is null or provenance ->> 'location' in ('scraped', 'enriched', 'jack'))\n  and (founders is null) = (provenance ->> 'founders' is null)\n  and (founders is null or provenance ->> 'founders' in ('scraped', 'enriched', 'jack'))\n  and (links is null) = (provenance ->> 'links' is null)\n  and (links is null or provenance ->> 'links' in ('scraped', 'enriched', 'jack'))\n, false)"
+        },
+        "profiles_sector_is_controlled": {
+          "name": "profiles_sector_is_controlled",
+          "value": "sector in ('ai-ml', 'developer-tools', 'data-infrastructure', 'saas-enterprise', 'fintech', 'health-bio', 'security', 'hardware-robotics', 'climate-energy', 'consumer-marketplace', 'vertical-saas', 'other')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.swipes": {
+      "name": "swipes",
+      "schema": "",
+      "columns": {
+        "profile_id": {
+          "name": "profile_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "decision": {
+          "name": "decision",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "decided_at": {
+          "name": "decided_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "swipes_profile_id_profiles_id_fk": {
+          "name": "swipes_profile_id_profiles_id_fk",
+          "tableFrom": "swipes",
+          "tableTo": "profiles",
+          "columnsFrom": [
+            "profile_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "swipes_user_id_users_id_fk": {
+          "name": "swipes_user_id_users_id_fk",
+          "tableFrom": "swipes",
+          "tableTo": "users",
+          "schemaTo": "auth",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "swipes_user_id_profile_id_pk": {
+          "name": "swipes_user_id_profile_id_pk",
+          "columns": [
+            "user_id",
+            "profile_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {
+        "swipes_select_own": {
+          "name": "swipes_select_own",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "(select auth.uid()) = \"swipes\".\"user_id\""
+        },
+        "swipes_insert_own": {
+          "name": "swipes_insert_own",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "authenticated"
+          ],
+          "withCheck": "(select auth.uid()) = \"swipes\".\"user_id\" and exists (select 1 from \"profiles\" where \"profiles\".\"id\" = \"swipes\".\"profile_id\")"
+        },
+        "swipes_update_own": {
+          "name": "swipes_update_own",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "(select auth.uid()) = \"swipes\".\"user_id\"",
+          "withCheck": "(select auth.uid()) = \"swipes\".\"user_id\" and exists (select 1 from \"profiles\" where \"profiles\".\"id\" = \"swipes\".\"profile_id\")"
+        }
+      },
+      "checkConstraints": {
+        "swipes_decision_is_a_swipe": {
+          "name": "swipes_decision_is_a_swipe",
+          "value": "decision in ('keep', 'pass')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.user_profiles": {
+      "name": "user_profiles",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "sectors": {
+          "name": "sectors",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'"
+        },
+        "stages": {
+          "name": "stages",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'"
+        },
+        "area": {
+          "name": "area",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'Bay Area'"
+        },
+        "excluded_sectors": {
+          "name": "excluded_sectors",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "user_profiles_user_id_users_id_fk": {
+          "name": "user_profiles_user_id_users_id_fk",
+          "tableFrom": "user_profiles",
+          "tableTo": "users",
+          "schemaTo": "auth",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "user_profiles_select_own": {
+          "name": "user_profiles_select_own",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": [
+            "authenticated"
+          ],
+          "using": "(select auth.uid()) = \"user_profiles\".\"user_id\""
+        },
+        "user_profiles_insert_own": {
+          "name": "user_profiles_insert_own",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": [
+            "authenticated"
+          ],
+          "withCheck": "(select auth.uid()) = \"user_profiles\".\"user_id\""
+        },
+        "user_profiles_update_own": {
+          "name": "user_profiles_update_own",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": [
+            "authenticated"
+          ],
+          "using": "(select auth.uid()) = \"user_profiles\".\"user_id\"",
+          "withCheck": "(select auth.uid()) = \"user_profiles\".\"user_id\""
+        }
+      },
+      "checkConstraints": {
+        "user_profiles_sectors_are_controlled": {
+          "name": "user_profiles_sectors_are_controlled",
+          "value": "sectors <@ array['ai-ml', 'developer-tools', 'data-infrastructure', 'saas-enterprise', 'fintech', 'health-bio', 'security', 'hardware-robotics', 'climate-energy', 'consumer-marketplace', 'vertical-saas', 'other']::text[]"
+        },
+        "user_profiles_excluded_sectors_are_controlled": {
+          "name": "user_profiles_excluded_sectors_are_controlled",
+          "value": "excluded_sectors <@ array['ai-ml', 'developer-tools', 'data-infrastructure', 'saas-enterprise', 'fintech', 'health-bio', 'security', 'hardware-robotics', 'climate-energy', 'consumer-marketplace', 'vertical-saas', 'other']::text[]"
+        },
+        "user_profiles_sectors_excluded_disjoint": {
+          "name": "user_profiles_sectors_excluded_disjoint",
+          "value": "not (\"user_profiles\".\"sectors\" && \"user_profiles\".\"excluded_sectors\")"
+        }
+      },
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

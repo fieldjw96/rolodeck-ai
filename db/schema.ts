@@ -16,11 +16,19 @@ import {
 } from "drizzle-orm/pg-core";
 import { authUid, authUsers, authenticatedRole } from "drizzle-orm/supabase";
 
-import { SECTOR_VALUES, type Sector, type Stage } from "./profile-input";
 import {
+  SECTOR_VALUES,
+  type CompanyLinks,
+  type Founder,
+  type Sector,
+  type Stage,
+} from "./profile-input";
+import {
+  NULLABLE_FIELDS,
   PROVENANCE_VALUES,
   PROVENANCED_FIELDS,
   type ProfileProvenance,
+  type ProvenancedField,
 } from "./provenance";
 
 const provenanceLiterals = PROVENANCE_VALUES.map((value) => `'${value}'`).join(
@@ -83,8 +91,8 @@ const ingestPolicies = (table: string) => [
 const hasValidProvenance = (field: string) =>
   `provenance ->> '${field}' in (${provenanceLiterals})`;
 
-/** The Profile fields nullable enough that their provenance can be null too. */
-const NULLABLE_FIELDS: readonly string[] = ["website", "location"];
+const isNullable = (field: ProvenancedField): boolean =>
+  (NULLABLE_FIELDS as readonly ProvenancedField[]).includes(field);
 
 /**
  * The database's own half of the per-field provenance rule. Zod guards the boundary in
@@ -96,11 +104,11 @@ const provenanceCoversEveryField = sql.raw(
   // no provenance key at all would slip through unwrapped. The coalesce is what turns a
   // missing field into a rejection rather than a silently unattributed value.
   `coalesce(\n  ${[
-    ...PROVENANCED_FIELDS.filter(
-      (field) => !NULLABLE_FIELDS.includes(field),
-    ).map(hasValidProvenance),
-    // `website` and `location` are the two nullable Profile fields: each carries provenance
-    // exactly when it has a value to attribute.
+    ...PROVENANCED_FIELDS.filter((field) => !isNullable(field)).map(
+      hasValidProvenance,
+    ),
+    // The nullable Profile fields each carry provenance exactly when they have a value to
+    // attribute. See `NULLABLE_FIELDS` in `db/provenance.ts`.
     ...NULLABLE_FIELDS.flatMap((field) => [
       `(${field} is null) = (provenance ->> '${field}' is null)`,
       `(${field} is null or ${hasValidProvenance(field)})`,
@@ -136,6 +144,15 @@ export const profiles = pgTable(
      * unenforceable and unverifiable.
      */
     location: text("location"),
+    /**
+     * The people a Source states are behind the company, as that Source stated them. One
+     * jsonb value rather than a child table because it arrives from one Source as a whole and
+     * is replaced as a whole on re-ingest, the same shape `provenance` has. Null when the
+     * Source stated nobody, never an empty list: see `founderListSchema`.
+     */
+    founders: jsonb("founders").$type<Founder[]>(),
+    /** The company's own links beyond `website`. Null when the Source stated none. */
+    links: jsonb("links").$type<CompanyLinks>(),
     provenance: jsonb("provenance").$type<ProfileProvenance>().notNull(),
     /**
      * The name reduced to what identity actually depends on: case-folded, with runs of

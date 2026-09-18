@@ -30,6 +30,8 @@ const SCRAPED_EXCEPT_STAGE: ProfileProvenance = {
   stage: "enriched",
   website: "scraped",
   location: "scraped",
+  founders: null,
+  links: null,
 };
 
 const SPROCKET: ProfileInput = {
@@ -157,6 +159,8 @@ describe("persistProfiles", () => {
     expect(row?.provenance).toEqual({
       ...SCRAPED_EXCEPT_STAGE,
       location: null,
+      founders: null,
+      links: null,
     });
     expect(row?.provenance.sector).toBe("scraped");
     expect(row?.provenance.stage).toBe("enriched");
@@ -324,6 +328,8 @@ describe("persistProfiles against a value a human put there", () => {
     stage: "jack",
     website: "jack",
     location: "jack",
+    founders: null,
+    links: null,
   };
 
   /** Sprocket as the next scrape finds it: it raised a round and describes itself anew. */

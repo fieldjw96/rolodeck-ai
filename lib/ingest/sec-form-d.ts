@@ -377,6 +377,9 @@ export function parseFormDFiling({
         website: null,
         // The filing's own sworn address, stated rather than derived.
         location: scraped,
+        // A filing states no team and no company links, and must not guess at either.
+        founders: null,
+        links: null,
       },
     },
   };
