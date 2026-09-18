@@ -11,6 +11,10 @@ type DialogProps = {
   /** Called for Escape, the close button and a click on the backdrop. The caller owns whether
    * the dialog is mounted, so closing is always the caller unmounting it. */
   onClose: () => void;
+  /** The element to return focus to on close. Pass it when the opener is a button: Safari does
+   * not focus a clicked button, so `document.activeElement` at mount is the body there. Without
+   * it, whatever had focus when the dialog mounted is used. */
+  returnFocusTo?: HTMLElement | null;
   children: ReactNode;
 };
 
@@ -24,18 +28,26 @@ const FOCUSABLE =
  *
  * Rendered into `document.body` so no ancestor's overflow or stacking context can clip it.
  */
-export function Dialog({ label, onClose, children }: DialogProps) {
+export function Dialog({
+  label,
+  onClose,
+  returnFocusTo,
+  children,
+}: DialogProps) {
   const panel = useRef<HTMLDivElement>(null);
   // Latest `onClose` without re-running the mount effect, which must run once: re-running it
   // would steal focus back to the close button and record the wrong element to return to.
   const close = useRef(onClose);
 
+  const returnTo = useRef(returnFocusTo);
+
   useEffect(() => {
     close.current = onClose;
+    returnTo.current = returnFocusTo;
   });
 
   useEffect(() => {
-    const opener =
+    const active =
       document.activeElement instanceof HTMLElement
         ? document.activeElement
         : null;
@@ -46,7 +58,7 @@ export function Dialog({ label, onClose, children }: DialogProps) {
 
     return () => {
       document.body.style.overflow = overflow;
-      opener?.focus();
+      (returnTo.current?.isConnected ? returnTo.current : active)?.focus();
     };
   }, []);
 

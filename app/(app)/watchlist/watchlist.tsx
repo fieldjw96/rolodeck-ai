@@ -68,6 +68,8 @@ async function fetchKept(): Promise<ProfilesPage> {
 export function Watchlist() {
   const [state, setState] = useState<WatchlistState>({ status: "loading" });
   const [openId, setOpenId] = useState<string | null>(null);
+  // The row button that opened the card, which the Dialog returns focus to on close.
+  const [opener, setOpener] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
     fetchKept()
@@ -148,7 +150,10 @@ export function Watchlist() {
               type="button"
               className={styles.open}
               aria-haspopup="dialog"
-              onClick={() => setOpenId(profile.id)}
+              onClick={(event) => {
+                setOpener(event.currentTarget);
+                setOpenId(profile.id);
+              }}
             >
               <span className={styles.openLabel}>Open {profile.name}</span>
             </button>
@@ -156,7 +161,11 @@ export function Watchlist() {
         ))}
       </ul>
       {open === undefined ? null : (
-        <Dialog label={open.name} onClose={() => setOpenId(null)}>
+        <Dialog
+          label={open.name}
+          returnFocusTo={opener}
+          onClose={() => setOpenId(null)}
+        >
           {/* The Deck's card, unchanged, with no Keep or Pass: the Watchlist is decisions
               already made. */}
           <ProfileCard
