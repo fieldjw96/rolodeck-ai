@@ -51,11 +51,12 @@ type UnsavedSwipe = {
 
 /**
  * How many Profiles may be left in hand, counting the one on screen, before the next page is
- * fetched. Fetching a page is one round trip, about 100 ms to production from the Bay Area
- * before the query itself, and a reader deciding as fast as they can read a name still spends a
- * few hundred milliseconds a Profile. Five Profiles is over a second of that pace: several page
- * fetches of headroom, so the next page is in hand before the reader reaches the end of this
- * one. In Profiles rather than time, because the reader's pace is what runs the Deck down.
+ * fetched. Fetching a page is one round trip, measured at about 100 ms to production before
+ * auth and the query are added, and a reader deciding as fast as they can read a name still
+ * spends a few hundred milliseconds a Profile. Five Profiles is over a second of that pace:
+ * several page fetches of headroom, so the next page is in hand before the reader reaches the
+ * end of this one. In Profiles rather than time, because the reader's pace is what runs the
+ * Deck down.
  */
 export const PREFETCH_AT_REMAINING = 5;
 
