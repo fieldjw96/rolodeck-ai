@@ -227,7 +227,6 @@ function FullCard({
             <CompanyPanel
               sector={sector}
               stage={stage}
-              description={description}
               location={location}
               founded={founded}
               teamSize={
@@ -250,14 +249,12 @@ function FullCard({
 function CompanyPanel({
   sector,
   stage,
-  description,
   location,
   founded,
   teamSize,
 }: {
   sector: string;
   stage: string;
-  description: string | undefined;
   location: string | null | undefined;
   founded: number | null | undefined;
   teamSize: number | null;
@@ -279,10 +276,8 @@ function CompanyPanel({
         )}
       </dl>
 
-      {description === undefined ? null : (
-        <p className={styles.description}>{description}</p>
-      )}
-
+      {/* No longer description than the header's one line is stored for any Source, so the
+          panel does not repeat it; the figures lead straight into the sectors. */}
       <ul className={styles.chips} aria-label="Sectors">
         <li className={styles.chip}>{sector}</li>
       </ul>
