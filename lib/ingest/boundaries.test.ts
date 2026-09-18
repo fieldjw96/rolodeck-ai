@@ -8,18 +8,20 @@ import {
 } from "../testing/sources";
 
 /**
- * Every Source parser under `lib/ingest` and `lib/news` reads bytes a caller already has, and four
+ * Every Source parser under `lib/ingest` and `lib/news` reads bytes a caller already has, and five
  * modules go and get them: `edgar.ts` for the SEC Form D Source, `accelerator-fetch.ts` for the
- * accelerator batch pages, `yc-fetch.ts` for Y Combinator's sitemap and company pages, and
- * `lib/news/feed-fetch.ts` for News's feeds. That split is what lets the parsers be tested
- * offline against committed captures, so it is asserted here rather than left to a comment.
+ * accelerator batch pages, `yc-fetch.ts` for Y Combinator's sitemap and company pages,
+ * `lib/news/feed-fetch.ts` for News's feeds, and `team-page-fetch.ts` for a company's own site,
+ * which the team-page enrichment reads (docs/adr/0016). That split is what lets the parsers be
+ * tested offline against committed captures, so it is asserted here rather than left to a comment.
  *
  * A file added tomorrow is covered too: this reads both trees rather than a hand-kept list, and
- * the only way to add a fifth fetching module is to say so on the line below.
+ * the only way to add a sixth fetching module is to say so on the line below.
  */
 const MAY_FETCH = new Set([
   "lib/ingest/accelerator-fetch.ts",
   "lib/ingest/edgar.ts",
+  "lib/ingest/team-page-fetch.ts",
   "lib/ingest/yc-fetch.ts",
   "lib/news/feed-fetch.ts",
 ]);
