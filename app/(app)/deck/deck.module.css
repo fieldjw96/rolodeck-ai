@@ -66,6 +66,46 @@
   background: var(--color-accent-hover);
 }
 
+/* A decision that did not save, named with a way to retry it. Styled after the danger state
+   notice, because it is the same kind of news, but compact: the card stays usable under it. */
+.unsaved {
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-danger-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-danger-soft);
+}
+
+.unsavedList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.unsavedItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  font-size: var(--text-sm);
+}
+
+.retry {
+  flex: none;
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text);
+  font-size: var(--text-sm);
+}
+
+.retry:hover:not(:disabled) {
+  background: var(--color-surface-muted);
+}
+
 .icon {
   width: var(--space-4);
   height: var(--space-4);
