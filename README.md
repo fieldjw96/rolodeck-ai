@@ -399,6 +399,31 @@ month unreported after that, which is a quiet month and not a stale selector, so
 a quiet month either: it fails to parse, and is named in the job summary. A failed run opens or comments on a GitHub issue titled "Ingest failure: `<source>`", so
 a Source down for a week produces one issue to read rather than seven to ignore.
 
+### The run that never happened
+
+A failed run is reported by the paragraph above. A run that never happened is not: it produces
+no run, no failure and no issue, and a silently dead scraper reads exactly like a quiet week.
+GitHub's scheduler is best-effort by its own documentation — delayed under load, occasionally
+dropped, and disabled outright after a period of repository inactivity, which would stop every
+Source at once. So `ingest-freshness.yml` runs daily at 16:10 UTC and asks of every Source
+whether it has completed successfully since its own previous scheduled occurrence, plus six
+hours of grace for that scheduling delay (`SCHEDULE_GRACE_MS` in `lib/ingest/freshness.ts`). One
+that has not gets an issue titled "Ingest Source has not run: `<source>`", saying when it last
+succeeded and when it should have — commented on rather than duplicated while it is still late,
+the same one-issue-per-Source convention a failed run uses.
+
+Which Sources are checked, and how often each is expected to run, come from the workflow files
+themselves: a Source is a workflow in `.github/workflows/` that calls `ingest-run.yml`, and its
+cadence is its own `schedule.cron`, read by `lib/ingest/workflow-schedules.ts` and turned into
+scheduled occurrences by a real cron parser. Add a Source with a cron and it is watched; change
+a cron and the check follows it. Nothing about a schedule is written down twice.
+
+The check is itself a scheduled workflow, so whatever would silence every Source would silence
+it too, and it cannot detect its own absence. It is partly self-healing — because the question
+is "has it succeeded since its last occurrence", a check that misses a day reports the same
+Source the next day with the gap intact rather than reset — but closing that properly needs a
+watcher that does not depend on GitHub's scheduler at all.
+
 ## News
 
 News is articles about the Company Profiles you Kept, read from the RSS feeds publishers offer
