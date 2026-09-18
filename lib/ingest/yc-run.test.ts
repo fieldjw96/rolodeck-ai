@@ -239,7 +239,9 @@ describe("persistYcProfiles, against a real database", () => {
     expect(row?.links).toEqual({ github: "https://github.com/stripe" });
 
     // And a run whose page stops stating either clears both, provenance with them.
-    const { founders: _founders, links: _links, ...silent } = stripe.input;
+    const silent = { ...stripe.input };
+    delete silent.founders;
+    delete silent.links;
     await persistYcProfiles(scratch.db, [
       {
         input: silent,

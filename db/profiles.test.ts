@@ -331,7 +331,9 @@ describe("profiles founders and links", () => {
       })
       .returning();
 
-    expect(written?.founders).toEqual([{ name: "Ada Example", bio: "Retired" }]);
+    expect(written?.founders).toEqual([
+      { name: "Ada Example", bio: "Retired" },
+    ]);
     expect(written?.links).toEqual({ github: "https://github.com/sprocket" });
   });
 
@@ -360,7 +362,9 @@ describe("profiles founders and links", () => {
 
   it("still accepts a row written before either existed, which the migration does not backfill", async () => {
     // A row from before migration 0010 has neither column set nor either key in its provenance.
-    const { founders: _founders, links: _links, ...before } = MIXED_PROVENANCE;
+    const before: Partial<ProfileProvenance> = { ...MIXED_PROVENANCE };
+    delete before.founders;
+    delete before.links;
 
     const [written] = await scratch.db
       .insert(profiles)

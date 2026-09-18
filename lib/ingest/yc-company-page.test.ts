@@ -474,7 +474,9 @@ describe("the founders and links a page states", () => {
 
   it("stores a one-word biography exactly as stated", () => {
     const founders = parsedPage({
-      founders: [{ full_name: "Ada Example", title: "", founder_bio: "Retired" }],
+      founders: [
+        { full_name: "Ada Example", title: "", founder_bio: "Retired" },
+      ],
     }).input.founders;
 
     expect(founders).toEqual([{ name: "Ada Example", bio: "Retired" }]);
