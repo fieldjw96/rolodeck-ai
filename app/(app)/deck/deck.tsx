@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import type { CompanyLinks, Founder } from "../../../db/profile-input";
 import { ProfileCard } from "../../../lib/ui/profile-card";
 import { StateNotice } from "../../../lib/ui/state-notice";
 import styles from "./deck.module.css";
@@ -12,7 +13,10 @@ type Profile = {
   description: string;
   sector: string;
   stage: string;
+  website: string | null;
   location: string | null;
+  founders: Founder[] | null;
+  links: CompanyLinks | null;
 };
 
 type ProfilesPage = {
@@ -201,6 +205,12 @@ export function Deck() {
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
+      // A key something inside the page has already claimed, such as an arrow key moving
+      // between the card's tabs, is not a Keep or a Pass.
+      if (event.defaultPrevented) {
+        return;
+      }
+
       if (event.key === "ArrowLeft") {
         decide("pass");
       } else if (event.key === "ArrowRight") {
@@ -250,13 +260,19 @@ export function Deck() {
 
   return (
     <main className={styles.deck}>
+      {/* Keyed by Profile, so every Profile opens on the Company tab rather than on
+          whichever tab the last one was left on. */}
       <ProfileCard
+        key={profile.id}
         headingLevel={1}
         name={profile.name}
         description={profile.description}
         sector={profile.sector}
         stage={profile.stage}
         location={profile.location}
+        website={profile.website}
+        founders={profile.founders}
+        links={profile.links}
       />
 
       {/*
