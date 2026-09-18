@@ -148,3 +148,56 @@ describe("parseProfileInput", () => {
     expect(result.rejection.field.length).toBeGreaterThan(0);
   });
 });
+
+describe("founders and links at the boundary", () => {
+  const withTeam = (extra: Record<string, unknown>) =>
+    parseProfileInput({ ...VALID_INPUT, ...extra });
+
+  it("accepts a founder stated by name alone", () => {
+    const result = withTeam({ founders: [{ name: "Ada Example" }] });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects an empty founder list, which would claim a company has no founders", () => {
+    const result = withTeam({ founders: [] });
+
+    expect(result.success).toBe(false);
+    if (result.success) return;
+    expect(result.rejection.field).toBe("founders");
+  });
+
+  it("rejects a founder with no name, naming the field", () => {
+    const result = withTeam({ founders: [{ role: "CEO" }] });
+
+    expect(result.success).toBe(false);
+    if (result.success) return;
+    expect(result.rejection.field).toBe("founders.0.name");
+  });
+
+  it("rejects a founder carrying a key it does not know, such as an email", () => {
+    const result = withTeam({
+      founders: [{ name: "Ada Example", email: "ada@example.com" }],
+    });
+
+    expect(result.success).toBe(false);
+    if (result.success) return;
+    expect(result.rejection.field).toBe("founders.0");
+  });
+
+  it("rejects links that state none, which should be absent instead", () => {
+    const result = withTeam({ links: {} });
+
+    expect(result.success).toBe(false);
+    if (result.success) return;
+    expect(result.rejection.field).toBe("links");
+  });
+
+  it("rejects a link that is not http(s), naming it", () => {
+    const result = withTeam({ links: { github: "javascript:alert(1)" } });
+
+    expect(result.success).toBe(false);
+    if (result.success) return;
+    expect(result.rejection.field).toBe("links.github");
+  });
+});

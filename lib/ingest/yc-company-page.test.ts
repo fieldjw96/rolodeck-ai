@@ -258,6 +258,8 @@ describe("provenance", () => {
       stage: "enriched",
       website: "scraped",
       location: null,
+      founders: "scraped",
+      links: "scraped",
     });
   });
 
@@ -409,5 +411,156 @@ describe("parseCompanyPages", () => {
 
   it("returns an empty batch for no pages", () => {
     expect(parseCompanyPages([])).toEqual({ profiles: [], rejections: [] });
+  });
+});
+
+describe("the founders and links a page states", () => {
+  const SPROCKET = {
+    name: "Sprocket",
+    one_liner: "Developer tooling for warehouse robotics.",
+    tags: ["Robotics"],
+    team_size: 10,
+  };
+
+  const parsedPage = (company: Record<string, unknown>) => {
+    const result = parseCompanyPage(
+      pageWith({ ...SPROCKET, ...company }),
+      CAPTURE,
+    );
+    if (!result.success) {
+      throw new Error(
+        `rejected on ${result.rejection.field}: ${result.rejection.reason}`,
+      );
+    }
+    return result.profile;
+  };
+
+  const rejectionField = (company: Record<string, unknown>) => {
+    const result = parseCompanyPage(
+      pageWith({ ...SPROCKET, ...company }),
+      CAPTURE,
+    );
+    return result.success ? undefined : result.rejection.field;
+  };
+
+  it("stores each founder's stated name, role and links, and no biography where the page states none", () => {
+    // Stripe's founders have an empty `founder_bio`: stored without one, not rejected.
+    expect(parsed("yc-stripe").input.founders).toEqual([
+      {
+        name: "Patrick Collison",
+        role: "Founder/CEO",
+        linkedin: "https://www.linkedin.com/in/patrickcollison/",
+        twitter: "https://twitter.com/patrickc",
+      },
+      {
+        name: "John Collison",
+        role: "Founder/President",
+        linkedin: "https://www.linkedin.com/in/johnbcollison/",
+        twitter: "https://twitter.com/collision",
+      },
+    ]);
+  });
+
+  it("carries a founder's biography as stated, and drops only the links the page left blank", () => {
+    const [amit, shashank] = parsed("yc-buxfer").input.founders ?? [];
+
+    expect(amit?.bio).toMatch(/^Amit Manjhi is a 3x founder/);
+    expect(shashank).toEqual({
+      name: "Shashank Pandit",
+      role: "Founder",
+      linkedin: "https://www.linkedin.com/in/shashankpandit",
+    });
+  });
+
+  it("stores a one-word biography exactly as stated", () => {
+    const founders = parsedPage({
+      founders: [{ full_name: "Ada Example", title: "", founder_bio: "Retired" }],
+    }).input.founders;
+
+    expect(founders).toEqual([{ name: "Ada Example", bio: "Retired" }]);
+  });
+
+  it("stores the company's own links beyond its website, and only those it states", () => {
+    expect(parsed("yc-stripe").input.links).toEqual({
+      linkedin: "https://www.linkedin.com/company/stripe/",
+      twitter: "https://twitter.com/stripe",
+      github: "https://github.com/stripe",
+    });
+    // Buxfer's `linkedin_url` is an empty string and its `github_url` is null.
+    expect(parsed("yc-buxfer").input.links).toEqual({
+      twitter: "https://twitter.com/buxfer",
+    });
+  });
+
+  it("attributes both scraped when the page states them, since nothing about them is derived", () => {
+    const { attribution } = parsed("yc-stripe");
+
+    expect(attribution.founders).toEqual({
+      ...fixture("yc-stripe").capture,
+      provenance: "scraped",
+    });
+    expect(attribution.links).toEqual({
+      ...fixture("yc-stripe").capture,
+      provenance: "scraped",
+    });
+  });
+
+  it("leaves links absent, and their provenance null, when every one the page carries is blank", () => {
+    // Lawdingo's company `linkedin_url` and `twitter_url` are empty and its `github_url` null.
+    const { input, attribution } = parsed("yc-lawdingo");
+
+    expect(input.links).toBeUndefined();
+    expect(attribution.links).toBeNull();
+  });
+
+  it.each([
+    ["an empty list", []],
+    ["null", null],
+    ["no key at all", undefined],
+  ])(
+    "leaves founders absent, never an empty list, when the page states %s",
+    (_, founders) => {
+      const { input, attribution } = parsedPage({ founders });
+
+      expect(input.founders).toBeUndefined();
+      expect(attribution.founders).toBeNull();
+    },
+  );
+
+  it("never reads an email or a photograph, whatever the page carries", () => {
+    const founders = parsedPage({
+      founders: [
+        {
+          full_name: "Ada Example",
+          has_email: true,
+          avatar_thumb_url: "https://example.com/ada.png",
+        },
+      ],
+    }).input.founders;
+
+    expect(founders).toEqual([{ name: "Ada Example" }]);
+  });
+
+  it("rejects a founder list that has changed shape, naming the field", () => {
+    expect(rejectionField({ founders: [{ name: "Ada Example" }] })).toBe(
+      "props.company.founders.0.full_name",
+    );
+    expect(rejectionField({ founders: "Ada Example" })).toBe(
+      "props.company.founders",
+    );
+  });
+
+  it("rejects a founder with a blank name, or a link that is not http(s), naming the field", () => {
+    expect(rejectionField({ founders: [{ full_name: "  " }] })).toBe(
+      "founders.0.name",
+    );
+    expect(
+      rejectionField({
+        founders: [
+          { full_name: "Ada Example", twitter_url: "javascript:alert(1)" },
+        ],
+      }),
+    ).toBe("founders.0.twitter");
+    expect(rejectionField({ github_url: "not a url" })).toBe("links.github");
   });
 });

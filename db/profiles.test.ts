@@ -304,3 +304,73 @@ describe("profiles row level security", () => {
     expect(rows.map((row) => row.name)).toEqual(["Not Jack's"]);
   });
 });
+
+describe("profiles founders and links", () => {
+  const SPROCKET = {
+    ownerId: JACK,
+    source: "test",
+    name: "Sprocket",
+    description: "Developer tooling for warehouse robotics.",
+    sector: "hardware-robotics",
+    stage: "seed",
+    website: "https://sprocket.example",
+  };
+
+  it("stores both as stated, each attributed", async () => {
+    const [written] = await scratch.db
+      .insert(profiles)
+      .values({
+        ...SPROCKET,
+        founders: [{ name: "Ada Example", bio: "Retired" }],
+        links: { github: "https://github.com/sprocket" },
+        provenance: {
+          ...MIXED_PROVENANCE,
+          founders: "scraped",
+          links: "scraped",
+        },
+      })
+      .returning();
+
+    expect(written?.founders).toEqual([{ name: "Ada Example", bio: "Retired" }]);
+    expect(written?.links).toEqual({ github: "https://github.com/sprocket" });
+  });
+
+  it("rejects founders stated with no provenance to attribute them", async () => {
+    const violated = await constraintViolatedBy(
+      scratch.db.insert(profiles).values({
+        ...SPROCKET,
+        founders: [{ name: "Ada Example" }],
+        provenance: MIXED_PROVENANCE,
+      }),
+    );
+
+    expect(violated).toBe("profiles_provenance_covers_every_field");
+  });
+
+  it("rejects provenance for links nobody stated", async () => {
+    const violated = await constraintViolatedBy(
+      scratch.db.insert(profiles).values({
+        ...SPROCKET,
+        provenance: { ...MIXED_PROVENANCE, links: "scraped" },
+      }),
+    );
+
+    expect(violated).toBe("profiles_provenance_covers_every_field");
+  });
+
+  it("still accepts a row written before either existed, which the migration does not backfill", async () => {
+    // A row from before migration 0010 has neither column set nor either key in its provenance.
+    const { founders: _founders, links: _links, ...before } = MIXED_PROVENANCE;
+
+    const [written] = await scratch.db
+      .insert(profiles)
+      .values({
+        ...SPROCKET,
+        provenance: before as ProfileProvenance,
+      })
+      .returning();
+
+    expect(written?.founders).toBeNull();
+    expect(written?.links).toBeNull();
+  });
+});

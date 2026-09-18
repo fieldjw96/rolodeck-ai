@@ -153,6 +153,8 @@ describe("GET /api/profiles", () => {
       stage: "jack",
       website: null,
       location: null,
+      founders: null,
+      links: null,
     });
   });
 

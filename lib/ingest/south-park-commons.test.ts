@@ -124,6 +124,8 @@ describe("provenance", () => {
       stage: "enriched",
       website: null,
       location: null,
+      founders: null,
+      links: null,
     });
   });
 });

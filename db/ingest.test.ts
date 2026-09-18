@@ -596,6 +596,22 @@ describe("persistProfiles rejections", () => {
     expect(rows.map((row) => row.name)).toEqual(["Second Co"]);
   });
 
+  it("rejects founders left unattributed rather than letting the check constraint abort the batch", async () => {
+    const report = await persistProfiles(scratch.db, {
+      source: "yc",
+      candidates: [
+        {
+          input: { ...SPROCKET, founders: [{ name: "Ada Example" }] },
+          provenance: { ...SCRAPED_EXCEPT_STAGE, location: null },
+        },
+        candidateFor({ ...SPROCKET, name: "Second Co" }),
+      ],
+    });
+
+    expect(report.rejections[0]?.field).toBe("provenance.founders");
+    expect(report.inserted).toBe(1);
+  });
+
   it("carries the offending record back with the rejection", async () => {
     const bad = malformed({ ...SPROCKET, name: "   " });
 
