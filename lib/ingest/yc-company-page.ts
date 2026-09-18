@@ -38,13 +38,6 @@ import { stageFromTeamSize } from "./stage";
 export type CompanyPageResult = ScrapedProfileResult;
 
 /**
- * The shape a YC company page's embedded payload has to have for a Profile to be readable
- * from it. Deliberately loose about keys we do not use — the payload carries dozens, and a
- * new one is not a reason to stop ingesting — and strict about the ones we do, so a field
- * that disappears or changes type fails here, naming itself, rather than arriving as
- * `undefined` further down.
- */
-/**
  * One entry in the page's `founders`. Loose for the same reason the company is: the payload
  * also carries `avatar_thumb_url` and `has_email`, which are deliberately never read. There is
  * no photograph, and YC states only that an email exists for its own introduction flow, never
@@ -58,6 +51,13 @@ const ycFounderSchema = z.looseObject({
   twitter_url: z.string().nullish(),
 });
 
+/**
+ * The shape a YC company page's embedded payload has to have for a Profile to be readable
+ * from it. Deliberately loose about keys we do not use — the payload carries dozens, and a
+ * new one is not a reason to stop ingesting — and strict about the ones we do, so a field
+ * that disappears or changes type fails here, naming itself, rather than arriving as
+ * `undefined` further down.
+ */
 const ycCompanySchema = z.looseObject({
   name: z.string(),
   one_liner: z.string().nullish(),

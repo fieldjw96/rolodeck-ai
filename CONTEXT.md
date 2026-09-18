@@ -16,6 +16,13 @@ One startup's record in the Deck: name, description, sector, stage, and provenan
 just "Profile"; qualify it always now that **User Profile** below is a distinct thing.
 _Avoid_: card, entry, listing, and the bare word Profile
 
+**Founder**:
+A person a Source states is behind a Company Profile, stored as that Source stated them: name,
+and where stated, role, biography and links. Never an email address. Founders are the subject
+of the product and never its users, and not entities of their own: someone who founded two
+companies is two Founders.
+_Avoid_: team member, contact, person
+
 **User Profile**:
 The owner's stated preferences, which rank the Deck: sectors, stages, area, exclusions.
 _Avoid_: settings, preferences, brief
