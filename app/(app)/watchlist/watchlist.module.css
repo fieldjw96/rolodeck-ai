@@ -39,3 +39,26 @@
   gap: var(--space-4);
   list-style: none;
 }
+
+.row {
+  position: relative;
+}
+
+/* Covers the whole row, so a click anywhere on the card opens it. The visible text is the
+   card's own; this only carries the name assistive tech reads. */
+.open {
+  position: absolute;
+  inset: 0;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-lg);
+}
+
+.openLabel {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

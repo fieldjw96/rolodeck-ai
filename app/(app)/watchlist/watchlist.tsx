@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 
+import type { CompanyLinks, Founder } from "../../../db/profile-input";
+import { Dialog } from "../../../lib/ui/dialog";
 import { ProfileCard } from "../../../lib/ui/profile-card";
 import { StateNotice } from "../../../lib/ui/state-notice";
 import styles from "./watchlist.module.css";
@@ -12,6 +14,11 @@ type KeptProfile = {
   sector: string;
   stage: string;
   location: string | null;
+  // What the full card reads. `GET /api/profiles` sends all of it with every Profile.
+  description?: string;
+  website?: string | null;
+  founders?: Founder[] | null;
+  links?: CompanyLinks | null;
 };
 
 type ProfilesPage = {
@@ -60,6 +67,7 @@ async function fetchKept(): Promise<ProfilesPage> {
  */
 export function Watchlist() {
   const [state, setState] = useState<WatchlistState>({ status: "loading" });
+  const [openId, setOpenId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchKept()
@@ -113,6 +121,7 @@ export function Watchlist() {
   }
 
   const count = state.profiles.length;
+  const open = state.profiles.find((profile) => profile.id === openId);
 
   return (
     <main className={styles.watchlist}>
@@ -124,7 +133,7 @@ export function Watchlist() {
       </div>
       <ul className={styles.grid}>
         {state.profiles.map((profile) => (
-          <li key={profile.id}>
+          <li key={profile.id} className={styles.row}>
             <ProfileCard
               compact
               headingLevel={2}
@@ -133,9 +142,36 @@ export function Watchlist() {
               stage={profile.stage}
               location={profile.location}
             />
+            {/* The row's way in: a button stretched over the compact card, so the card keeps
+                showing exactly what it did and the control is a real one. */}
+            <button
+              type="button"
+              className={styles.open}
+              aria-haspopup="dialog"
+              onClick={() => setOpenId(profile.id)}
+            >
+              <span className={styles.openLabel}>Open {profile.name}</span>
+            </button>
           </li>
         ))}
       </ul>
+      {open === undefined ? null : (
+        <Dialog label={open.name} onClose={() => setOpenId(null)}>
+          {/* The Deck's card, unchanged, with no Keep or Pass: the Watchlist is decisions
+              already made. */}
+          <ProfileCard
+            headingLevel={2}
+            name={open.name}
+            description={open.description}
+            sector={open.sector}
+            stage={open.stage}
+            location={open.location}
+            website={open.website}
+            founders={open.founders}
+            links={open.links}
+          />
+        </Dialog>
+      )}
     </main>
   );
 }
