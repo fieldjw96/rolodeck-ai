@@ -11,7 +11,7 @@ import {
 import { afterEach, describe, expect, it } from "vitest";
 
 import type { Founder } from "../../db/profile-input";
-import { initialsOf, ProfileCard } from "./profile-card";
+import { firstSentence, initialsOf, ProfileCard } from "./profile-card";
 
 afterEach(cleanup);
 
@@ -249,6 +249,43 @@ describe("the full card", () => {
     expect(
       screen.getByText("Security analytics for the enterprise."),
     ).toBeInTheDocument();
+  });
+
+  it("puts the first sentence in the header and the longer description on the Company panel", () => {
+    const description =
+      "Security analytics for the enterprise. Versive finds threats in network data before they become breaches.";
+    renderFull({ description });
+
+    const header = screen
+      .getByRole("heading", { level: 1, name: "Versive" })
+      .closest("header");
+    expect(header).toHaveTextContent(
+      /^VersiveSecurity analytics for the enterprise\.$/,
+    );
+    expect(
+      within(screen.getByRole("tabpanel", { name: "Company" })).getByText(
+        description,
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("does not repeat a one-sentence description on the Company panel", () => {
+    renderFull();
+
+    expect(
+      within(screen.getByRole("tabpanel", { name: "Company" })).queryByText(
+        "Security analytics for the enterprise.",
+      ),
+    ).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ["Widgets, but faster.", "Widgets, but faster."],
+    ["No full stop at all", "No full stop at all"],
+    ["  One. Two! Three?  ", "One."],
+    ["Version 2.0 ships today. More soon.", "Version 2.0 ships today."],
+  ])("takes %j's first sentence as %j", (description, expected) => {
+    expect(firstSentence(description)).toBe(expected);
   });
 
   it("shows the founders as initials above the tabs, with a count beside them", () => {

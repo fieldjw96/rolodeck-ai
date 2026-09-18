@@ -172,7 +172,7 @@ function FullCard({
           {name}
         </Heading>
         {description === undefined ? null : (
-          <p className={styles.tagline}>{description}</p>
+          <p className={styles.tagline}>{firstSentence(description)}</p>
         )}
       </header>
 
@@ -224,6 +224,7 @@ function FullCard({
         >
           {tab === "company" ? (
             <CompanyPanel
+              description={description}
               sector={sector}
               stage={stage}
               location={location}
@@ -246,12 +247,14 @@ function FullCard({
 }
 
 function CompanyPanel({
+  description,
   sector,
   stage,
   location,
   founded,
   teamSize,
 }: {
+  description: string | undefined;
   sector: string;
   stage: string;
   location: string | null | undefined;
@@ -275,13 +278,31 @@ function CompanyPanel({
         )}
       </dl>
 
-      {/* No longer description than the header's one line is stored for any Source, so the
-          panel does not repeat it; the figures lead straight into the sectors. */}
+      {/* The longer description, in full, where the header could only carry its first
+          sentence. One that is a single sentence already reads whole in the header, so the
+          panel does not repeat it and the figures lead straight into the sectors. */}
+      {description === undefined ||
+      firstSentence(description) === description.trim() ? null : (
+        <p className={styles.longDescription}>{description.trim()}</p>
+      )}
+
       <ul className={styles.chips} aria-label="Sectors">
         <li className={styles.chip}>{sector}</li>
       </ul>
     </>
   );
+}
+
+/**
+ * The header's one line: a Profile stores one description, which for a Source like YC is a
+ * paragraph, so the header takes its first sentence and the Company panel carries the rest.
+ * A sentence ends at `.`, `!` or `?` followed by whitespace; a description with no such break
+ * is one sentence, returned whole.
+ */
+export function firstSentence(description: string): string {
+  const trimmed = description.trim();
+  const end = /[.!?](?=\s)/.exec(trimmed);
+  return end === null ? trimmed : trimmed.slice(0, end.index + 1);
 }
 
 function Figure({

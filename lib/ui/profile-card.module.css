@@ -99,6 +99,12 @@
   letter-spacing: var(--tracking-tight);
 }
 
+/* The Company panel's full description, where the header carries only its first sentence. */
+.longDescription {
+  line-height: var(--leading-normal);
+  overflow-wrap: anywhere;
+}
+
 .tagline {
   font-size: var(--text-lg);
   font-style: italic;
