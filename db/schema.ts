@@ -153,6 +153,14 @@ export const profiles = pgTable(
     founders: jsonb("founders").$type<Founder[]>(),
     /** The company's own links beyond `website`. Null when the Source stated none. */
     links: jsonb("links").$type<CompanyLinks>(),
+    /**
+     * When the team-page enrichment last read this company's own site looking for founders, or
+     * null if it never has. Not a Profile field and so not provenanced, like `created_at`: it
+     * says what ingest did, not what the company is. It is what tells "never looked" apart from
+     * "looked, and the page named nobody", which `founders` being null cannot say on its own
+     * because null there already means the Source stated none. See docs/adr/0016.
+     */
+    foundersSoughtAt: timestamp("founders_sought_at", { withTimezone: true }),
     provenance: jsonb("provenance").$type<ProfileProvenance>().notNull(),
     /**
      * The name reduced to what identity actually depends on: case-folded, with runs of
