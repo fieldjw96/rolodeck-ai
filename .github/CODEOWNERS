@@ -6,19 +6,16 @@
 #                       undone by reverting a commit.
 #   CODEOWNERS          is this rule. It should not be editable by the thing it constrains.
 #
-# This file does not stop anything, and it is written down here so that nobody reads it as
-# though it does.
+# This file does not stop anything. See docs/adr/0017, which amends ADR 0012 on exactly this
+# point and records why, what was considered instead, and what it costs.
 #
-# Two reasons, either of which would be enough. The branch ruleset's only bypass actor is the
-# repository admin role, always, and Runs act as Jack, who holds it. And the review this file
-# asks for cannot be given: GitHub does not let anyone approve their own pull request, and a
-# Run's pull request is authored by Jack, so his code-owner approval on it is impossible
-# rather than merely missing. #147 changed a workflow and merged without him seeing it.
+# The short version: the ruleset's only bypass actor is the admin role the Runs act as, and a
+# Run's pull request is authored by Jack, who cannot approve his own, so the review this file
+# asks for is impossible rather than merely missing. #147 changed a workflow and merged
+# without him seeing it.
 #
-# Making it real would mean the Runs having a GitHub identity of their own. That was
-# considered on 2026-09-18 and deliberately not done: this is a single-player repo and every
-# commit in it is Jack's either way. What the file is for now is flagging: a pull request
-# touching one of these paths should say so plainly, because nothing else will.
+# What the file is for is flagging: a pull request touching one of these paths should say so
+# plainly in its body, because nothing else will.
 
 /.github/workflows/   @fieldjw96
 /db/migrations/       @fieldjw96

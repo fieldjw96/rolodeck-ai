@@ -29,6 +29,12 @@ about. Green checks describe the world when they ran, and nothing before now re-
 
 **Three paths still require Jack's own approval**, listed in `.github/CODEOWNERS`:
 
+> **Amended by ADR 0017.** This paragraph no longer holds. The approval it describes was never
+> enforced and cannot be: the ruleset's only bypass actor is the admin role the Runs act as,
+> and a Run's pull request is authored by Jack, who cannot approve his own. The paths stay
+> listed as a flag. The reasons below for caring about each one still stand, and so does the
+> rest of this ADR.
+
 - `.github/workflows/` is the Gate itself. A Run that weakened `claude-review.yml` or
   `ci.yml` would face no reviewer on the pull request after it, and the change would be in
   force for every Run that followed.

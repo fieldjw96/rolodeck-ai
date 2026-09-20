@@ -69,16 +69,12 @@ Gate itself; `db/migrations/`, because reverting a commit does not unmake a sche
 CODEOWNERS, because a rule should not be editable by what it constrains.
 
 **Those three are advisory, not enforced, and a Run must not read them as a gate it cannot
-pass.** The ruleset's only bypass actor is the repository admin role, and Runs act as Jack, who
-holds it. Worse, the rule they would otherwise trigger is unsatisfiable: GitHub does not let
-anyone approve their own pull request, and a Run's pull request is authored by Jack, so his
-code-owner approval on it is impossible rather than merely absent. rolodeck-ai#147 changed a
-workflow and merged without him seeing it.
+pass.** See ADR 0017, which amends ADR 0012 on this one point: the approval ADR 0012 described
+was never enforced and cannot be, because the ruleset's only bypass actor is the admin role the
+Runs act as, and a Run's pull request is authored by Jack, who cannot approve his own.
 
 What they mean in practice is that a change to one of these paths is worth saying so plainly in
-the pull request, because nothing will stop it. Making them real would mean the Runs having a
-GitHub identity of their own; that was considered on 2026-09-18 and deliberately not done, on
-the grounds that this is a single-player repo and every commit in it is Jack's anyway.
+the pull request, because nothing will stop it.
 
 See ADR 0012, which supersedes ADR 0001. The `agent-harness` ADRs that ADR 0001 referred to
 are archived along with that repo; `foreman` replaced it.
