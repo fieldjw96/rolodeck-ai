@@ -1,4 +1,5 @@
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -13,6 +14,8 @@ import {
   EMPTY_DECK_MESSAGE,
   LOAD_ERROR_MESSAGE,
   LOADING_DECK_MESSAGE,
+  PREFETCH_AT_REMAINING,
+  unsavedMessage,
 } from "./deck";
 
 type Profile = {
@@ -42,6 +45,24 @@ const globex: Profile = {
   location: null,
 };
 
+const initech: Profile = {
+  id: "33333333-3333-3333-3333-333333333333",
+  name: "Initech",
+  description: "Reports, with cover sheets.",
+  sector: "SaaS",
+  stage: "Seed",
+  location: null,
+};
+
+const hooli: Profile = {
+  id: "44444444-4444-4444-4444-444444444444",
+  name: "Hooli",
+  description: "Making the world a better place.",
+  sector: "Consumer",
+  stage: "Growth",
+  location: null,
+};
+
 function jsonResponse(body: unknown): Response {
   return { ok: true, json: async () => body } as Response;
 }
@@ -67,6 +88,64 @@ function stubFetch(answers: Record<string, unknown>): ReturnType<typeof vi.fn> {
   vi.stubGlobal("fetch", fetchMock);
 
   return fetchMock;
+}
+
+/**
+ * Answers GETs from `pages` at once, except those whose URL is in `held`, and holds every
+ * swipe POST open until the test answers it by URL with a status. That is what lets a test
+ * look at the Deck with a write still in flight, or finish writes in whatever order it likes.
+ */
+function stubSwipes(pages: Record<string, unknown>, held: string[] = []) {
+  const open: { url: string; settle: (response: Response) => void }[] = [];
+  const posted: string[] = [];
+  const fetched: string[] = [];
+
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === "string" ? input : input.toString();
+
+      if ((init?.method ?? "GET") === "POST") {
+        posted.push(url);
+        return new Promise<Response>((settle) => open.push({ url, settle }));
+      }
+
+      fetched.push(url);
+      const body = pages[`GET ${url}`];
+
+      if (body === undefined) {
+        throw new Error(`unexpected fetch: GET ${url}`);
+      }
+
+      if (held.includes(url)) {
+        return new Promise<Response>((settle) =>
+          open.push({ url, settle: () => settle(jsonResponse(body)) }),
+        );
+      }
+
+      return jsonResponse(body);
+    }),
+  );
+
+  return {
+    posted: () => [...posted],
+    fetched: () => [...fetched],
+    pending: () => open.map((request) => request.url),
+    answer(url: string, status: number) {
+      const at = open.findIndex((request) => request.url === url);
+
+      if (at === -1) {
+        throw new Error(`no pending request ${url}`);
+      }
+
+      const [request] = open.splice(at, 1);
+      request!.settle(
+        (status < 400
+          ? { ok: true, status, json: async () => ({}) }
+          : { ok: false, status }) as Response,
+      );
+    },
+  };
 }
 
 /**
@@ -370,18 +449,10 @@ describe("the Deck", () => {
     );
   });
 
-  it("does not advance the Deck when a swipe request fails", async () => {
-    const fetchMock = vi.fn(
-      async (_input: RequestInfo | URL, init?: RequestInit) => {
-        if ((init?.method ?? "GET") === "GET") {
-          return jsonResponse({ profiles: [acme, globex], next_cursor: null });
-        }
-
-        return { ok: false, status: 500 } as Response;
-      },
-    );
-
-    vi.stubGlobal("fetch", fetchMock);
+  it("shows the next Profile the instant Keep is clicked, before the swipe has been recorded", async () => {
+    const swipes = stubSwipes({
+      "GET /api/profiles": { profiles: [acme, globex], next_cursor: null },
+    });
 
     render(<Deck />);
 
@@ -389,26 +460,89 @@ describe("the Deck", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Keep" }));
 
-    await waitFor(() =>
-      expect(fetchMock).toHaveBeenCalledWith(
-        `/api/profiles/${acme.id}/keep`,
-        expect.objectContaining({ method: "POST" }),
-      ),
-    );
-
-    expect(screen.getByRole("heading", { name: "Acme" })).toBeInTheDocument();
+    // Synchronously, with the POST still unanswered: nothing on the network sits between
+    // the click and the next card.
+    expect(swipes.pending()).toEqual([`/api/profiles/${acme.id}/keep`]);
+    expect(screen.getByRole("heading", { name: "Globex" })).toBeInTheDocument();
   });
 
-  it("ignores a second decision made before the first swipe has settled", async () => {
-    const fetchMock = stubFetch({
+  it("shows the next Profile the instant an arrow key decides, before the swipe has been recorded", async () => {
+    const swipes = stubSwipes({
+      "GET /api/profiles": { profiles: [acme, globex], next_cursor: null },
+    });
+
+    render(<Deck />);
+
+    await screen.findByRole("heading", { name: "Acme" });
+
+    fireEvent.keyDown(window, { key: "ArrowLeft" });
+
+    expect(swipes.pending()).toEqual([`/api/profiles/${acme.id}/pass`]);
+    expect(screen.getByRole("heading", { name: "Globex" })).toBeInTheDocument();
+  });
+
+  it("names the company and decision of a swipe that failed to save, without going back to it, and retries it", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const swipes = stubSwipes({
+      "GET /api/profiles": { profiles: [acme, globex], next_cursor: null },
+    });
+
+    render(<Deck />);
+
+    await screen.findByRole("heading", { name: "Acme" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Keep" }));
+    await act(async () => swipes.answer(`/api/profiles/${acme.id}/keep`, 500));
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      unsavedMessage("Acme", "keep"),
+    );
+    // The reader stays where they had moved on to.
+    expect(screen.getByRole("heading", { name: "Globex" })).toBeInTheDocument();
+
+    const retry = screen.getByRole("button", { name: "Retry Keep on Acme" });
+    fireEvent.click(retry);
+    fireEvent.click(retry);
+
+    // A retry clicked twice is still one write.
+    expect(swipes.pending()).toEqual([`/api/profiles/${acme.id}/keep`]);
+
+    await act(async () => swipes.answer(`/api/profiles/${acme.id}/keep`, 200));
+
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(swipes.posted()).toEqual([
+      `/api/profiles/${acme.id}/keep`,
+      `/api/profiles/${acme.id}/keep`,
+    ]);
+  });
+
+  it("keeps a failed swipe on screen after the Deck runs out", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const swipes = stubSwipes({
+      "GET /api/profiles": { profiles: [acme], next_cursor: null },
+    });
+
+    render(<Deck />);
+
+    await screen.findByRole("heading", { name: "Acme" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Pass" }));
+    expect(screen.getByText(EMPTY_DECK_MESSAGE)).toBeInTheDocument();
+
+    await act(async () => swipes.answer(`/api/profiles/${acme.id}/pass`, 500));
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      unsavedMessage("Acme", "pass"),
+    );
+  });
+
+  it("records three swipes in rapid succession as three distinct decisions, each exactly once", async () => {
+    const swipes = stubSwipes({
       "GET /api/profiles": {
-        profiles: [acme, globex],
+        profiles: [acme, globex, initech, hooli],
         next_cursor: null,
-      },
-      [`POST /api/profiles/${acme.id}/keep`]: {
-        profile_id: acme.id,
-        decision: "keep",
-        decided_at: new Date().toISOString(),
       },
     });
 
@@ -416,18 +550,126 @@ describe("the Deck", () => {
 
     await screen.findByRole("heading", { name: "Acme" });
 
-    const keepButton = screen.getByRole("button", { name: "Keep" });
-    fireEvent.click(keepButton);
-    fireEvent.click(keepButton);
+    // Faster than any write can come back, and than React can re-render between them for
+    // the second click on the same button.
+    const keep = screen.getByRole("button", { name: "Keep" });
+    fireEvent.click(keep);
+    fireEvent.click(keep);
+    fireEvent.keyDown(window, { key: "ArrowLeft" });
+
+    expect(screen.getByRole("heading", { name: "Hooli" })).toBeInTheDocument();
+    expect(swipes.posted()).toEqual([
+      `/api/profiles/${acme.id}/keep`,
+      `/api/profiles/${globex.id}/keep`,
+      `/api/profiles/${initech.id}/pass`,
+    ]);
+
+    // Completing out of order changes nothing about which Profile each was recorded against.
+    await act(async () => {
+      swipes.answer(`/api/profiles/${initech.id}/pass`, 200);
+      swipes.answer(`/api/profiles/${acme.id}/keep`, 200);
+      swipes.answer(`/api/profiles/${globex.id}/keep`, 200);
+    });
+
+    expect(swipes.posted()).toHaveLength(3);
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("fetches the next page ahead of need, so a swipe across the page boundary does not wait", async () => {
+    const swipes = stubSwipes({
+      "GET /api/profiles": {
+        profiles: [acme, globex],
+        next_cursor: "cursor-1",
+      },
+      "GET /api/profiles?cursor=cursor-1": {
+        profiles: [initech],
+        next_cursor: null,
+      },
+    });
+
+    render(<Deck />);
+
+    await screen.findByRole("heading", { name: "Acme" });
+    // Two in hand is under `PREFETCH_AT_REMAINING`, so the next page is fetched as soon as
+    // the first one is dealt, before any decision.
+    expect(PREFETCH_AT_REMAINING).toBeGreaterThanOrEqual(2);
+    await waitFor(() =>
+      expect(swipes.fetched()).toContain("/api/profiles?cursor=cursor-1"),
+    );
+    await act(async () => {});
+
+    fireEvent.click(screen.getByRole("button", { name: "Keep" }));
+    fireEvent.click(screen.getByRole("button", { name: "Keep" }));
+
+    // Across the boundary, synchronously.
+    expect(
+      screen.getByRole("heading", { name: "Initech" }),
+    ).toBeInTheDocument();
+  });
+
+  it("does not prefetch while more than PREFETCH_AT_REMAINING Profiles are in hand", async () => {
+    const page = Array.from({ length: PREFETCH_AT_REMAINING + 2 }, (_, i) => ({
+      ...acme,
+      id: `00000000-0000-0000-0000-${String(i).padStart(12, "0")}`,
+      name: `Company ${i}`,
+    }));
+
+    const swipes = stubSwipes({
+      "GET /api/profiles": { profiles: page, next_cursor: "cursor-1" },
+      "GET /api/profiles?cursor=cursor-1": { profiles: [], next_cursor: null },
+    });
+
+    render(<Deck />);
+
+    await screen.findByRole("heading", { name: "Company 0" });
+    fireEvent.click(screen.getByRole("button", { name: "Pass" }));
+    await act(async () => {});
+
+    expect(swipes.fetched()).not.toContain("/api/profiles?cursor=cursor-1");
+
+    fireEvent.click(screen.getByRole("button", { name: "Pass" }));
+
+    await waitFor(() =>
+      expect(swipes.fetched()).toContain("/api/profiles?cursor=cursor-1"),
+    );
+  });
+
+  it("never deals a decided Profile again, even if a page fetched while its write was in flight carries it", async () => {
+    const swipes = stubSwipes(
+      {
+        "GET /api/profiles": { profiles: [acme], next_cursor: "cursor-1" },
+        "GET /api/profiles?cursor=cursor-1": {
+          profiles: [acme, globex],
+          next_cursor: null,
+        },
+      },
+      ["/api/profiles?cursor=cursor-1"],
+    );
+
+    render(<Deck />);
+
+    await screen.findByRole("heading", { name: "Acme" });
+    fireEvent.click(screen.getByRole("button", { name: "Keep" }));
+
+    // Out of Profiles with the next page not yet in: the one wait left, and a rare one.
+    expect(screen.getByText(LOADING_DECK_MESSAGE)).toBeInTheDocument();
+    // The page was read before Acme's swipe landed, so the server still dealt Acme in it.
+    await waitFor(() =>
+      expect(swipes.pending()).toContain("/api/profiles?cursor=cursor-1"),
+    );
+    await act(async () => swipes.answer("/api/profiles?cursor=cursor-1", 200));
 
     expect(
       await screen.findByRole("heading", { name: "Globex" }),
     ).toBeInTheDocument();
 
-    const keepCalls = fetchMock.mock.calls.filter(
-      ([url]) => url === `/api/profiles/${acme.id}/keep`,
-    );
-    expect(keepCalls).toHaveLength(1);
+    fireEvent.click(screen.getByRole("button", { name: "Keep" }));
+
+    expect(screen.getByText(EMPTY_DECK_MESSAGE)).toBeInTheDocument();
+    expect(swipes.posted()).toEqual([
+      `/api/profiles/${acme.id}/keep`,
+      `/api/profiles/${globex.id}/keep`,
+    ]);
   });
 
   it("takes a Keep clicked the instant the first Profile appears, before its effects have run", async () => {

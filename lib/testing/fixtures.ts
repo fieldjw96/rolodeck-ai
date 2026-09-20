@@ -148,6 +148,21 @@ export async function readNewsFeedFixture(
   return { slug, xml: text, capture };
 }
 
+export type TeamPageFixture = {
+  readonly slug: string;
+  readonly html: string;
+  readonly capture: Capture;
+};
+
+/** One captured company team or about page, as the company's own site served it. */
+export async function readTeamPageFixture(
+  name: string,
+): Promise<TeamPageFixture> {
+  const slug = `team-page-${name}`;
+  const { text, capture } = await readFixture(slug, "html");
+  return { slug, html: text, capture };
+}
+
 /** One captured events Source document: Techmeme's iCalendar feed, a Luma calendar page. */
 export async function readEventSourceFixture(
   slug: string,
