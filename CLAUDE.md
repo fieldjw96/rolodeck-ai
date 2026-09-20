@@ -64,10 +64,17 @@ check is green, the second-agent review Gate has approved it, and the branch is 
 with `main`. Those rules are enforced by a GitHub branch ruleset rather than by the
 supervisor, so they cannot be got wrong by a bug in ours.
 
-Three paths are the exception and always need Jack's own approval, listed in
-`.github/CODEOWNERS`: `.github/workflows/`, because it is the Gate itself; `db/migrations/`,
-because reverting a commit does not unmake a schema change; and CODEOWNERS, because a rule
-must not be editable by what it constrains.
+Three paths are singled out in `.github/CODEOWNERS`: `.github/workflows/`, because it is the
+Gate itself; `db/migrations/`, because reverting a commit does not unmake a schema change; and
+CODEOWNERS, because a rule should not be editable by what it constrains.
+
+**Those three are advisory, not enforced, and a Run must not read them as a gate it cannot
+pass.** See ADR 0017, which amends ADR 0012 on this one point: the approval ADR 0012 described
+was never enforced and cannot be, because the ruleset's only bypass actor is the admin role the
+Runs act as, and a Run's pull request is authored by Jack, who cannot approve his own.
+
+What they mean in practice is that a change to one of these paths is worth saying so plainly in
+the pull request, because nothing will stop it.
 
 See ADR 0012, which supersedes ADR 0001. The `agent-harness` ADRs that ADR 0001 referred to
 are archived along with that repo; `foreman` replaced it.

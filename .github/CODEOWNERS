@@ -1,14 +1,21 @@
-# Paths that may never reach main without Jack's own approval.
-#
-# Everything else in this repo can be approved by the review Gate and merged unattended.
-# These three cannot, because each one removes or weakens the thing that would catch the
-# next mistake:
+# Paths worth a second look before they reach main. NOT a gate: see the warning below.
 #
 #   .github/workflows/  is the Gate itself. A Run that weakened claude-review.yml or ci.yml
 #                       would face no reviewer on the pull request after it.
 #   db/migrations/      is the least reversible thing here. A bad schema change cannot be
 #                       undone by reverting a commit.
-#   CODEOWNERS          is this rule. It must not be editable by the thing it constrains.
+#   CODEOWNERS          is this rule. It should not be editable by the thing it constrains.
+#
+# This file does not stop anything. See docs/adr/0017, which amends ADR 0012 on exactly this
+# point and records why, what was considered instead, and what it costs.
+#
+# The short version: the ruleset's only bypass actor is the admin role the Runs act as, and a
+# Run's pull request is authored by Jack, who cannot approve his own, so the review this file
+# asks for is impossible rather than merely missing. #147 changed a workflow and merged
+# without him seeing it.
+#
+# What the file is for is flagging: a pull request touching one of these paths should say so
+# plainly in its body, because nothing else will.
 
 /.github/workflows/   @fieldjw96
 /db/migrations/       @fieldjw96
