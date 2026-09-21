@@ -6,6 +6,10 @@ status: accepted
 
 This amends docs/adr/0010. It does not supersede it.
 
+Amended by docs/adr/0018: the keyless search this ADR said did not exist does, on the Hacker News
+Search API the Show HN Source already reads, and News now also searches it for each Kept company.
+The feed path, and the reasons below for rejecting GNews, Google News and publisher search, stand.
+
 ADR 0010 decided two things: how News judges and stores what it finds, and where it finds it.
 The first stands exactly as written. Every candidate article is stored in `news_items` with a
 `confidence` from `scoreNewsMatch`, including the ones that score zero, and what the owner sees
