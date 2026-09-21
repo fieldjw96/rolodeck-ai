@@ -210,7 +210,8 @@ const nonBlank = z
  * string is read the same way rather than as a malformed link.
  */
 const hitSchema = z.looseObject({
-  objectID: nonBlank,
+  // Numeric, as every Hacker News item id is: a text post's url is built from it.
+  objectID: z.string().regex(/^\d+$/, "must be a Hacker News item id"),
   title: nonBlank,
   url: z.preprocess(
     (value) => (value === "" ? null : value),

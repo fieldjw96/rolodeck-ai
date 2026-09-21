@@ -280,6 +280,7 @@ describe("parseHistorySearch", () => {
           hit({ objectID: "1", url: "javascript:alert(1)" }),
           hit({ objectID: "2", title: "  " }),
           hit({ objectID: "3", created_at_i: "yesterday" }),
+          hit({ objectID: "../../evil", url: null }),
           hit({ objectID: "4" }),
         ],
       },
@@ -288,11 +289,12 @@ describe("parseHistorySearch", () => {
 
     expect(parsed).toMatchObject({
       success: true,
-      hits: 4,
+      hits: 5,
       rejections: [
         { field: "hits.0.url" },
         { field: "hits.1.title" },
         { field: "hits.2.created_at_i" },
+        { field: "hits.3.objectID" },
       ],
     });
     expect(parsed.success && parsed.articles).toHaveLength(1);
