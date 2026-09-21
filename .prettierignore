@@ -10,6 +10,7 @@ db/migrations
 # destroy the only thing they prove. Their .meta.json siblings are ours, and stay formatted.
 db/fixtures/*.html
 db/fixtures/show-hn-*.json
+db/fixtures/news-search-*.json
 !db/fixtures/*.meta.json
 db/fixtures/*.xml
 db/fixtures/*.ics
