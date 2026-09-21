@@ -148,6 +148,22 @@ export async function readNewsFeedFixture(
   return { slug, xml: text, capture };
 }
 
+export type NewsSearchFixture = {
+  readonly slug: string;
+  /** The response body, parsed as JSON and nothing more: `parseHistorySearch` validates it. */
+  readonly body: unknown;
+  readonly capture: Capture;
+};
+
+/** One captured Hacker News search response, as `lib/news/history-search.ts` asks for it. */
+export async function readNewsSearchFixture(
+  name: string,
+): Promise<NewsSearchFixture> {
+  const slug = `news-search-${name}`;
+  const { text, capture } = await readFixture(slug, "json");
+  return { slug, body: JSON.parse(text) as unknown, capture };
+}
+
 export type TeamPageFixture = {
   readonly slug: string;
   readonly html: string;

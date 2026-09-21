@@ -20,6 +20,8 @@ export type KeptCompany = {
   readonly id: string;
   readonly name: string;
   readonly sector: string;
+  /** Searched as the company's own domain, per `lib/news/history-search.ts`. */
+  readonly website: string | null;
 };
 
 /**
@@ -41,7 +43,12 @@ export async function readKeptCompaniesForNews(
   const owner = z.guid().parse(ownerId);
 
   return db
-    .select({ id: profiles.id, name: profiles.name, sector: profiles.sector })
+    .select({
+      id: profiles.id,
+      name: profiles.name,
+      sector: profiles.sector,
+      website: profiles.website,
+    })
     .from(profiles)
     .where(
       and(

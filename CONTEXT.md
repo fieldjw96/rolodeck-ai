@@ -76,6 +76,11 @@ A syndication document a publisher offers for software to read, such as Techmeme
 News reads articles from. Never a synonym for News or for a Source. See `docs/adr/0015`.
 _Avoid_: provider, river, stream
 
+**History search**:
+News's other path: a search of the last twelve months of Hacker News for one Kept Company
+Profile, whose results are scored against that Profile alone. See `docs/adr/0018`.
+_Avoid_: backfill, lookup
+
 **Confidence**:
 How sure News is that an article is about the Kept Company Profile it is attributed to, from 0
 to 1. Stored for every candidate article; only those at or above the display threshold are

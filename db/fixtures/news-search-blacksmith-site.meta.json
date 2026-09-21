@@ -1,0 +1,4 @@
+{
+  "sourceUrl": "https://hn.algolia.com/api/v1/search?query=blacksmith.sh&restrictSearchableAttributes=url&tags=story&typoTolerance=false&numericFilters=created_at_i%3E%3D1758326400&hitsPerPage=50&attributesToRetrieve=title%2Curl%2Ccreated_at_i%2Cstory_text",
+  "capturedAt": "2026-09-20"
+}
