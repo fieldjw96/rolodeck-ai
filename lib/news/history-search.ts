@@ -60,10 +60,9 @@ import type { NewsArticle } from "./feeds";
  *    results are kept: a pre-seed company is not in a dozen headlines a year, and the one that
  *    is will have its own site linked, which the first query finds.
  *
- * Every result that survives is still scored by `scoreNewsMatch` rather than trusted.
- *
- * Every result is scored against the Company Profile it was searched for, and only that one. A
- * targeted result is about the company it was searched for or it is about nothing.
+ * Every result that survives is still scored by `scoreNewsMatch` rather than trusted, against
+ * the Company Profile it was searched for and only that one. A targeted result is about the
+ * company it was searched for or it is about nothing.
  *
  * Per CLAUDE.md, the response is hostile. It crosses a Zod schema, so a changed shape is a
  * rejection naming the field and costs that one company; one bad hit costs that hit.
@@ -121,7 +120,10 @@ export function companyDomain(website: string | null): string | null {
     return null;
   }
 
-  if (!/^https?:$/.test(url.protocol) || url.pathname.replace(/\/+$/, "") !== "") {
+  if (
+    !/^https?:$/.test(url.protocol) ||
+    url.pathname.replace(/\/+$/, "") !== ""
+  ) {
     return null;
   }
 
@@ -136,7 +138,10 @@ function isOnDomain(url: string, domain: string): boolean {
   return host === domain || host.endsWith(`.${domain}`);
 }
 
-function searchUrl(params: Readonly<Record<string, string>>, now: Date): string {
+function searchUrl(
+  params: Readonly<Record<string, string>>,
+  now: Date,
+): string {
   const since = Math.floor(
     (now.getTime() - HISTORY_WINDOW_DAYS * DAY_MS) / 1_000,
   );
@@ -311,7 +316,10 @@ export function parseHistorySearch(
       return;
     }
 
-    if (query.kind === "site" && (url == null || !isOnDomain(url, query.domain))) {
+    if (
+      query.kind === "site" &&
+      (url == null || !isOnDomain(url, query.domain))
+    ) {
       return;
     }
 

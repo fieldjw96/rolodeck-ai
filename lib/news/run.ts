@@ -114,10 +114,7 @@ function pathScores(candidates: readonly NewsCandidate[]): NewsPathScores {
   };
 }
 
-function candidate(
-  profile: KeptCompany,
-  article: NewsArticle,
-): NewsCandidate {
+function candidate(profile: KeptCompany, article: NewsArticle): NewsCandidate {
   return {
     profileId: profile.id,
     title: article.title,
