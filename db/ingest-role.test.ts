@@ -522,6 +522,7 @@ describe("what ingest does, as the ingest role", () => {
         },
       ],
       client,
+      search: { search: async () => ({ hits: [] }) },
     });
     await scratch.reset();
 
