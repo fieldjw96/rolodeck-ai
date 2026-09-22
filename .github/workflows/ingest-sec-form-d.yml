@@ -1,5 +1,5 @@
 # Weekly: SEC Form D filings change as slowly as a Company Profile itself does. See
-# README.md's "Scheduled runs" for the full list and lib/ingest/throttle.ts for why EDGAR
+# docs/ingest.md's "Scheduled runs" for the full list and lib/ingest/throttle.ts for why EDGAR
 # gets a whole week between requests rather than a daily poll.
 
 name: Ingest - SEC Form D

@@ -1,6 +1,6 @@
 # Daily: the Diary goes stale by definition. Runs before ingest-news each day so a Company
-# Profile an Event names has a chance to already be in the Deck. See README.md's "Ingest
-# schedules" for the full list.
+# Profile an Event names has a chance to already be in the Deck. See docs/ingest.md's
+# "Scheduled runs" for the full list.
 
 name: Ingest - Events
 

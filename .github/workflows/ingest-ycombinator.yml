@@ -1,6 +1,6 @@
 # Daily: each run fetches one bounded window of YC's company sitemap, and the window advances a
 # day at a time, so a weekly schedule would leave six windows in seven unvisited. See
-# lib/ingest/yc-sitemap.ts and README.md's "Scheduled runs" for the full list.
+# lib/ingest/yc-sitemap.ts and docs/ingest.md's "Scheduled runs" for the full list.
 
 name: Ingest - Y Combinator
 
