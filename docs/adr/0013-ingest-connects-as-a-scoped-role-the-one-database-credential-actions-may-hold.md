@@ -134,7 +134,7 @@ risk rather than reducing it.
 
 The migration touches `db/migrations/`, so per ADR 0012 it waits for Jack. Once applied, the role
 has no password: Jack sets one by hand in the Supabase SQL editor and builds the connection
-string, as the README's "Ingest's credential" section describes. No Run ever holds it.
+string, as the "Ingest's credential" section of docs/ingest.md describes. No Run ever holds it.
 
 A new table ingest needs to write gets nothing automatically — Supabase's default privileges name
 `anon`, `authenticated` and `service_role`, not this role — so the migration adding it has to grant

@@ -1,4 +1,4 @@
-# Daily: News goes stale by definition. See README.md's "Scheduled runs" for the full list.
+# Daily: News goes stale by definition. See docs/ingest.md's "Scheduled runs" for the full list.
 #
 # A zero-article run is not a failure here, unlike every other Source: lib/news/run.ts's
 # `newsRunFailed` only trips when not one feed in `NEWS_FEEDS` could be fetched and parsed.

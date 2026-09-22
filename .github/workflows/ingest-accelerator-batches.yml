@@ -1,5 +1,5 @@
 # Weekly: South Park Commons and AngelPad post new portfolio companies far slower than News or
-# Events go stale. See README.md's "Scheduled runs" for the full list.
+# Events go stale. See docs/ingest.md's "Scheduled runs" for the full list.
 
 name: Ingest - Accelerator batches
 
