@@ -93,8 +93,9 @@ the whole guarantee, and nothing in this repository can change a GitHub secret o
 `SUPABASE_SECRET_KEY` is deliberately not among them, and neither is
 `ROLODECK_INGEST_DATABASE_URL`: the running app reads neither, so neither belongs in Vercel
 either. The secret key is used only by `npm run account:provision`; the database
-URL is ingest's. `ROLODECK_OWNER_ID` comes from running
-`npm run account:provision` once, against the real project.
+URL is ingest's. `ROLODECK_NEWS_KEEPS_USER_ID`, which only `npm run ingest:news` reads, is a
+user id from the Supabase dashboard; it names whose Keeps News gathers for, per ADR 0019, and
+owns nothing.
 
 Two of these are database credentials, and CLAUDE.md otherwise allows only ingest's in GitHub
 Actions. ADR 0014 is the ADR that widens that rule, and it widens it this far and no further:

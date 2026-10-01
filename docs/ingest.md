@@ -61,8 +61,8 @@ curl "https://hn.algolia.com/api/v1/search?tags=story_<id>" -o db/fixtures/show-
 
 with a `db/fixtures/show-hn-<slug>.meta.json` beside it recording `query` and `capturedAt`.
 `npm run source:show-hn` runs it live, against the real API and a real database, and is not
-part of `npm test` or CI for that reason: it needs `ROLODECK_INGEST_DATABASE_URL` and `ROLODECK_OWNER_ID`,
-and it exits non-zero if it inserts nothing.
+part of `npm test` or CI for that reason: it needs `ROLODECK_INGEST_DATABASE_URL`, and it exits
+non-zero if it inserts nothing.
 
 ## Writing what a Source parsed
 
@@ -71,8 +71,9 @@ only write path into `profiles`, so a new Source Ticket is about fetching and pa
 nothing else. It takes records, it never fetches, and returns how many it inserted, how many
 it updated, and how many it rejected with the offending field named for each.
 
-Every row it writes is owned by `ROLODECK_OWNER_ID`, and writes are idempotent on
-`(owner_id, source, name_key)`: running a Source again updates the Profiles it wrote last time
+Nothing owns a row it writes — a Company Profile is Catalogue, the same row for every User,
+per `docs/adr/0019` — and writes are idempotent on
+`(source, name_key)`: running a Source again updates the Profiles it wrote last time
 rather than dealing the Deck a second card for the same company. `source` is a lowercase slug
 naming the Source; `name_key` is the company name case-folded and whitespace-collapsed by
 Postgres itself. See `docs/adr/0008` for why the key is that and not something else.
@@ -100,7 +101,7 @@ migration `0008_ingest_role`. See `docs/adr/0013` for why it exists and how it i
 Company Profiles are Kept.
 
 **What it may not:** read or write `swipes`, `user_profiles`, or anything in the `auth` schema;
-change a row's `id` or `owner_id`, so move nothing between accounts; delete or truncate a Company
+change a row's `id`; delete or truncate a Company
 Profile, an Event or News; create roles or databases; or become any other role.
 `db/ingest-role.test.ts` asserts each of those against a real Postgres, and runs
 `db/testing/ingest-role-check.sql` to refuse a role the migrations leave any broader. That check
@@ -144,7 +145,7 @@ stated Attendance, and nothing else is: a company named only in an Event's prose
 attendee.
 
 `persistEvents` in `db/events.ts` is the one write path into `events` and `event_attendances`,
-idempotent on `(owner_id, source, external_id)`, and it matches each attendee to Company Profiles
+idempotent on `(source, external_id)`, and it matches each attendee to Company Profiles
 on `name_key`.
 
 `npm run ingest:events` fetches every Source live and writes through
@@ -219,9 +220,9 @@ whose `founders` is null, and it never touches one whose Source stated a team. S
 docs/adr/0016. It runs in three steps:
 
 ```
-ROLODECK_INGEST_DATABASE_URL=... ROLODECK_OWNER_ID=... npm run ingest:team-pages:gather
+ROLODECK_INGEST_DATABASE_URL=... npm run ingest:team-pages:gather
 # a model writes one JSON answer per company into $TEAM_PAGES_DIR/answers/
-ROLODECK_INGEST_DATABASE_URL=... ROLODECK_OWNER_ID=... npm run ingest:team-pages:apply
+ROLODECK_INGEST_DATABASE_URL=... npm run ingest:team-pages:apply
 ```
 
 The gather step takes up to `TEAM_PAGE_CANDIDATES_PER_RUN` Profiles with a website and no
@@ -246,12 +247,13 @@ News is articles about the Company Profiles you Kept, read from the RSS feeds pu
 and shown on `/news`, grouped by company, newest first.
 
 ```
-ROLODECK_INGEST_DATABASE_URL=... ROLODECK_OWNER_ID=... npm run ingest:news
+ROLODECK_INGEST_DATABASE_URL=... ROLODECK_NEWS_KEEPS_USER_ID=... npm run ingest:news
 ```
 
 fetches every feed in `NEWS_FEEDS` (`lib/news/feeds.ts`) once (today, Techmeme's `/feed.xml`),
-scores every article in them against every Kept Company Profile, never one that is unswiped or
-Passed, and stores each pair in `news_items` with a `confidence` from `scoreNewsMatch` in
+scores every article in them against every Company Profile `ROLODECK_NEWS_KEEPS_USER_ID` has
+Kept — never one that is unswiped or Passed, and never one only another User Kept, which
+`docs/adr/0019` narrows deliberately — and stores each pair in `news_items` with a `confidence` from `scoreNewsMatch` in
 `lib/news/match.ts` for how sure it is that the article is about that company and not a
 namesake. The page shows only items at or above `NEWS_DISPLAY_THRESHOLD` in the same file; the
 rest stay stored, so the threshold can be retuned without fetching anything again. Running it
@@ -276,7 +278,7 @@ part of `npm test` or CI.
 A read-only script that measures how often the same company appears under multiple sources:
 
 ```
-ROLODECK_INGEST_DATABASE_URL=... ROLODECK_OWNER_ID=... npm run measure:profile-duplicates
+ROLODECK_INGEST_DATABASE_URL=... npm run measure:profile-duplicates
 ```
 
 Reports the count of profiles that appear under more than one source, their percentage of the

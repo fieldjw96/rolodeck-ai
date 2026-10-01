@@ -13,10 +13,10 @@ import { parseEnv } from "../env/parse-env";
  * per docs/adr/0020. So that is a Ticket and a rate conversation, not a schema change, and this
  * variable is what records the narrowing in the meantime.
  *
- * It is deliberately not the old `ROLODECK_OWNER_ID` under a new description. That named the one
- * account every row belonged to, which is a thing that no longer exists; this names one User
- * whose swipes are read, and nothing it is set to owns anything. Reusing the name would have let
- * the old meaning survive the column it described.
+ * It is deliberately a new name rather than the retired owner variable under a new description.
+ * That one named the single account every row belonged to, which is a thing that no longer
+ * exists; this names one User whose swipes are read, and nothing it is set to owns anything.
+ * Reusing the old name would have let the old meaning survive the column it described.
  */
 const newsKeepsSchema = z.object({
   // `z.guid()` rather than `z.uuid()`, matching `db/deck.ts`: Postgres's `uuid` type accepts any
