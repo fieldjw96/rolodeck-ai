@@ -111,7 +111,7 @@ describe("wroteNothing", () => {
   });
 
   it("passes a second run of a healthy pipeline, which inserts nothing", () => {
-    // Ingest is idempotent on (owner_id, source, name_key) — docs/adr/0008 — so re-running a
+    // Ingest is idempotent on (source, name_key) — docs/adr/0008 — so re-running a
     // Source updates rather than inserts. Failing on `inserted === 0` alone would cry wolf.
     expect(wroteNothing(report({ inserted: 0, updated: 12 }))).toBe(false);
   });

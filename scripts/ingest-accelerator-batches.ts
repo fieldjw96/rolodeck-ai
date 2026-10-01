@@ -51,7 +51,7 @@ import {
  * returns nothing and reports fine.
  *
  * Known limitation: a company already present under `sec-form-d` or `show-hn` is not matched
- * here. `persistProfiles`'s natural key is `(owner_id, source, name_key)` — `source` is part
+ * here. `persistProfiles`'s natural key is `(source, name_key)` — `source` is part
  * of the key by design (docs/adr/0008), specifically so two Sources describing the same
  * company do not collide and silently overwrite each other's `sector`, `stage` and
  * provenance. That ADR names the resulting cost directly: "a company found by two Sources is

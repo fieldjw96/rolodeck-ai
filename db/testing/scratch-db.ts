@@ -24,7 +24,7 @@ export type ScratchDb = {
    * is ingest's own role, from migration `0008_ingest_role`; it has no signed-in user.
    */
   as: (role: ScratchRole, userId?: string) => Promise<void>;
-  /** Adds the `auth.users` row that `profiles.owner_id` needs to point at. */
+  /** Adds the `auth.users` row that `swipes.user_id` and `user_profiles.user_id` point at. */
   createUser: (id: string) => Promise<void>;
   /** Returns to the superuser session, which bypasses RLS. */
   reset: () => Promise<void>;
@@ -64,7 +64,7 @@ export async function createScratchDb(): Promise<ScratchDb> {
   };
 
   // Raw SQL rather than Drizzle's `authUsers`, which models columns the shim deliberately
-  // leaves out: auth is a separate Ticket and `owner_id` only ever references the id.
+  // leaves out: auth is a separate Ticket and the references are only ever to the id.
   const createUser = async (id: string) => {
     await client.query("insert into auth.users (id) values ($1)", [id]);
   };

@@ -110,7 +110,7 @@ export function readEdgarContact(): string {
  * A scraper whose selectors have gone stale returns zero rows and reports success, which is
  * the failure this project keeps meeting — so a run that put nothing in the table is an error,
  * not a quiet week. Inserts and updates both count: ingest is idempotent on
- * `(owner_id, source, name_key)` per docs/adr/0008, so the second run of a healthy pipeline
+ * `(source, name_key)` per docs/adr/0008, so the second run of a healthy pipeline
  * inserts nothing at all and updates everything, and failing that would be crying wolf.
  */
 export function wroteNothing(report: IngestReport): boolean {

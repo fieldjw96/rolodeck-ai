@@ -50,7 +50,7 @@ export type LumaCalendar = {
  * a community that is not a company, states no attendance however many Events it lists.
  *
  * Two calendars cross-listing one Event is two Events in the Diary, because `persistEvents` is
- * idempotent on `(owner_id, source, external_id)` and the Source differs. That is the same cost
+ * idempotent on `(source, external_id)` and the Source differs. That is the same cost
  * ADR 0008 already accepts for a company two Sources both found, and for the same reason:
  * reconciling two Sources' accounts of one thing is its own decision, not a thing to do inside
  * "write the row". As captured, exactly one of the 69 Events across these four calendars is
