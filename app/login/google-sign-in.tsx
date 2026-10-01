@@ -37,9 +37,10 @@ export function GoogleSignIn({ error }: { error?: unknown }) {
         Sign in with Google
       </a>
 
-      <p className={styles.note}>
-        A Berkeley address works: bConnected accounts sign in through CalNet.
-      </p>
+      {/* What ADR 0020 decided, said plainly. Deliberately no claim about `berkeley.edu`
+          specifically: ADR 0021 records that whether that Workspace restricts third-party
+          apps is unverified, and a promise on this page is the wrong place to find out. */}
+      <p className={styles.note}>Open to anyone with a Google account.</p>
     </div>
   );
 }
