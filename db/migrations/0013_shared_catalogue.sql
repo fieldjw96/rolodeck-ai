@@ -17,14 +17,23 @@
 --
 -- A Keep, an article or an Attendance pointing at a row that loses is repointed at the one that
 -- wins rather than cascading away with it: those are facts about the company, not about which
--- duplicate of it a row happened to name. Where repointing would collide with a row the winner
--- already has — the same User having Kept both, the same article stored against both — the loser's
--- is deleted first, because the pair is the natural key and one of them has to go.
+-- duplicate of it a row happened to name. Where repointing would collide — the same User having
+-- Kept two of them, the same article stored against two of them — all but one of the colliding
+-- rows is deleted first, because the pair is the natural key and only one of them can survive.
+--
+-- "All but one", chosen by ranking the whole group at once, rather than "the loser's, where the
+-- keeper already has it". Nothing bounds a group at two: `ROLODECK_OWNER_ID` was one account by
+-- convention only, and three rows sharing a key repoint two losers onto one keeper. A pairwise
+-- test against the keeper passes for both of them when the keeper holds no such row itself, and
+-- then the one `UPDATE` sets two rows to the same key and aborts the migration on a constraint
+-- the schema has had all along. So the keeper is mapped to itself below and ranked alongside its
+-- losers: `rn = 1` is the row that survives, and it is the keeper's own wherever one exists.
 DO $$
 DECLARE
   collapsed_profiles bigint := 0;
   collapsed_events bigint := 0;
 BEGIN
+  -- Every row of a colliding group, keeper included, mapped to the row that wins.
   CREATE TEMP TABLE collapsed_profile_ids AS
   SELECT p.id, winner.keeper
     FROM public.profiles p
@@ -33,46 +42,75 @@ BEGIN
         FROM public.profiles
        GROUP BY source, name_key
       HAVING count(*) > 1
-    ) winner ON winner.source = p.source AND winner.name_key = p.name_key
-   WHERE p.id <> winner.keeper;
+    ) winner ON winner.source = p.source AND winner.name_key = p.name_key;
 
+  -- A Keep is identified by `(user_id, profile_id)` and will be keyed `(user_id, keeper)`. The
+  -- decision that survives is the keeper's, else the earliest a loser recorded.
   DELETE FROM public.swipes s
-   USING collapsed_profile_ids d
-   WHERE s.profile_id = d.id
-     AND EXISTS (
-       SELECT 1 FROM public.swipes kept
-        WHERE kept.profile_id = d.keeper AND kept.user_id = s.user_id
-     );
+   USING (
+     SELECT s.user_id,
+            s.profile_id,
+            row_number() OVER (
+              PARTITION BY s.user_id, d.keeper
+              ORDER BY (s.profile_id = d.keeper) DESC, s.decided_at, s.profile_id
+            ) AS rn
+       FROM public.swipes s
+       JOIN collapsed_profile_ids d ON d.id = s.profile_id
+   ) dup
+   WHERE dup.rn > 1
+     AND s.user_id = dup.user_id
+     AND s.profile_id = dup.profile_id;
   UPDATE public.swipes s
      SET profile_id = d.keeper
     FROM collapsed_profile_ids d
-   WHERE s.profile_id = d.id;
+   WHERE s.profile_id = d.id
+     AND d.id <> d.keeper;
 
+  -- An article is identified by its own `id` and will be keyed `(keeper, url)`.
   DELETE FROM public.news_items n
-   USING collapsed_profile_ids d
-   WHERE n.profile_id = d.id
-     AND EXISTS (
-       SELECT 1 FROM public.news_items kept
-        WHERE kept.profile_id = d.keeper AND kept.url = n.url
-     );
+   USING (
+     SELECT n.id,
+            row_number() OVER (
+              PARTITION BY d.keeper, n.url
+              ORDER BY (n.profile_id = d.keeper) DESC, n.fetched_at, n.id
+            ) AS rn
+       FROM public.news_items n
+       JOIN collapsed_profile_ids d ON d.id = n.profile_id
+   ) dup
+   WHERE dup.rn > 1
+     AND n.id = dup.id;
   UPDATE public.news_items n
      SET profile_id = d.keeper
     FROM collapsed_profile_ids d
-   WHERE n.profile_id = d.id;
+   WHERE n.profile_id = d.id
+     AND d.id <> d.keeper;
 
+  -- An Attendance is the pair itself, so two that collapse onto one are the same fact twice and
+  -- which copy survives cannot be told apart.
   DELETE FROM public.event_attendances a
-   USING collapsed_profile_ids d
-   WHERE a.profile_id = d.id
-     AND EXISTS (
-       SELECT 1 FROM public.event_attendances kept
-        WHERE kept.profile_id = d.keeper AND kept.event_id = a.event_id
-     );
+   USING (
+     SELECT a.event_id,
+            a.profile_id,
+            row_number() OVER (
+              PARTITION BY a.event_id, d.keeper
+              ORDER BY (a.profile_id = d.keeper) DESC, a.profile_id
+            ) AS rn
+       FROM public.event_attendances a
+       JOIN collapsed_profile_ids d ON d.id = a.profile_id
+   ) dup
+   WHERE dup.rn > 1
+     AND a.event_id = dup.event_id
+     AND a.profile_id = dup.profile_id;
   UPDATE public.event_attendances a
      SET profile_id = d.keeper
     FROM collapsed_profile_ids d
-   WHERE a.profile_id = d.id;
+   WHERE a.profile_id = d.id
+     AND d.id <> d.keeper;
 
-  DELETE FROM public.profiles p USING collapsed_profile_ids d WHERE p.id = d.id;
+  DELETE FROM public.profiles p
+   USING collapsed_profile_ids d
+   WHERE p.id = d.id
+     AND d.id <> d.keeper;
   GET DIAGNOSTICS collapsed_profiles = ROW_COUNT;
   DROP TABLE collapsed_profile_ids;
 
@@ -84,22 +122,32 @@ BEGIN
         FROM public.events
        GROUP BY source, external_id
       HAVING count(*) > 1
-    ) winner ON winner.source = e.source AND winner.external_id = e.external_id
-   WHERE e.id <> winner.keeper;
+    ) winner ON winner.source = e.source AND winner.external_id = e.external_id;
 
   DELETE FROM public.event_attendances a
-   USING collapsed_event_ids d
-   WHERE a.event_id = d.id
-     AND EXISTS (
-       SELECT 1 FROM public.event_attendances kept
-        WHERE kept.event_id = d.keeper AND kept.profile_id = a.profile_id
-     );
+   USING (
+     SELECT a.event_id,
+            a.profile_id,
+            row_number() OVER (
+              PARTITION BY d.keeper, a.profile_id
+              ORDER BY (a.event_id = d.keeper) DESC, a.event_id
+            ) AS rn
+       FROM public.event_attendances a
+       JOIN collapsed_event_ids d ON d.id = a.event_id
+   ) dup
+   WHERE dup.rn > 1
+     AND a.event_id = dup.event_id
+     AND a.profile_id = dup.profile_id;
   UPDATE public.event_attendances a
      SET event_id = d.keeper
     FROM collapsed_event_ids d
-   WHERE a.event_id = d.id;
+   WHERE a.event_id = d.id
+     AND d.id <> d.keeper;
 
-  DELETE FROM public.events e USING collapsed_event_ids d WHERE e.id = d.id;
+  DELETE FROM public.events e
+   USING collapsed_event_ids d
+   WHERE e.id = d.id
+     AND d.id <> d.keeper;
   GET DIAGNOSTICS collapsed_events = ROW_COUNT;
   DROP TABLE collapsed_event_ids;
 

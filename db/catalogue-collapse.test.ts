@@ -34,14 +34,18 @@ const SOMEONE_ELSE = "22222222-2222-2222-2222-222222222222";
 let scratch: ScratchDb;
 let collapse: string;
 
-/** Two Company Profiles with the same `(source, name_key)`, oldest first. */
-async function duplicatePair(): Promise<{ older: string; newer: string }> {
+/**
+ * `count` Company Profiles with the same `(source, name_key)`, oldest first. The key is case-
+ * and whitespace-insensitive, so the spellings differ and collide anyway.
+ */
+async function duplicateProfiles(count: number): Promise<string[]> {
+  const spellings = ["Sprocket", "  SPROCKET  ", "sprocket", "SpRocKet"];
   const written = await scratch.db
     .insert(profiles)
     .values(
-      [0, 1].map((index) => ({
+      Array.from({ length: count }, (_, index) => ({
         source: "yc",
-        name: index === 0 ? "Sprocket" : "  SPROCKET  ",
+        name: spellings[index]!,
         description: "Developer tooling for warehouse robotics.",
         sector: "hardware-robotics",
         stage: "seed",
@@ -52,7 +56,33 @@ async function duplicatePair(): Promise<{ older: string; newer: string }> {
     )
     .returning({ id: profiles.id });
 
-  return { older: written[0]!.id, newer: written[1]!.id };
+  return written.map((row) => row.id);
+}
+
+/** Two Company Profiles with the same `(source, name_key)`, oldest first. */
+async function duplicatePair(): Promise<{ older: string; newer: string }> {
+  const [older, newer] = await duplicateProfiles(2);
+
+  return { older: older!, newer: newer! };
+}
+
+/** `count` Events with the same `(source, external_id)`, oldest first. */
+async function duplicateEvents(count: number): Promise<string[]> {
+  const written = await scratch.db
+    .insert(events)
+    .values(
+      Array.from({ length: count }, (_, index) => ({
+        source: "luma",
+        externalId: "summit@example.com",
+        name: `Sprocket Summit ${index}`,
+        startDate: "2026-10-01",
+        url: "https://example.com/summit",
+        createdAt: new Date(Date.UTC(2026, 0, 1 + index)),
+      })),
+    )
+    .returning({ id: events.id });
+
+  return written.map((row) => row.id);
 }
 
 beforeAll(async () => {
@@ -176,31 +206,170 @@ describe("collapsing the duplicates the old owner-bearing keys kept apart", () =
 
   it("keeps the oldest of two Events that now share a key, and repoints Attendance", async () => {
     const { older } = await duplicatePair();
-    const written = await scratch.db
-      .insert(events)
-      .values(
-        [0, 1].map((index) => ({
-          source: "luma",
-          externalId: "summit@example.com",
-          name: `Sprocket Summit ${index}`,
-          startDate: "2026-10-01",
-          url: "https://example.com/summit",
-          createdAt: new Date(Date.UTC(2026, 0, 1 + index)),
-        })),
-      )
-      .returning({ id: events.id });
+    const written = await duplicateEvents(2);
     await scratch.db
       .insert(eventAttendances)
-      .values({ eventId: written[1]!.id, profileId: older });
+      .values({ eventId: written[1]!, profileId: older });
 
     await scratch.client.exec(collapse);
 
     expect(
       (await scratch.db.select().from(events)).map((row) => row.id),
-    ).toEqual([written[0]!.id]);
+    ).toEqual([written[0]!]);
     expect(await scratch.db.select().from(eventAttendances)).toEqual([
-      { eventId: written[0]!.id, profileId: older },
+      { eventId: written[0]!, profileId: older },
     ]);
+  });
+
+  /**
+   * Three rows sharing a key, which is the shape a pairwise collapse gets wrong: two losers
+   * repoint onto one keeper, and if neither is deleted first they arrive at the same key. These
+   * assert the survivor, but what they really assert is that the statement completes at all —
+   * the alternative is an aborted migration that cannot be re-run from where it stopped.
+   */
+  describe("when three or more rows share a key", () => {
+    it("keeps one Keep when a User had swiped two losers and not the keeper", async () => {
+      const [keeper, second, third] = await duplicateProfiles(3);
+      await scratch.db.insert(swipes).values([
+        {
+          userId: JACK,
+          profileId: third!,
+          decision: "keep",
+          decidedAt: new Date("2026-02-01T00:00:00Z"),
+        },
+        {
+          userId: JACK,
+          profileId: second!,
+          decision: "pass",
+          decidedAt: new Date("2026-03-01T00:00:00Z"),
+        },
+      ]);
+
+      await scratch.client.exec(collapse);
+
+      expect(
+        (await scratch.db.select().from(profiles)).map((row) => row.id),
+      ).toEqual([keeper]);
+      // The earliest of the losers' decisions, there being no decision on the keeper itself.
+      expect(
+        (await scratch.db.select().from(swipes)).map((row) => [
+          row.profileId,
+          row.decision,
+        ]),
+      ).toEqual([[keeper, "keep"]]);
+    });
+
+    it("prefers the keeper's own Keep to either loser's", async () => {
+      const [keeper, second, third] = await duplicateProfiles(3);
+      await scratch.db.insert(swipes).values([
+        // Latest of the three, and still the one that survives: it is already on the keeper.
+        {
+          userId: JACK,
+          profileId: keeper!,
+          decision: "pass",
+          decidedAt: new Date("2026-04-01T00:00:00Z"),
+        },
+        {
+          userId: JACK,
+          profileId: second!,
+          decision: "keep",
+          decidedAt: new Date("2026-02-01T00:00:00Z"),
+        },
+        {
+          userId: JACK,
+          profileId: third!,
+          decision: "keep",
+          decidedAt: new Date("2026-03-01T00:00:00Z"),
+        },
+      ]);
+
+      await scratch.client.exec(collapse);
+
+      expect(
+        (await scratch.db.select().from(swipes)).map((row) => [
+          row.profileId,
+          row.decision,
+        ]),
+      ).toEqual([[keeper, "pass"]]);
+    });
+
+    it("keeps one copy of an article two losers both stored", async () => {
+      const [keeper, second, third] = await duplicateProfiles(3);
+      await scratch.db.insert(newsItems).values([
+        {
+          profileId: second!,
+          title: "The copy fetched first",
+          description: null,
+          url: "https://news.example/both",
+          publishedAt: new Date("2026-09-01T12:00:00Z"),
+          sourceName: "The Example Times",
+          confidence: 0.9,
+          fetchedAt: new Date("2026-09-01T13:00:00Z"),
+        },
+        {
+          profileId: third!,
+          title: "The copy fetched later",
+          description: null,
+          url: "https://news.example/both",
+          publishedAt: new Date("2026-09-01T12:00:00Z"),
+          sourceName: "The Example Times",
+          confidence: 0.9,
+          fetchedAt: new Date("2026-09-02T13:00:00Z"),
+        },
+        {
+          profileId: third!,
+          title: "Stored against one of them only",
+          description: null,
+          url: "https://news.example/only",
+          publishedAt: new Date("2026-09-02T12:00:00Z"),
+          sourceName: "The Example Times",
+          confidence: 0.9,
+          fetchedAt: new Date("2026-09-02T13:00:00Z"),
+        },
+      ]);
+
+      await scratch.client.exec(collapse);
+
+      const rows = await scratch.db.select().from(newsItems);
+      expect(rows.every((row) => row.profileId === keeper)).toBe(true);
+      expect(rows.map((row) => row.title).sort()).toEqual([
+        "Stored against one of them only",
+        "The copy fetched first",
+      ]);
+    });
+
+    it("keeps one Attendance when two duplicate Company Profiles attended one Event", async () => {
+      const [keeper, second, third] = await duplicateProfiles(3);
+      const [event] = await duplicateEvents(1);
+      await scratch.db.insert(eventAttendances).values([
+        { eventId: event!, profileId: second! },
+        { eventId: event!, profileId: third! },
+      ]);
+
+      await scratch.client.exec(collapse);
+
+      expect(await scratch.db.select().from(eventAttendances)).toEqual([
+        { eventId: event, profileId: keeper },
+      ]);
+    });
+
+    it("keeps one Attendance when one Company Profile attended three duplicate Events", async () => {
+      const { older } = await duplicatePair();
+      const [keeper, second, third] = await duplicateEvents(3);
+      await scratch.db.insert(eventAttendances).values([
+        { eventId: second!, profileId: older },
+        { eventId: third!, profileId: older },
+      ]);
+
+      await scratch.client.exec(collapse);
+
+      expect(
+        (await scratch.db.select().from(events)).map((row) => row.id),
+      ).toEqual([keeper]);
+      expect(await scratch.db.select().from(eventAttendances)).toEqual([
+        { eventId: keeper, profileId: older },
+      ]);
+    });
   });
 
   it("leaves rows the new keys do not collide on alone", async () => {
