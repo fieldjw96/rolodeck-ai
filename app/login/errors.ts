@@ -33,7 +33,8 @@ export const OAUTH_ERRORS = {
   /** There was a code and Supabase refused it: expired, replayed, or not ours. */
   exchange: "That Google sign-in could not be completed. You can try again.",
   /** We could not even start: Supabase Auth is unreachable or misconfigured. */
-  unavailable: "Sign in with Google is unavailable right now. Try again shortly.",
+  unavailable:
+    "Sign in with Google is unavailable right now. Try again shortly.",
 } as const;
 
 export type OAuthError = keyof typeof OAUTH_ERRORS;

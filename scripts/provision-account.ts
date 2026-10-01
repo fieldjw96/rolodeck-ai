@@ -1,7 +1,4 @@
-import {
-  parseProvisionArgs,
-  provisionAccount,
-} from "../lib/auth/provisioning";
+import { parseProvisionArgs, provisionAccount } from "../lib/auth/provisioning";
 import { createSupabaseAdminClient } from "../lib/supabase/admin";
 
 /**

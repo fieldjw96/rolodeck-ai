@@ -158,7 +158,9 @@ export async function startGoTrueStub(): Promise<GoTrueStub> {
       throw new Error(`not an authorize URL: ${options.url}`);
     }
     if (asked.searchParams.get("provider") !== "google") {
-      throw new Error(`the stub only knows the google provider: ${options.url}`);
+      throw new Error(
+        `the stub only knows the google provider: ${options.url}`,
+      );
     }
     if (redirectTo === null) {
       throw new Error(`no redirect_to on the authorize URL: ${options.url}`);
@@ -314,7 +316,8 @@ export async function startGoTrueStub(): Promise<GoTrueStub> {
           ) {
             send(400, {
               error: "invalid_grant",
-              error_description: "invalid flow state, no valid flow state found",
+              error_description:
+                "invalid flow state, no valid flow state found",
             });
             return;
           }
@@ -338,8 +341,7 @@ export async function startGoTrueStub(): Promise<GoTrueStub> {
         if (grant !== "password") {
           send(400, {
             error: "unsupported_grant_type",
-            error_description:
-              "the stub only issues password and pkce grants",
+            error_description: "the stub only issues password and pkce grants",
           });
           return;
         }

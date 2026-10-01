@@ -16,13 +16,13 @@ function firstValue(header: string | null): string | null {
 
 /** True for the hosts where `https` is not available and assuming it would break the flow. */
 function isLoopback(host: string): boolean {
-  const hostname = host.split(":")[0]!.toLowerCase();
+  // An IPv6 host arrives bracketed, colons and all, so the port cannot simply be split off.
+  const hostname = host.startsWith("[")
+    ? host.slice(1, host.indexOf("]")).toLowerCase()
+    : host.split(":")[0]!.toLowerCase();
 
   return (
-    hostname === "localhost" ||
-    hostname === "127.0.0.1" ||
-    hostname === "[::1]" ||
-    hostname === "::1"
+    hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1"
   );
 }
 

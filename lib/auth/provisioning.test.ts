@@ -76,7 +76,10 @@ describe("provisioning the smoke-test account", () => {
   });
 
   it("signs in with the rotated password and not the old one", async () => {
-    const { email } = await provisionAccount(backend.admin, "smoke@example.com");
+    const { email } = await provisionAccount(
+      backend.admin,
+      "smoke@example.com",
+    );
     const stale = (await provisionAccount(backend.admin, email)).password;
     const current = (await provisionAccount(backend.admin, email)).password;
 

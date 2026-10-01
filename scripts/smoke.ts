@@ -74,7 +74,7 @@ async function main(): Promise<void> {
 
     results.push(
       await check("password page renders", async () => {
-        // Unlisted, and reached by typing the path: ADR 0013 forbids `SUPABASE_SECRET_KEY` in
+        // Unlisted, and reached by typing the path: ADR 0013 forbids Supabase's secret key in
         // Actions, so this workflow cannot generate a sign-in link and signs in with the one
         // password `npm run account:provision` creates and rotates.
         await page.goto(`${options.baseUrl}/login/password`, {

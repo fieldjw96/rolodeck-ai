@@ -18,7 +18,7 @@ export const GOOGLE_SIGN_IN_PATH = "/login/google";
 
 /**
  * The email-and-password form, which survives for the deploy smoke test and for nothing else.
- * Nothing links here: ADR 0013 forbids `SUPABASE_SECRET_KEY` in GitHub Actions, so the smoke
+ * Nothing links here: ADR 0013 forbids Supabase's secret key in GitHub Actions, so the smoke
  * test cannot generate a sign-in link and has to type a password, and ADR 0021 keeps that one
  * credential unlisted rather than widening ADR 0013. Under `/login`, so it too needs no entry.
  */

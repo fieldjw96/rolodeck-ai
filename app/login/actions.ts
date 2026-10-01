@@ -24,7 +24,7 @@ function failedWith(error: SignInError): never {
 /**
  * The unlisted way in. Google SSO is the front door (docs/adr/0021) and this path survives for
  * one caller: `.github/workflows/deploy.yml`'s smoke test, which has to sign in and cannot
- * generate a sign-in link, because that needs `SUPABASE_SECRET_KEY` and ADR 0013 forbids that
+ * generate a sign-in link, because that needs Supabase's secret key and ADR 0013 forbids that
  * key in GitHub Actions. Nothing on `/login` links here; `scripts/provision-account.ts` creates
  * and rotates the one account that uses it.
  */

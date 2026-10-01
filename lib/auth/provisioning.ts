@@ -90,7 +90,7 @@ async function findByEmail(
  *
  * This is no longer how people get in. Sign-up is open and arrives through Google SSO, which
  * never calls this (docs/adr/0020 and docs/adr/0021). What it is for is the one credential the
- * deploy smoke test signs in with: ADR 0013 forbids `SUPABASE_SECRET_KEY` in GitHub Actions,
+ * deploy smoke test signs in with: ADR 0013 forbids Supabase's secret key in GitHub Actions,
  * so the workflow cannot generate a sign-in link and has to type a password, and something has
  * to create and rotate the account that password belongs to.
  *

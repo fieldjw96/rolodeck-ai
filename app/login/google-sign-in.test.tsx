@@ -134,10 +134,17 @@ describe("the two doors, as the source tree has them", () => {
     expect(page!.text).not.toContain("password");
   });
 
-  it("names the password path only where it is served, redirected to, or defined", () => {
+  it("has the password path as one constant and no other code naming it", () => {
+    // Comments stripped first: prose may say where the unlisted door is, and this is about
+    // what the app links to, redirects to or fetches.
     const namers = sources
       .filter(shipped)
-      .filter((file) => file.text.includes("/login/password"))
+      .filter((file) =>
+        file.text
+          .replace(/\/\*[\s\S]*?\*\//g, "")
+          .replace(/^\s*\/\/.*$/gm, "")
+          .includes("/login/password"),
+      )
       .map((file) => file.path);
 
     expect(namers.sort()).toEqual(["lib/auth/paths.ts"]);
