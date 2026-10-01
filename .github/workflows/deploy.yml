@@ -191,7 +191,7 @@ jobs:
               exit 1
               ;;
           esac
-          echo "Every production secret is present, both database URLs use the pooler, and the app's logs in as rolodeck_app."
+          echo "Every production secret is present, both database URLs use the pooler, and the app's connection logs in as rolodeck_app while the migration's does not."
 
       - id: link
         name: Check the Vercel project is reachable

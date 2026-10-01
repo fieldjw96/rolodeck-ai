@@ -84,7 +84,8 @@ row first.
 
 The connection it writes through is its own: `getIngestDb()` in `db/ingest-connection.ts`, as
 the `rolodeck_ingest` role, built from `ROLODECK_INGEST_DATABASE_URL` rather than the app's own
-`DATABASE_URL`. The app's connection is a member of `authenticated` on purpose; ingest writes
+`DATABASE_URL`. The app's connection is the `rolodeck_app` role, a member of `authenticated` and
+nothing more, on purpose; ingest writes
 rows owned by the account rather than by itself, so it needs a role that bypasses RLS on the
 tables it writes, and nowhere else.
 
@@ -107,7 +108,9 @@ runs in the test suite only: a grant made by hand in the Supabase SQL editor is 
 
 **It is the only database credential that belongs in GitHub Actions repository secrets.**
 Scheduled ingest runs there, so this one connection string may be an Actions secret.
-`DATABASE_URL` and `SUPABASE_SECRET_KEY` may not: both reach every table. The one exception is
+`DATABASE_URL` and `SUPABASE_SECRET_KEY` may not: the secret key bypasses RLS outright, and the
+app's connection can act as any account it is handed an id for, since `asUser()` takes the id
+from the caller rather than from the credential. The one exception is
 the deploy workflow's `production` environment, restricted to `main`, which ADR 0014 allows to
 hold the migration and app connection strings; see "The workflow's secrets" in `docs/deploying.md`.
 

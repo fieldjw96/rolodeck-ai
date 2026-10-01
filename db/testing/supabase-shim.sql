@@ -20,12 +20,12 @@ end
 $$;
 
 -- The app's own login role, which migration 0012_app_role creates and `DATABASE_URL` connects
--- as. Created here too, before any migration runs, for two reasons. A real project's role was
--- created by an earlier run of that migration and has had a password set on it by hand since,
--- so the state every production run of 0012 sees is "the role is already there" — which is the
--- state the tests see as well this way, guard, self-check and all. And a test that logs in as
--- the role needs it to exist and to be able to log in; its password is set by whatever stands
--- the database up, never by a committed file.
+-- as. Created here too, before any migration runs, for two reasons. Every run of 0012 after the
+-- first finds the role already there, with a password set on it by hand since — so that is the
+-- state the tests see as well this way, and the migration's guard and its own self-check are
+-- exercised against it rather than only against an empty cluster. And a test that logs in as the
+-- role needs it to exist and to be able to log in; its password is set by whatever stands the
+-- database up, never by a committed file.
 --
 -- Deliberately narrower than 0012 asks for: no membership of `authenticated` is granted here,
 -- so if that migration ever stopped granting it, the role would reach nothing and the tests

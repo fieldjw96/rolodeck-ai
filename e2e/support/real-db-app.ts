@@ -52,6 +52,9 @@ function databaseUrl(): string {
  * A password for `rolodeck_app` on this scratch database. Random per run, and never anything a
  * real project uses: migration 0012 deliberately sets no password, because the migration is
  * committed, so whatever stands a database up sets one. Here that is this file.
+ *
+ * One per worker process, which is safe because `playwright.db.config.ts` runs one worker: a
+ * second would set its own password on the same cluster's role and lock the first one out.
  */
 const APP_ROLE_PASSWORD = `e2e-${randomUUID()}`;
 

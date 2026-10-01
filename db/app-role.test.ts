@@ -1,4 +1,7 @@
 // @vitest-environment node
+import { readFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
+
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { APP_ROLE } from "../lib/supabase/env";
@@ -35,6 +38,10 @@ import {
 
 const JACK = "11111111-1111-1111-1111-111111111111";
 const SOMEONE_ELSE = "22222222-2222-2222-2222-222222222222";
+
+const MIGRATION_PATH = fileURLToPath(
+  new URL("./migrations/0012_app_role.sql", import.meta.url),
+);
 
 describe("the app's role itself", () => {
   let scratch: ScratchDb;
@@ -140,6 +147,93 @@ describe("the app's role itself", () => {
           authenticated: schema === "public",
         },
       ]);
+    },
+  );
+
+  /**
+   * The migration's last statement refuses to finish if the role it leaves behind is broader
+   * than the file says, on whatever database it runs against — including the real Supabase
+   * project, where none of the tests above ever run. That makes it the only check production
+   * gets, so it is worth knowing it has been seen to fail and not only to pass. Run here
+   * against the role as the migration left it, and then against one deliberately widened.
+   */
+  const roleCheck = async (): Promise<string> => {
+    const migration = await readFile(MIGRATION_PATH, "utf8");
+    // Drizzle's own separator, which `db/migrations/meta/_journal.json` records as
+    // `breakpoints: true`. The check is the last statement in the file.
+    const statements = migration.split("--> statement-breakpoint");
+    const check = statements.at(-1) ?? "";
+
+    expect(check).toContain("RAISE EXCEPTION 'rolodeck_app");
+    return check;
+  };
+
+  it("passes the migration's own check on the role as the migration left it", async () => {
+    await expect(scratch.client.exec(await roleCheck())).resolves.toBeDefined();
+  });
+
+  it.each([
+    [
+      "a grant on swipes",
+      "grant select on swipes to rolodeck_app",
+      "revoke select on swipes from rolodeck_app",
+    ],
+    [
+      "a column grant on swipes",
+      "grant select (user_id) on swipes to rolodeck_app",
+      "revoke select (user_id) on swipes from rolodeck_app",
+    ],
+    [
+      "usage of the public schema, which it needs only as authenticated",
+      "grant usage on schema public to rolodeck_app",
+      "revoke usage on schema public from rolodeck_app",
+    ],
+    [
+      // Granted to PUBLIC rather than to the role, so only the privilege check catches it.
+      "a grant to PUBLIC on user_profiles",
+      "grant select on user_profiles to public",
+      "revoke select on user_profiles from public",
+    ],
+    [
+      "an RLS bypass",
+      "alter role rolodeck_app bypassrls",
+      "alter role rolodeck_app nobypassrls",
+    ],
+    [
+      "the right to create roles",
+      "alter role rolodeck_app createrole",
+      "alter role rolodeck_app nocreaterole",
+    ],
+    [
+      // The quietest widening of the lot: every grant stays as it was, and the role simply
+      // starts holding `authenticated`'s table privileges while it is still itself.
+      "inheritance of the role it belongs to",
+      "alter role rolodeck_app inherit",
+      "alter role rolodeck_app noinherit",
+    ],
+    [
+      "membership of a second role",
+      "grant rolodeck_ingest to rolodeck_app",
+      "revoke rolodeck_ingest from rolodeck_app",
+    ],
+    [
+      "the right to hand its membership of authenticated to somebody else",
+      "grant authenticated to rolodeck_app with admin option",
+      "revoke admin option for authenticated from rolodeck_app",
+    ],
+  ])(
+    "fails the migration's own check on a role broadened with %s",
+    async (_description, broaden, restore) => {
+      const check = await roleCheck();
+      await scratch.client.exec(broaden);
+
+      try {
+        await expect(scratch.client.exec(check)).rejects.toThrow(
+          /rolodeck_app may|rolodeck_app must/,
+        );
+      } finally {
+        await scratch.client.exec(restore);
+      }
     },
   );
 });

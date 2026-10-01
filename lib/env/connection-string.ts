@@ -1,8 +1,10 @@
 /**
  * What a Postgres connection string has to say about itself before this repo will connect with
- * it. Both of the two it holds — the app's `DATABASE_URL` (docs/adr/0005) and ingest's
+ * it. The two the running code holds — the app's `DATABASE_URL` (docs/adr/0005) and ingest's
  * `ROLODECK_INGEST_DATABASE_URL` (docs/adr/0013) — carry their scoping in the role they log in
- * as, so a string naming the wrong role is the credential that looks scoped and is not.
+ * as, so a string naming the wrong role is the credential that looks scoped and is not. The
+ * third, `MIGRATION_DATABASE_URL`, is privileged on purpose and is read by `drizzle.config.ts`
+ * rather than through here.
  *
  * Here rather than in either `env.ts` because both need the same two checks and neither may
  * import the other: `lib/ingest/credential-boundary.test.ts` forbids an ingest entry point from
