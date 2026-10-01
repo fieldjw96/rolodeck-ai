@@ -14,8 +14,23 @@ import type { OAuthError } from "../errors";
  *
  * A GET handler rather than a Server Action because the login page reaches it with a link: see
  * `app/login/google-sign-in.tsx` on `form-action 'self'`.
+ *
+ * Nothing here is allowed to throw its way out. A route handler that throws is answered with a
+ * 500 and an opaque Next error digest, which is no way to tell somebody that the one button on
+ * the page did not work — and the one thing that can throw is reading the environment, which
+ * means the whole deployment is misconfigured and the message should say so.
  */
 export async function GET(request: NextRequest): Promise<NextResponse> {
+  try {
+    return await startSignIn(request);
+  } catch (error) {
+    console.error(error);
+
+    return backToLogin(request, "unavailable");
+  }
+}
+
+async function startSignIn(request: NextRequest): Promise<NextResponse> {
   const { supabase, carryCookies } = supabaseForRouteHandler(request);
 
   const { data, error } = await supabase.auth.signInWithOAuth({

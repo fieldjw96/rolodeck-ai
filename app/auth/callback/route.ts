@@ -21,6 +21,18 @@ import type { OAuthError } from "../../login/errors";
  * user, because Supabase keys it on the provider and the provider's subject id.
  */
 export async function GET(request: NextRequest): Promise<NextResponse> {
+  try {
+    return await completeSignIn(request);
+  } catch (error) {
+    // Supabase Auth unreachable, or the environment misconfigured. A handler that let this
+    // through would answer a cancelled consent screen's near neighbour with a 500.
+    console.error(error);
+
+    return backToLogin(request, "unavailable");
+  }
+}
+
+async function completeSignIn(request: NextRequest): Promise<NextResponse> {
   const parameters = request.nextUrl.searchParams;
 
   // Google's own refusals and cancellations arrive as `error`/`error_description`, not as an

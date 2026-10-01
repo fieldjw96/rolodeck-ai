@@ -278,6 +278,39 @@ describe("a round trip that does not finish", () => {
     );
   });
 
+  it("says so, rather than throwing, when Supabase is not configured at all", async () => {
+    // The gate refuses to run in this state and nothing else is reachable, so this is only
+    // ever the message on a broken deployment — but it is a message, not a 500.
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", "");
+
+    try {
+      const started = await startGoogleSignIn(request("/login/google"));
+      const finished = await finishGoogleSignIn(
+        request("/auth/callback?code=anything"),
+      );
+
+      for (const response of [started, finished]) {
+        expect(response.status).toBe(303);
+        expect(response.headers.get("location")).toBe(
+          `${ORIGIN}/login?error=unavailable`,
+        );
+      }
+
+      // Swallowed for the browser, not for the logs: this is the one failure here somebody
+      // has to go and fix.
+      expect(logged).toHaveBeenCalledTimes(2);
+    } finally {
+      logged.mockRestore();
+      vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", backend.url);
+      vi.stubEnv(
+        "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
+        backend.publishableKey,
+      );
+    }
+  });
+
   it("never answers with a blank page, a 500, or an opaque digest", async () => {
     // The point of the handler being a handler: every one of these is a redirect a person can
     // read, not an exception Next would render as a digest.

@@ -69,10 +69,11 @@ function passThrough(request: NextRequest, nonce: string): NextResponse {
 }
 
 /**
- * The single-account gate. Every request Next routes through the Proxy either carries a valid
- * Supabase session or is turned away — sent to `/login`, or answered 401 if it was a request
- * to a route handler — so the app is never publicly readable even though V1 has exactly one
- * account.
+ * The gate. Every request Next routes through the Proxy either carries a valid Supabase session
+ * or is turned away — sent to `/login`, or answered 401 if it was a request to a route handler.
+ * Anyone may sign up (docs/adr/0020), so what this guards is no longer "one account" but the
+ * line between a signed-in reader of the Catalogue and the public: the whole app bar `/login`
+ * and the OAuth callback is behind it.
  *
  * This is the optimistic half of the check that Next's authentication guide describes: it
  * centralises the refusal and, just as importantly, is the only place that can write refreshed

@@ -92,7 +92,8 @@ the whole guarantee, and nothing in this repository can change a GitHub secret o
 
 `SUPABASE_SECRET_KEY` is deliberately not among them, and neither is
 `ROLODECK_INGEST_DATABASE_URL`: the running app reads neither, so neither belongs in Vercel
-either. The secret key is used only by `npm run account:provision`; the database
+either. The secret key is used only by `npm run account:provision`, which creates and rotates the
+smoke test's one password account; the database
 URL is ingest's. `ROLODECK_NEWS_KEEPS_USER_ID`, which only `npm run ingest:news` reads, is a
 user id from the Supabase dashboard; it names whose Keeps News gathers for, per ADR 0019, and
 owns nothing.
@@ -135,14 +136,14 @@ ROLODECK_SMOKE_EMAIL=... ROLODECK_SMOKE_PASSWORD=... npm run smoke
 npm run smoke -- http://localhost:3000
 ```
 
-Signs in to a running deployment and checks that the login page renders, that signing in
-lands on the Deck, that the Deck deals a Company Profile out of Postgres, and that the
+Signs in to a running deployment and checks that `/login` offers Google, that the unlisted
+`/login/password` form renders, that signing in through it lands on the Deck, that the Deck deals a Company Profile out of Postgres, and that the
 Watchlist renders. Exits non-zero if any of that fails.
 
 **It writes nothing.** It never Keeps or Passes. Destructive testing belongs in
 `npm run test:e2e:db`, which runs against a throwaway Postgres and a throwaway user; this
-one runs against the real deployment and the real single account, so a Keep here would put a
-Company Profile on the real account's Watchlist that nobody chose.
+one runs against the real deployment and the real smoke-test account, so a Keep here would
+put a Company Profile on that account's Watchlist that nobody chose.
 
 It exists for the class of failure a diff cannot show. Both real bugs in the first
 deployment were of that kind: a UTF-8 BOM prepended to an environment variable, so every
