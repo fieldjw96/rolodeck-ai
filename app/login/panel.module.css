@@ -1,7 +1,9 @@
 /* The first screen anyone sees, so it carries the same card, the same accent and the same
-   type as the Deck behind it rather than a browser's default form. */
+   type as the Deck behind it rather than a browser's default form. Shared by both doors: the
+   Google panel on /login and the unlisted password form on /login/password, so the two cannot
+   drift into looking like two different products. */
 
-.form {
+.panel {
   display: flex;
   width: 100%;
   max-width: 24rem;
@@ -73,18 +75,28 @@
 }
 
 .submit {
+  display: flex;
   margin-top: var(--space-2);
   min-height: var(--space-8);
+  align-items: center;
+  justify-content: center;
   padding: var(--space-3) var(--space-4);
   background: var(--color-accent);
   border: 1px solid transparent;
   border-radius: var(--radius-pill);
   font-size: var(--text-base);
   font-weight: var(--weight-semibold);
+  text-decoration: none;
   color: var(--color-accent-contrast);
   transition: background-color var(--transition-fast);
 }
 
 .submit:hover {
   background: var(--color-accent-hover);
+}
+
+/* Why Google and nothing else, said once, under the button rather than beside it. */
+.note {
+  font-size: var(--text-xs);
+  color: var(--color-text-faint);
 }

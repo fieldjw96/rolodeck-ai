@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { createServerClient } from "@supabase/ssr";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
-import { startGoTrueStub } from "./gotrue-stub";
+import { startGoTrueStub, type GoTrueStub } from "./gotrue-stub";
 
 /**
  * A throwaway account, created for one test and deleted when it finishes. Nothing here is
@@ -21,6 +21,12 @@ export type AuthBackend = {
   publishableKey: string;
   /** The secret-key client, for the tests that are about the Admin API itself. */
   admin: SupabaseClient;
+  /**
+   * Stands in for a completed Google consent screen, or null where nothing can: against a live
+   * project there is no way to consent on a real Google account from a test, so the OAuth
+   * round trip is a stub-only exercise and a test that needs it must say so.
+   */
+  authorize: GoTrueStub["authorize"] | null;
   createUser: () => Promise<ThrowawayUser>;
   deleteUser: (id: string) => Promise<void>;
   close: () => Promise<void>;
@@ -81,6 +87,7 @@ export async function stubBackend(): Promise<AuthBackend> {
     url: stub.url,
     publishableKey: stub.publishableKey,
     admin: admin.client,
+    authorize: stub.authorize,
     createUser: admin.createUser,
     deleteUser: admin.deleteUser,
     close: stub.close,
@@ -116,6 +123,7 @@ async function liveBackend(): Promise<AuthBackend> {
     url: credentials.url,
     publishableKey: credentials.publishableKey,
     admin: admin.client,
+    authorize: null,
     createUser: admin.createUser,
     deleteUser: admin.deleteUser,
     close: async () => {},

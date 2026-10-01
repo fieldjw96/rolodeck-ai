@@ -10,7 +10,10 @@ const EMPTY_DECK_MESSAGE = "No Profiles left in the Deck.";
 /** Types a throwaway user's credentials into the real login form and submits it, so this
  * spec exercises the same Server Action a person signing in does — not a cookie shortcut. */
 async function login(page: Page, baseURL: string, user: SeededUser) {
-  await page.goto(`${baseURL}/login`);
+  // `/login/password`, not `/login`: the front door is Google, whose consent screen a test
+  // cannot reach, and the password form is the unlisted path that survives for exactly this
+  // reason — see docs/adr/0021.
+  await page.goto(`${baseURL}/login/password`);
   await page.getByLabel("Email").fill(user.email);
   await page.getByLabel("Password").fill(user.password);
   await page.getByRole("button", { name: "Sign in" }).click();

@@ -83,7 +83,7 @@ describe("signing in", () => {
     await expect(
       signIn(form({ email: user.email, password: "not-the-password" })),
     ).rejects.toMatchObject({
-      digest: expect.stringContaining("/login?error=credentials"),
+      digest: expect.stringContaining("/login/password?error=credentials"),
     });
 
     expect(sessionCookies()).toEqual([]);
@@ -93,13 +93,13 @@ describe("signing in", () => {
     await expect(
       signIn(form({ email: "stranger@example.invalid", password: "anything" })),
     ).rejects.toMatchObject({
-      digest: expect.stringContaining("/login?error=credentials"),
+      digest: expect.stringContaining("/login/password?error=credentials"),
     });
   });
 
   it("rejects a form that is missing a field before it asks Supabase anything", async () => {
     await expect(signIn(form({ email: user.email }))).rejects.toMatchObject({
-      digest: expect.stringContaining("/login?error=incomplete"),
+      digest: expect.stringContaining("/login/password?error=incomplete"),
     });
 
     expect(sessionCookies()).toEqual([]);
@@ -109,7 +109,7 @@ describe("signing in", () => {
     await expect(
       signIn(form({ email: "not-an-email", password: "anything" })),
     ).rejects.toMatchObject({
-      digest: expect.stringContaining("/login?error=incomplete"),
+      digest: expect.stringContaining("/login/password?error=incomplete"),
     });
   });
 });

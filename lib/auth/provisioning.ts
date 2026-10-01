@@ -1,12 +1,14 @@
 import { randomBytes } from "node:crypto";
 
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { SupabaseClient, User } from "@supabase/supabase-js";
 
 export type ProvisionedAccount = {
   id: string;
   email: string;
   /** Generated here and shown once; nothing stores it. */
   password: string;
+  /** True when the address already had an account and only its password changed. */
+  rotated: boolean;
 };
 
 const USAGE =
@@ -38,43 +40,88 @@ export function generatePassword(): string {
   return randomBytes(32).toString("base64url");
 }
 
+/** A page size large enough that one request answers it in practice, and a bound on the walk. */
+const PER_PAGE = 200;
+const PAGE_LIMIT = 50;
+
 /**
- * Creates the one account this app has, using a client holding the secret key.
- *
- * There is no sign-up flow on purpose: CLAUDE.md's V1 is single-player, and a self-service
- * route into a deployment meant to have exactly one user is a way in for everybody else.
- * Provisioning is an operator action instead, run from the server laptop where the secret key
- * already lives — the same trust boundary as the scraper's ingest path.
+ * The account for an address, or null. There is no "get user by email" in the Admin API, so
+ * this walks the list — and stops with an error rather than guessing if the list is longer
+ * than the walk, because guessing here means creating a second account for an address that
+ * already has one.
  */
-export async function provisionSingleAccount(
+async function findByEmail(
+  admin: SupabaseClient,
+  email: string,
+): Promise<User | null> {
+  const wanted = email.toLowerCase();
+
+  for (let page = 1; page <= PAGE_LIMIT; page += 1) {
+    const { data, error } = await admin.auth.admin.listUsers({
+      page,
+      perPage: PER_PAGE,
+    });
+
+    if (error !== null) {
+      throw new Error(`could not read the account list: ${error.message}`);
+    }
+
+    const match = data.users.find(
+      (user) => user.email?.toLowerCase() === wanted,
+    );
+
+    if (match !== undefined) {
+      return match;
+    }
+
+    if (data.users.length < PER_PAGE) {
+      return null;
+    }
+  }
+
+  throw new Error(
+    `more than ${String(PER_PAGE * PAGE_LIMIT)} accounts: cannot tell whether ${email} already has one`,
+  );
+}
+
+/**
+ * Creates the email-and-password account, or rotates its password if the address already has
+ * one, using a client holding the secret key.
+ *
+ * This is no longer how people get in. Sign-up is open and arrives through Google SSO, which
+ * never calls this (docs/adr/0020 and docs/adr/0021). What it is for is the one credential the
+ * deploy smoke test signs in with: ADR 0013 forbids `SUPABASE_SECRET_KEY` in GitHub Actions,
+ * so the workflow cannot generate a sign-in link and has to type a password, and something has
+ * to create and rotate the account that password belongs to.
+ *
+ * It used to refuse outright if the project had any account at all, which was the single-player
+ * rule enforced rather than described. With sign-up open that rule is gone, and the refusal
+ * would now fire on the first stranger who signed in with Google — guarding a door nobody uses
+ * and breaking a password rotation while it did.
+ */
+export async function provisionAccount(
   admin: SupabaseClient,
   email: string,
 ): Promise<ProvisionedAccount> {
-  const existing = await admin.auth.admin.listUsers({ page: 1, perPage: 1 });
-
-  if (existing.error !== null) {
-    throw new Error(
-      `could not read the account list: ${existing.error.message}`,
-    );
-  }
-
-  // The single-account rule, enforced rather than described. The Catalogue is shared and
-  // nothing owns it (docs/adr/0019), so a second account would not hide anything; what this
-  // guards now is that the password path exists for one operator-made account, and open
-  // sign-up arrives through Google SSO instead. See docs/adr/0020 and docs/adr/0021.
-  const [first] = existing.data.users;
-  if (first !== undefined) {
-    throw new Error(
-      `this project already has an account (${first.email ?? first.id}). ` +
-        "Remove it in the Supabase dashboard first if you meant to replace it.",
-    );
-  }
-
   const password = generatePassword();
+  const existing = await findByEmail(admin, email);
+
+  if (existing !== null) {
+    const { error } = await admin.auth.admin.updateUserById(existing.id, {
+      password,
+    });
+
+    if (error !== null) {
+      throw new Error(`could not rotate the password: ${error.message}`);
+    }
+
+    return { id: existing.id, email, password, rotated: true };
+  }
+
   const { data, error } = await admin.auth.admin.createUser({
     email,
     password,
-    // No inbox is watching this address, and nobody else can be signing up.
+    // No inbox is watching this address: it belongs to the smoke test, not to a person.
     email_confirm: true,
   });
 
@@ -84,5 +131,5 @@ export async function provisionSingleAccount(
     );
   }
 
-  return { id: data.user.id, email, password };
+  return { id: data.user.id, email, password, rotated: false };
 }
