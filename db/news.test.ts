@@ -230,7 +230,9 @@ describe("readNews", () => {
   });
 
   it("returns nothing for a Company Profile that is not currently Kept, even with News stored for it", async () => {
-    const [passed, unswiped, keptThenPassed] = await seedProfiles(scratch.db, { count: 3 });
+    const [passed, unswiped, keptThenPassed] = await seedProfiles(scratch.db, {
+      count: 3,
+    });
     await swipe(passed!, "pass");
     await swipe(keptThenPassed!, "keep");
 
@@ -283,7 +285,9 @@ describe("readNews", () => {
     // article is Catalogue, so the second User sees the row; what they do not see is the Keep
     // that caused it to be gathered, which is why `readNews` still answers them nothing.
     await scratch.as("authenticated", SOMEONE_ELSE);
-    expect((await storedRows()).map((row) => row.title)).toEqual(["Headline 1"]);
+    expect((await storedRows()).map((row) => row.title)).toEqual([
+      "Headline 1",
+    ]);
     expect(await scratch.db.select().from(swipes)).toEqual([]);
 
     await scratch.as("anon");

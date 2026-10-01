@@ -195,9 +195,9 @@ describe("collapsing the duplicates the old owner-bearing keys kept apart", () =
 
     await scratch.client.exec(collapse);
 
-    expect((await scratch.db.select().from(events)).map((row) => row.id)).toEqual(
-      [written[0]!.id],
-    );
+    expect(
+      (await scratch.db.select().from(events)).map((row) => row.id),
+    ).toEqual([written[0]!.id]);
     expect(await scratch.db.select().from(eventAttendances)).toEqual([
       { eventId: written[0]!.id, profileId: older },
     ]);

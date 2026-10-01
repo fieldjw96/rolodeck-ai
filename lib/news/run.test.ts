@@ -473,7 +473,11 @@ describe("fetchNewsForKeptProfiles", () => {
 
   it("searches each Kept Company Profile by its own site and its name, over the last twelve months", async () => {
     await swipe(
-      await companyProfile("Blacksmith", "developer-tools", "https://blacksmith.sh/"),
+      await companyProfile(
+        "Blacksmith",
+        "developer-tools",
+        "https://blacksmith.sh/",
+      ),
       "keep",
     );
     await swipe(await companyProfile("Quiet Co", "other"), "keep");

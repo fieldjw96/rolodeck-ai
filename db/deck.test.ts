@@ -408,9 +408,11 @@ describe("row level security under the Deck", () => {
 
     await expect(
       refusalFrom(
-        scratch.db
-          .insert(swipes)
-          .values({ userId: JACK, profileId: theOnlyProfile, decision: "keep" }),
+        scratch.db.insert(swipes).values({
+          userId: JACK,
+          profileId: theOnlyProfile,
+          decision: "keep",
+        }),
       ),
     ).resolves.toMatch(/row-level security/i);
   });

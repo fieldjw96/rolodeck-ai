@@ -275,8 +275,13 @@ describe("profiles row level security", () => {
     await scratch.as("authenticated", SOMEONE_ELSE);
     const theirs = await scratch.db.select().from(profiles);
 
-    expect(jacks.map((row) => row.name).sort()).toEqual(["Sprocket", "Thimble"]);
-    expect(theirs.map((row) => row.name).sort()).toEqual(jacks.map((row) => row.name).sort());
+    expect(jacks.map((row) => row.name).sort()).toEqual([
+      "Sprocket",
+      "Thimble",
+    ]);
+    expect(theirs.map((row) => row.name).sort()).toEqual(
+      jacks.map((row) => row.name).sort(),
+    );
   });
 
   it("hides one User's Keep from the other", async () => {

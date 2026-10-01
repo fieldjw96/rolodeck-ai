@@ -353,9 +353,9 @@ describe("logged in as the ingest role", () => {
   it.each(["profiles", "news_items", "events"])(
     "has no owner column on %s to write at all",
     async (table) => {
-      expect(await refusal(`update ${table} set owner_id = $1`, [JACK])).toMatch(
-        /column "owner_id" of relation .* does not exist/,
-      );
+      expect(
+        await refusal(`update ${table} set owner_id = $1`, [JACK]),
+      ).toMatch(/column "owner_id" of relation .* does not exist/);
     },
   );
 

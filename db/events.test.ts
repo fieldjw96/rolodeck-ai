@@ -217,7 +217,6 @@ describe("persistEvents", () => {
 
     expect(await eventRowCount()).toBe(0);
   });
-
 });
 
 describe("persistEvents idempotency", () => {
