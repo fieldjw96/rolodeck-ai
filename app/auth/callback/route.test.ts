@@ -12,6 +12,7 @@ import {
 } from "vitest";
 
 import { applyAuthGate } from "../../../lib/auth/gate";
+import { needsOnboarding } from "../../../lib/auth/onboarding";
 import {
   cookieHeader,
   stubBackend,
@@ -20,6 +21,11 @@ import {
 } from "../../../lib/auth/testing/auth-backend";
 import { GET as startGoogleSignIn } from "../../login/google/route";
 import { GET as finishGoogleSignIn } from "./route";
+
+// This file is about the OAuth round trip, not Postgres: `needsOnboarding` is mocked, the same
+// way `next/headers` would be, rather than wiring a database into it. The real decision is
+// covered in `db/user-profile.test.ts` and exercised end to end in `e2e/onboarding.spec.ts`.
+vi.mock("../../../lib/auth/onboarding", () => ({ needsOnboarding: vi.fn() }));
 
 const ORIGIN = "https://rolodeck.example";
 
@@ -80,6 +86,10 @@ afterAll(async () => {
 
 beforeEach(() => {
   jar = new Map();
+  // Most of this file is about the round trip itself, not the destination it ends at, so the
+  // default is "already asked" — the specific redirect a brand new identity gets is its own
+  // describe block below.
+  vi.mocked(needsOnboarding).mockResolvedValue(false);
 });
 
 /**
@@ -167,11 +177,14 @@ describe("starting the Google round trip", () => {
 });
 
 describe("a Google identity signing in for the first time", () => {
-  it("lands on the Deck with a session, with nothing provisioned by hand", async () => {
-    const { response } = await signInWithGoogle("first@berkeley.edu");
+  it("is sent to onboarding rather than the Deck, since nobody has asked it anything yet", async () => {
+    vi.mocked(needsOnboarding).mockResolvedValueOnce(true);
 
-    expect(response.headers.get("location")).toBe(`${ORIGIN}/deck`);
+    const { response, userId } = await signInWithGoogle("first@berkeley.edu");
+
+    expect(response.headers.get("location")).toBe(`${ORIGIN}/onboarding`);
     expect(sessionCookieNames().length).toBeGreaterThan(0);
+    expect(needsOnboarding).toHaveBeenCalledWith(userId);
 
     const user = await userFromJar();
 
@@ -180,6 +193,13 @@ describe("a Google identity signing in for the first time", () => {
     // sign-up be open with no SMTP provider at all. See docs/adr/0021.
     expect(user?.email_confirmed_at).toEqual(expect.any(String));
     expect(user?.app_metadata.provider).toBe("google");
+  });
+
+  it("lands on the Deck with a session once a User Profile already exists", async () => {
+    const { response } = await signInWithGoogle("already-asked@berkeley.edu");
+
+    expect(response.headers.get("location")).toBe(`${ORIGIN}/deck`);
+    expect(sessionCookieNames().length).toBeGreaterThan(0);
   });
 
   it("gets a Deck the gate lets it reach", async () => {

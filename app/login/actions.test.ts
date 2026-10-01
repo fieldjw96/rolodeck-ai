@@ -14,6 +14,7 @@ import {
   type AuthBackend,
   type ThrowawayUser,
 } from "../../lib/auth/testing/auth-backend";
+import { needsOnboarding } from "../../lib/auth/onboarding";
 import { signIn } from "./actions";
 
 /**
@@ -31,6 +32,12 @@ vi.mock("next/headers", () => ({
     },
   }),
 }));
+
+// This file never touches Postgres: `needsOnboarding` is the one thing standing between a
+// successful sign-in and a destination, and is mocked the same way `next/headers` is above,
+// rather than wiring a database into a suite about credentials. Ticket #191's own coverage of
+// the real decision lives in `db/user-profile.test.ts` and `e2e/onboarding.spec.ts`.
+vi.mock("../../lib/auth/onboarding", () => ({ needsOnboarding: vi.fn() }));
 
 let backend: AuthBackend;
 let user: ThrowawayUser;
@@ -65,6 +72,7 @@ afterAll(async () => {
 
 beforeEach(() => {
   jar = new Map();
+  vi.mocked(needsOnboarding).mockResolvedValue(false);
 });
 
 describe("signing in", () => {
@@ -74,6 +82,19 @@ describe("signing in", () => {
       signIn(form({ email: user.email, password: user.password })),
     ).rejects.toMatchObject({
       digest: expect.stringContaining("/deck"),
+    });
+
+    expect(sessionCookies().length).toBeGreaterThan(0);
+    expect(needsOnboarding).toHaveBeenCalledWith(user.id);
+  });
+
+  it("sends the browser to onboarding instead, for a User who has never saved a User Profile", async () => {
+    vi.mocked(needsOnboarding).mockResolvedValueOnce(true);
+
+    await expect(
+      signIn(form({ email: user.email, password: user.password })),
+    ).rejects.toMatchObject({
+      digest: expect.stringContaining("/onboarding"),
     });
 
     expect(sessionCookies().length).toBeGreaterThan(0);

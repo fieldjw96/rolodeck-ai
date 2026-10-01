@@ -294,6 +294,31 @@ describe("ranking the Deck by the User Profile", () => {
     await expect(dealPage()).resolves.toEqual(["Newest", "Middle", "Oldest"]);
   });
 
+  it("deals a User who stated preferences the same Deck, reordered, not a shorter one (Ticket #191)", async () => {
+    const SOMEONE_ELSE = "22222222-2222-2222-2222-222222222222";
+    await scratch.createUser(SOMEONE_ELSE);
+
+    await seed([
+      { name: "Ai", minute: 0, sector: "ai-ml", stage: "series-a" },
+      { name: "Fintech", minute: 1, sector: "fintech" },
+      { name: "Security", minute: 2, sector: "security", stage: "seed" },
+      { name: "Climate", minute: 3, sector: "climate-energy" },
+      { name: "Other", minute: 4 },
+    ]);
+    await statePreferences({ sectors: ["ai-ml"], stages: ["series-a"] });
+
+    const stated = await dealPage();
+    const none = await asUser(scratch.db, SOMEONE_ELSE, (tx) =>
+      readDeckPage(tx, { userId: SOMEONE_ELSE, limit: 50 }),
+    ).then((page) => page.profiles.map((profile) => profile.name));
+
+    // The property the screen promises: every Company Profile still appears, in a different
+    // order, because stating a preference ranks rather than filters. See docs/adr/0011.
+    expect(stated).toHaveLength(none.length);
+    expect(stated).not.toEqual(none);
+    expect([...stated].sort()).toEqual([...none].sort());
+  });
+
   it("ranks nothing by place for an area it has no cities for, rather than erroring", async () => {
     await seed([
       { name: "In San Francisco", minute: 0, location: "San Francisco, CA" },

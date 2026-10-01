@@ -1,6 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { HOME_PATH, LOGIN_PATH } from "../../../lib/auth/paths";
+import { needsOnboarding } from "../../../lib/auth/onboarding";
+import {
+  HOME_PATH,
+  LOGIN_PATH,
+  ONBOARDING_PATH,
+} from "../../../lib/auth/paths";
 import { requestOrigin } from "../../../lib/http/request-origin";
 import { supabaseForRouteHandler } from "../../../lib/supabase/route-handler";
 import type { OAuthError } from "../../login/errors";
@@ -48,7 +53,7 @@ async function completeSignIn(request: NextRequest): Promise<NextResponse> {
   }
 
   const { supabase, carryCookies } = supabaseForRouteHandler(request);
-  const { error } = await supabase.auth.exchangeCodeForSession(code);
+  const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error !== null) {
     // An expired code, a replayed one, or a request arriving without the verifier cookie that
@@ -56,9 +61,15 @@ async function completeSignIn(request: NextRequest): Promise<NextResponse> {
     return carryCookies(backToLogin(request, "exchange"));
   }
 
+  // A User who has never saved a User Profile has never been asked for Sectors and Stages, on
+  // this identity's very first exchange or any since — see docs/adr/0011 and Ticket #191.
+  const destination = (await needsOnboarding(data.user.id))
+    ? ONBOARDING_PATH
+    : HOME_PATH;
+
   // The session cookies go out on this redirect; the gate takes it from here.
   return carryCookies(
-    NextResponse.redirect(new URL(HOME_PATH, requestOrigin(request)), 303),
+    NextResponse.redirect(new URL(destination, requestOrigin(request)), 303),
   );
 }
 

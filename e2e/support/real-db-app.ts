@@ -89,6 +89,11 @@ export type SeededUser = {
   profileNames: string[];
 };
 
+/** A throwaway user with no User Profile at all — the one `e2e/onboarding.spec.ts` needs, and
+ * the reason it is not `seededUser`: that fixture is already asked, on purpose, so the swipe
+ * flow it serves is not tangled up in Ticket #191's own screen. */
+export type NewUser = { email: string; password: string };
+
 /**
  * Everything the two specs in `swipe-flow.spec.ts` need against a real Postgres: a migrated
  * scratch database, a running app pointed at it, and — per test — a fresh signed-up user with
@@ -99,7 +104,7 @@ export type SeededUser = {
  * "reset between tests so they don't depend on run order".
  */
 export const test = base.extend<
-  { seededUser: SeededUser },
+  { seededUser: SeededUser; newUser: NewUser },
   { backend: AuthBackend; sql: Sql; app: RealDbApp }
 >({
   backend: [
@@ -183,6 +188,10 @@ export const test = base.extend<
 
     const user = await backend.createUser();
     await sql`insert into auth.users (id) values (${user.id})`;
+    // Already asked, on purpose: this fixture serves the swipe flow, which Ticket #191's
+    // onboarding screen is not part of. `newUser`, below, is the one deliberately without this
+    // row.
+    await sql`insert into user_profiles (user_id) values (${user.id})`;
 
     const db = drizzle(sql, { schema });
     await seedProfiles(db, { count: SEEDED_PROFILE_COUNT });
@@ -195,6 +204,19 @@ export const test = base.extend<
           seededName(i),
         ),
       });
+    } finally {
+      await backend.deleteUser(user.id);
+    }
+  },
+
+  newUser: async ({ backend, sql }, provide) => {
+    await sql`truncate table auth.users, profiles cascade`;
+
+    const user = await backend.createUser();
+    await sql`insert into auth.users (id) values (${user.id})`;
+
+    try {
+      await provide({ email: user.email, password: user.password });
     } finally {
       await backend.deleteUser(user.id);
     }

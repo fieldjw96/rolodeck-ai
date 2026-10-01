@@ -3,7 +3,12 @@
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
-import { HOME_PATH, PASSWORD_SIGN_IN_PATH } from "../../lib/auth/paths";
+import { needsOnboarding } from "../../lib/auth/onboarding";
+import {
+  HOME_PATH,
+  ONBOARDING_PATH,
+  PASSWORD_SIGN_IN_PATH,
+} from "../../lib/auth/paths";
 import { createSupabaseServerClient } from "../../lib/supabase/server";
 import type { SignInError } from "./errors";
 
@@ -39,12 +44,20 @@ export async function signIn(formData: FormData): Promise<never> {
   }
 
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.auth.signInWithPassword(credentials.data);
+  const { data, error } = await supabase.auth.signInWithPassword(
+    credentials.data,
+  );
 
   if (error !== null) {
     failedWith("credentials");
   }
 
+  // A User who has never saved a User Profile has never been asked for Sectors and Stages, on
+  // this account's very first sign-in or any since — see docs/adr/0011 and Ticket #191.
+  const destination = (await needsOnboarding(data.user.id))
+    ? ONBOARDING_PATH
+    : HOME_PATH;
+
   // Supabase has written the session cookies onto this response; the gate takes it from here.
-  redirect(HOME_PATH);
+  redirect(destination);
 }

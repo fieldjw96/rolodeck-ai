@@ -29,4 +29,28 @@ describe("userProfileInputSchema, on stages", () => {
     expect(result.error?.issues[0]?.path).toEqual(["stages", 0]);
     expect(result.error?.issues[0]?.message).toContain('"not-stated"');
   });
+
+  it("rejects a Stage off the closed list entirely, naming it, before Postgres ever sees it", () => {
+    const result = userProfileInputSchema.safeParse({
+      ...NOTHING,
+      stages: ["series-z"],
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0]?.path).toEqual(["stages", 0]);
+    expect(result.error?.issues[0]?.message).toContain('"series-z"');
+  });
+});
+
+describe("userProfileInputSchema, on sectors", () => {
+  it("rejects a Sector off the closed list entirely, naming it, before Postgres ever sees it", () => {
+    const result = userProfileInputSchema.safeParse({
+      ...NOTHING,
+      sectors: ["not-a-sector"],
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0]?.path).toEqual(["sectors", 0]);
+    expect(result.error?.issues[0]?.message).toContain('"not-a-sector"');
+  });
 });

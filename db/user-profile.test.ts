@@ -90,6 +90,41 @@ describe("readSavedUserProfile", () => {
   });
 });
 
+describe("the record of having been asked (Ticket #191)", () => {
+  it("is unresolved for an owner who has never saved a User Profile", async () => {
+    await expect(readSavedUserProfile(scratch.db, JACK)).resolves.toBeNull();
+  });
+
+  it("is resolved, and stays resolved, for an owner who stated preferences", async () => {
+    await writeUserProfile(scratch.db, JACK, {
+      sectors: ["fintech"],
+      stages: ["seed"],
+      area: "Bay Area",
+      excluded_sectors: [],
+    });
+
+    await expect(
+      readSavedUserProfile(scratch.db, JACK),
+    ).resolves.not.toBeNull();
+  });
+
+  it("is resolved, not unresolved, for an owner who skipped and left every preference empty", async () => {
+    // Skipping still writes the row — `writeUserProfile` upserts whatever it is given, empty
+    // arrays included — which is the whole of why row existence, not row content, is what
+    // being asked means. See `EMPTY_USER_PROFILE` above.
+    await writeUserProfile(scratch.db, JACK, {
+      sectors: [],
+      stages: [],
+      area: "Bay Area",
+      excluded_sectors: [],
+    });
+
+    await expect(
+      readSavedUserProfile(scratch.db, JACK),
+    ).resolves.not.toBeNull();
+  });
+});
+
 describe("writeUserProfile", () => {
   it("the owner has exactly one row: writing twice corrects it rather than adding a second", async () => {
     await writeUserProfile(scratch.db, JACK, {
