@@ -147,7 +147,51 @@ jobs:
               exit 1
               ;;
           esac
-          echo "Every production secret is present, and both database URLs use the pooler."
+
+          # Ticket #188: SUPABASE_POOLER_URL is set in Vercel as the running app's DATABASE_URL,
+          # and `readDatabaseUrl()` refuses a string that does not log in as `rolodeck_app` —
+          # the role that cannot bypass RLS. Checked here, before anything touches production,
+          # because the alternative is a green deploy whose every request 500s. A string that
+          # still logs in as `postgres` fails this step until Jack changes the secret, which is
+          # deliberate: the role is the whole guarantee, and nothing in the repository can
+          # change a secret on its behalf.
+          case "${SUPABASE_POOLER_URL#*://}" in
+            rolodeck_app:*|rolodeck_app.*|rolodeck_app@*) ;;
+            *)
+              echo "::error::SUPABASE_POOLER_URL must log in as rolodeck_app, or rolodeck_app.<project-ref> through the pooler — not postgres, which bypasses RLS. See docs/adr/0005 and docs/deploying.md."
+              exit 1
+              ;;
+          esac
+
+          # Any query parameter but sslmode is sent to Postgres at login, and ?user= replaces
+          # the login the check above just read. `readDatabaseUrl()` refuses those too.
+          query=""
+          case "$SUPABASE_POOLER_URL" in
+            *\?*) query="${SUPABASE_POOLER_URL#*\?}" ;;
+          esac
+          case "$query" in
+            "" | sslmode=*) ;;
+            *)
+              echo "::error::SUPABASE_POOLER_URL may carry no query parameter but sslmode."
+              exit 1
+              ;;
+          esac
+          case "$query" in
+            *\&*)
+              echo "::error::SUPABASE_POOLER_URL may carry no query parameter but sslmode."
+              exit 1
+              ;;
+          esac
+
+          # And the other way round: migrating needs rights `rolodeck_app` deliberately lacks,
+          # so narrowing this one as well would fail at the first CREATE TABLE. See ADR 0014.
+          case "${MIGRATION_DATABASE_URL#*://}" in
+            rolodeck_app:*|rolodeck_app.*|rolodeck_app@*)
+              echo "::error::MIGRATION_DATABASE_URL must stay the privileged connection. rolodeck_app cannot apply DDL; that is why the two are separate credentials."
+              exit 1
+              ;;
+          esac
+          echo "Every production secret is present, both database URLs use the pooler, and the app's connection logs in as rolodeck_app while the migration's does not."
 
       - id: link
         name: Check the Vercel project is reachable

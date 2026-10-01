@@ -54,7 +54,7 @@ repository-level secrets would not be withheld from it.
 | Secret                                 | What it is                                                                                                                                |
 | -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | `MIGRATION_DATABASE_URL`               | The privileged `postgres` connection migrations run as, through the session-mode pooler (`pooler.supabase.com`, port 5432). Not ingest's. |
-| `SUPABASE_POOLER_URL`                  | The pooler URL the deployed app connects with; set in Vercel as `DATABASE_URL`.                                                           |
+| `SUPABASE_POOLER_URL`                  | The pooler URL the deployed app connects with, logging in as `rolodeck_app.<project-ref>`; set in Vercel as `DATABASE_URL`.               |
 | `NEXT_PUBLIC_SUPABASE_URL`             | The project URL, as in `.env.example`.                                                                                                    |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | The publishable key, as in `.env.example`.                                                                                                |
 | `VERCEL_TOKEN`                         | A Vercel access token for the account that owns the `rolodeck-ai` project.                                                                |
@@ -64,6 +64,31 @@ repository-level secrets would not be withheld from it.
 Both database URLs must be pooler URLs, and the workflow refuses anything else before it
 touches production. Supabase's direct host `db.<ref>.supabase.co` is IPv6-only, and neither
 GitHub's runners nor Vercel's functions have IPv6 outbound.
+
+The two must also log in as different roles, and the preflight refuses them otherwise.
+`SUPABASE_POOLER_URL` has to be `rolodeck_app.<project-ref>`: that role cannot bypass RLS and
+holds no table privilege until `asUser()` drops it to `authenticated`, which is what makes a
+query that forgets its session fail instead of returning somebody's rows (Ticket #188,
+`docs/adr/0005`). `MIGRATION_DATABASE_URL` has to stay the privileged `postgres` connection,
+because applying DDL needs rights `rolodeck_app` deliberately lacks.
+
+### Setting the app's role up, by hand, once
+
+Migration 0012 creates `rolodeck_app` but sets no password, because the migration is committed.
+After it has been applied — the first merge after Ticket #188 does that — in the Supabase SQL
+editor:
+
+1. `alter role rolodeck_app with password '<a long random password>';`
+2. Build the connection string from the pooler's, under Project Settings → Database, with
+   `rolodeck_app.<project-ref>` as the user in place of `postgres.<project-ref>`, and the
+   password from step 1. Keep the port the dashboard gives for the app (6543, transaction
+   mode); `db/connection.ts` sets `prepare: false` for it.
+3. Put it in the `production` environment as `SUPABASE_POOLER_URL`, replacing the `postgres`
+   one, and in `.env.local` on the laptop as `DATABASE_URL`.
+
+Until step 3, every merge fails at the preflight step, before it touches production, and the
+first failure opens an issue saying so. That is the workflow behaving as intended: the role is
+the whole guarantee, and nothing in this repository can change a GitHub secret on its own.
 
 `SUPABASE_SECRET_KEY` is deliberately not among them, and neither is
 `ROLODECK_INGEST_DATABASE_URL`: the running app reads neither, so neither belongs in Vercel

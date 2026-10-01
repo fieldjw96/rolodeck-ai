@@ -19,6 +19,25 @@ begin
 end
 $$;
 
+-- The app's own login role, which migration 0012_app_role creates and `DATABASE_URL` connects
+-- as. Created here too, before any migration runs, for two reasons. Every run of 0012 after the
+-- first finds the role already there, with a password set on it by hand since — so that is the
+-- state the tests see as well this way, and the migration's guard and its own self-check are
+-- exercised against it rather than only against an empty cluster. And a test that logs in as the
+-- role needs it to exist and to be able to log in; its password is set by whatever stands the
+-- database up, never by a committed file.
+--
+-- Deliberately narrower than 0012 asks for: no membership of `authenticated` is granted here,
+-- so if that migration ever stopped granting it, the role would reach nothing and the tests
+-- would say so, rather than passing on something this file had already arranged.
+do $$
+begin
+  if not exists (select 1 from pg_roles where rolname = 'rolodeck_app') then
+    create role rolodeck_app with login nosuperuser nocreatedb nocreaterole noinherit noreplication nobypassrls;
+  end if;
+end
+$$;
+
 create schema if not exists auth;
 
 -- Only the column `profiles.owner_id` references. The app's auth gate is tested separately,

@@ -41,7 +41,9 @@ create and delete users through the Admin API.
 - `npm run test:e2e:db` runs Playwright's swipe-flow suite (Ticket #13) against a real
   Postgres instead. Point `DATABASE_URL` at a scratch database, apply
   `db/testing/supabase-shim.sql` to it first (the same as `npm run db:migrate`; see "Database"
-  below), then run the command.
+  below), then run the command. Here `DATABASE_URL` is the privileged connection the suite
+  migrates with: it hands the app under test a `rolodeck_app` one it derives from it, so the
+  browser's requests go through the same narrow role production uses.
 - `npm run build` followed by `npm run check:bundle-secrets` confirms nothing server-only
   leaked into the client bundle; CI runs this pair on every pull request.
 
@@ -50,10 +52,21 @@ create and delete users through the Admin API.
 The schema lives in `db/schema.ts`. After changing it, run `npm run db:generate` to write a
 migration into `db/migrations/`, and commit the generated files.
 
-`npm run db:migrate` applies pending migrations to the database at `DATABASE_URL`, which is
-also the connection the app's own queries run on, as the `authenticated` role, with the
-signed-in user's id in `request.jwt.claims`, so every RLS policy applies. See `docs/adr/0005`. Against
+`npm run db:migrate` applies pending migrations to the database at `DATABASE_URL`. Against
 anything that is not a real Supabase project, apply `db/testing/supabase-shim.sql` first: it
-supplies the `anon` and `authenticated` roles, the `auth` schema and `auth.uid()` that the
-migrations and RLS policies expect. The test suite does this for you, against an in-process
-Postgres, so no database needs to be running to run `npm run test`.
+supplies the `anon` and `authenticated` roles, the `rolodeck_app` login, the `auth` schema and
+`auth.uid()` that the migrations and RLS policies expect. The test suite does this for you,
+against an in-process Postgres, so no database needs to be running to run `npm run test`.
+
+Migrating and running the app are two different credentials under the same variable name, which
+is why `DATABASE_URL` means different things in those two commands. The app's has to log in as
+`rolodeck_app`, which migration 0012 creates: it cannot bypass RLS, and because it inherits
+nothing from `authenticated` it holds no privilege on any table until `asUser()` drops to that
+role for the length of a transaction, with the signed-in user's id in `request.jwt.claims`. So
+a query that forgets `asUser()` is refused by Postgres rather than quietly answered with the
+owner's own rows, and `getDb()` refuses a connection string that logs in as anything else. See
+`docs/adr/0005` and `db/app-role.test.ts`. Migrating needs rights that role deliberately lacks,
+so `npm run db:migrate` wants the privileged connection in `DATABASE_URL` instead — in
+production they are separate secrets for exactly this reason (`docs/adr/0014`). On a scratch
+database, `alter role rolodeck_app with password '<something>'` once; the migration sets none,
+because it is committed.

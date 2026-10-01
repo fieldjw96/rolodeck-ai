@@ -21,12 +21,20 @@ export type Database = PgDatabase<
 let connection: Database | null = null;
 
 /**
- * The app's connection to Postgres, made once per server process.
+ * The app's connection to Postgres, made once per server process, as the `rolodeck_app` role.
  *
- * This is not an RLS bypass: the connection role is a member of `authenticated`, and every
- * query the app makes goes through `asUser()` in `db/rls.ts`, which drops to that role for
- * the length of a transaction. Ingest never uses it: it has its own connection, as its own
- * narrower role, in `db/ingest-connection.ts` — see docs/adr/0013.
+ * This is not an RLS bypass, and since Ticket #188 that is a property of the credential rather
+ * than of every call site remembering. The role is NOBYPASSRLS and NOINHERIT, a member of
+ * `authenticated` and nothing else, so it holds no privilege on any table while it is itself:
+ * a query made outside `asUser()` in `db/rls.ts` — which spends that membership for the length
+ * of one transaction — is refused by Postgres rather than quietly answered with the owner's
+ * own rows. `readDatabaseUrl()` refuses a connection string that logs in as anything else,
+ * because the whole guarantee is in which role the string names.
+ *
+ * Ingest never uses it: it has its own connection, as its own narrower role, in
+ * `db/ingest-connection.ts` — see docs/adr/0013. Migrations do not use it either: applying DDL
+ * needs rights this role deliberately lacks, and `MIGRATION_DATABASE_URL` carries them — see
+ * docs/adr/0014.
  */
 export function getDb(): Database {
   if (connection === null) {

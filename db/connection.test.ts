@@ -12,7 +12,11 @@ async function freshModule() {
 }
 
 const A_CONNECTION_STRING =
-  "postgres://rolodeck:secret@localhost:5432/rolodeck";
+  "postgres://rolodeck_app:secret@localhost:5432/rolodeck";
+
+/** The pooler's form, which is how production reaches Supabase: `<role>.<project-ref>`. */
+const THROUGH_THE_POOLER =
+  "postgres://rolodeck_app.abcdefghijklmnop:secret@aws-0-us-west-1.pooler.supabase.com:6543/postgres";
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -25,6 +29,46 @@ describe("the app's connection to Postgres", () => {
     const { getDb } = await freshModule();
 
     expect(getDb()).toBe(getDb());
+  });
+
+  it.each([
+    ["directly, as rolodeck_app", A_CONNECTION_STRING],
+    ["through the pooler, as rolodeck_app.<project-ref>", THROUGH_THE_POOLER],
+  ])("connects with a string that logs in %s", async (_description, value) => {
+    vi.stubEnv("DATABASE_URL", value);
+
+    const { getDb } = await freshModule();
+
+    expect(() => getDb()).not.toThrow();
+  });
+
+  // The point of Ticket #188: `postgres` bypasses RLS, so every query the app makes would be
+  // answered whether or not it went through `asUser()`, and with one account the results look
+  // identical either way. The role is the whole guarantee, so the string naming it is checked.
+  it.each([
+    [
+      "postgres, which bypasses RLS",
+      "postgres://postgres:secret@localhost:5432/rolodeck",
+    ],
+    [
+      "postgres through the pooler",
+      "postgres://postgres.abcdefghijklmnop:secret@aws-0-us-west-1.pooler.supabase.com:6543/postgres",
+    ],
+    [
+      "the ingest role, which is a different credential",
+      "postgres://rolodeck_ingest:secret@localhost:5432/rolodeck",
+    ],
+    ["nobody at all", "postgres://localhost:5432/rolodeck"],
+    [
+      "rolodeck_app but is sent ?user=postgres at login",
+      "postgres://rolodeck_app:secret@localhost:5432/rolodeck?user=postgres",
+    ],
+  ])("refuses a string that logs in as %s", async (_description, value) => {
+    vi.stubEnv("DATABASE_URL", value);
+
+    const { getDb } = await freshModule();
+
+    expect(() => getDb()).toThrow(/DATABASE_URL/);
   });
 
   it.each([

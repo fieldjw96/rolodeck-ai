@@ -46,6 +46,14 @@ TypeScript. For that backstop to be real, `DATABASE_URL` must connect as a non-s
 that is merely a member of `authenticated`: Supabase's `postgres` role bypasses RLS, which makes
 a query that forgets `asUser()` unprotected rather than merely untidy. See ADR 0005.
 
+**That role is `rolodeck_app`, and it inherits nothing.** Migration `0012_app_role` creates it:
+NOBYPASSRLS, NOINHERIT, a member of `authenticated` and of nothing else, holding no grant of its
+own. So it can reach no table at all until `asUser()` drops to `authenticated` for the length of
+one transaction, and a query written outside `asUser()` is refused by Postgres rather than
+answered. `getDb()` refuses a connection string that logs in as anything else. The one query
+exempt is `app/api/health/route.ts`'s `select 1`, which reads no row; a new one needs the same
+kind of reason, in a comment, or it needs `asUser()`.
+
 **The service role key never leaves the server laptop.** It bypasses RLS completely. It is for
 running the auth tests against a real project, and it never reaches a browser, a client bundle,
 OneDrive, or GitHub. Ingest does not use it, and account provisioning no longer needs it now

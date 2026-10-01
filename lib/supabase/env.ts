@@ -1,5 +1,9 @@
 import { z } from "zod";
 
+import {
+  carriesOnlyPermittedParameters,
+  connectsAsRole,
+} from "../env/connection-string";
 import { parseEnv } from "../env/parse-env";
 
 /**
@@ -24,13 +28,35 @@ const secretSchema = z.object({
 });
 
 /**
+ * The Postgres role the app connects as: created by migration `0012_app_role`, a member of
+ * `authenticated` and of nothing else, and NOINHERIT, so it holds none of `authenticated`'s
+ * table privileges until `asUser()` in `db/rls.ts` spends that membership. See docs/adr/0005.
+ */
+export const APP_ROLE = "rolodeck_app";
+
+/**
  * The Postgres connection string the app's own queries go through. It carries a password, so
  * like the secret key it is deliberately not `NEXT_PUBLIC_`. Unlike the secret key it grants
- * no RLS bypass on its own: every query made with it runs inside `asUser()`, which drops to
- * the `authenticated` role for the length of a transaction. See `db/connection.ts`.
+ * no RLS bypass: every query made with it runs inside `asUser()`, which drops to the
+ * `authenticated` role for the length of a transaction, and the role it logs in as can reach
+ * no table at all until it does. See `db/connection.ts`.
+ *
+ * Refused unless it logs in as that role, in the same spirit as `getIngestDb()` refusing a user
+ * that is not `rolodeck_ingest`. The whole value of this Ticket is in which role the string
+ * names: `postgres` under this name would bypass RLS outright and every test would still pass,
+ * since one account's own rows look identical either way. Not shared with
+ * `MIGRATION_DATABASE_URL`, which must stay privileged to run DDL and is read by
+ * `drizzle.config.ts` straight from the environment — see docs/adr/0014.
  */
 const databaseSchema = z.object({
-  DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }),
+  DATABASE_URL: z
+    .url({ protocol: /^postgres(ql)?$/ })
+    .refine((value) => connectsAsRole(value, APP_ROLE), {
+      error: `must log in as the ${APP_ROLE} role (or ${APP_ROLE}.<project-ref> through Supabase's pooler), never as postgres, which bypasses RLS — see docs/adr/0005`,
+    })
+    .refine(carriesOnlyPermittedParameters, {
+      error: `may carry no query parameter but sslmode, because any other is sent to Postgres at login and ?user= replaces the ${APP_ROLE} login — see docs/adr/0005`,
+    }),
 });
 
 export type SupabaseBrowserSafeEnv = z.infer<typeof browserSafeSchema>;

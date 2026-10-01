@@ -6,6 +6,7 @@ import { parse } from "yaml";
 import { z } from "zod";
 
 import { DEFAULT_BASE_URL } from "../lib/smoke/options";
+import { APP_ROLE } from "../lib/supabase/env";
 
 /**
  * Ticket #137: the production deploy workflow's guarantees, asserted against the file itself.
@@ -216,6 +217,28 @@ describe("the production deploy workflow", () => {
         `(steps.${s.id}.outcome == 'failure' || steps.${s.id}.outcome == 'cancelled') && '${s.name}'`,
       );
     }
+  });
+
+  it("refuses a pooler URL that does not log in as the app's own role", () => {
+    // Ticket #188: this secret becomes the running app's DATABASE_URL, and `readDatabaseUrl()`
+    // refuses a string that does not log in as `rolodeck_app`, which cannot bypass RLS. The
+    // preflight asks the same question where failing costs nothing, so the alternative — a
+    // green deploy whose every request 500s — cannot happen. Built from the constant the app
+    // reads, so renaming the role without revisiting this file fails here.
+    const run = step("preflight").run ?? "";
+    expect(run).toContain(`${APP_ROLE}:*|${APP_ROLE}.*|${APP_ROLE}@*`);
+    expect(run).toContain(`SUPABASE_POOLER_URL must log in as ${APP_ROLE}`);
+    // A parameter sent to Postgres at login can replace the user the check above just read.
+    expect(run).toContain(
+      "SUPABASE_POOLER_URL may carry no query parameter but sslmode",
+    );
+    // And the migration credential must not be narrowed to it: applying DDL needs rights the
+    // app's role deliberately lacks, which is why ADR 0014 keeps the two apart.
+    expect(run).toContain(
+      "MIGRATION_DATABASE_URL must stay the privileged connection",
+    );
+    // Before anything that writes to production, which the step order above already fixes.
+    expect(indexOf("preflight")).toBeLessThan(indexOf("environment"));
   });
 
   it("migrates with the migration credential and never applies the test shim", () => {
