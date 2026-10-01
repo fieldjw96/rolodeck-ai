@@ -33,11 +33,7 @@ export const TEAM_PAGE_RETRY_AFTER_DAYS = 30;
  */
 export async function selectTeamPageCandidates(
   db: Database,
-  {
-    ownerId,
-    limit,
-    now = new Date(),
-  }: { ownerId: string; limit: number; now?: Date },
+  { limit, now = new Date() }: { limit: number; now?: Date },
 ): Promise<TeamPageCandidate[]> {
   const retryBefore = new Date(
     now.getTime() - TEAM_PAGE_RETRY_AFTER_DAYS * 24 * 60 * 60 * 1000,
@@ -52,7 +48,6 @@ export async function selectTeamPageCandidates(
     .from(profiles)
     .where(
       and(
-        eq(profiles.ownerId, ownerId),
         isNull(profiles.founders),
         isNotNull(profiles.website),
         or(
@@ -90,11 +85,7 @@ export type TeamPageResult = {
  */
 export async function recordTeamPageResults(
   db: Database,
-  {
-    ownerId,
-    results,
-    at,
-  }: { ownerId: string; results: readonly TeamPageResult[]; at: Date },
+  { results, at }: { results: readonly TeamPageResult[]; at: Date },
 ): Promise<{ updated: number }> {
   return db.transaction(async (tx) => {
     let updated = 0;
@@ -102,7 +93,6 @@ export async function recordTeamPageResults(
     for (const result of results) {
       const stillAGap = and(
         eq(profiles.id, result.profileId),
-        eq(profiles.ownerId, ownerId),
         isNull(profiles.founders),
       );
 

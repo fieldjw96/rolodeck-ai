@@ -28,7 +28,7 @@ import {
  * On demand only. It is not in `npm test` and not in CI: it makes real requests to two live
  * sites and writes real rows as the ingest role.
  *
- *     ROLODECK_INGEST_DATABASE_URL=... ROLODECK_OWNER_ID=... npm run ingest:accelerators
+ *     ROLODECK_INGEST_DATABASE_URL=... npm run ingest:accelerators
  *
  * `robots.txt`, checked before any fixture was captured:
  *

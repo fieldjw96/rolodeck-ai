@@ -174,16 +174,18 @@ export const test = base.extend<
   ],
 
   seededUser: async ({ backend, sql }, provide) => {
-    // `auth.users` cascades into `profiles` and `swipes` (`db/schema.ts`'s `onDelete:
-    // "cascade"` on both), so truncating it alone clears every table a previous test in this
-    // worker could have written to before this one seeds its own, unrelated owner.
-    await sql`truncate table auth.users cascade`;
+    // `auth.users` cascades into `swipes` and `user_profiles`, the two tables that still carry
+    // a User. The Catalogue does not cascade any more — nothing owns it, per docs/adr/0019 —
+    // so `profiles` is truncated by name, which takes `news_items` and `event_attendances`
+    // with it. Between them that is every table a previous test in this worker could have
+    // written to before this one seeds its own.
+    await sql`truncate table auth.users, profiles cascade`;
 
     const user = await backend.createUser();
     await sql`insert into auth.users (id) values (${user.id})`;
 
     const db = drizzle(sql, { schema });
-    await seedProfiles(db, { count: SEEDED_PROFILE_COUNT, ownerId: user.id });
+    await seedProfiles(db, { count: SEEDED_PROFILE_COUNT });
 
     try {
       await provide({

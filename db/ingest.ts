@@ -1,7 +1,6 @@
 import { sql } from "drizzle-orm";
 import { z } from "zod";
 
-import { readOwnerId } from "../lib/ingest/env";
 import { issueField } from "../lib/zod/issues";
 import type { Database } from "./connection";
 import {
@@ -21,9 +20,9 @@ import { profiles } from "./schema";
 
 /**
  * The one write path into `profiles`. Every source — SEC filings, Show HN, an accelerator
- * page — parses its own HTML its own way and then arrives here, so that "owned by the one
- * account", "no duplicates", "per-field provenance" and "a bad record is counted, not
- * half-written" are decided once rather than re-argued per source.
+ * page — parses its own HTML its own way and then arrives here, so that "no duplicates",
+ * "per-field provenance" and "a bad record is counted, not half-written" are decided once
+ * rather than re-argued per source.
  *
  * Nothing here fetches. It takes records; obtaining them is each source's own Ticket.
  */
@@ -157,19 +156,20 @@ export type IngestReport = {
 };
 
 /**
- * Writes a batch of candidates to `profiles`, owned by the single account, idempotently.
+ * Writes a batch of candidates to `profiles`, idempotently. Nobody owns what it writes: a
+ * Company Profile is Catalogue, the same row for every User. See docs/adr/0019.
  *
- * Idempotent on `(owner_id, source, name_key)`: re-running a source updates the Profiles it
- * wrote before instead of dealing the Deck a second card for the same company. `created_at`
- * is deliberately left alone on update, so re-ingesting does not reshuffle a Deck that is
- * ordered newest first. See docs/adr/0008.
+ * Idempotent on `(source, name_key)`: re-running a source updates the Profiles it wrote before
+ * instead of dealing the Deck a second card for the same company. `created_at` is deliberately
+ * left alone on update, so re-ingesting does not reshuffle a Deck that is ordered newest first.
+ * See docs/adr/0008, whose key lost its `owner_id` to docs/adr/0019.
  *
  * The whole batch is one transaction: the counts a caller gets back describe the table it can
  * now read, rather than however far a partial run happened to get.
  *
- * Throws, rather than counting a rejection, when the source name or the owner id is wrong.
- * Neither is data from a scraped page; both are the caller's own configuration, and a run
- * that wrote every Profile to an owner nobody signs in as should stop, not report success.
+ * Throws, rather than counting a rejection, when the source name is wrong. It is not data from
+ * a scraped page but the caller's own configuration, and it is half the natural key, so a run
+ * that misspelled it would write every company a second time rather than fail.
  */
 export async function persistProfiles(
   db: Database,
@@ -179,7 +179,6 @@ export async function persistProfiles(
   }: { source: string; candidates: Iterable<ProfileCandidate> },
 ): Promise<IngestReport> {
   const sourceName = sourceSchema.parse(source);
-  const ownerId = readOwnerId();
 
   const accepted: ProfileCandidate[] = [];
   const rejections: IngestRejection[] = [];
@@ -212,7 +211,6 @@ export async function persistProfiles(
       const [written] = await tx
         .insert(profiles)
         .values({
-          ownerId,
           source: sourceName,
           name: candidate.input.name,
           description: candidate.input.description,
@@ -225,7 +223,7 @@ export async function persistProfiles(
           provenance: candidate.provenance,
         })
         .onConflictDoUpdate({
-          target: [profiles.ownerId, profiles.source, profiles.nameKey],
+          target: [profiles.source, profiles.nameKey],
           set: {
             // The name too: the key is case- and whitespace-insensitive, so the row keeps
             // whatever spelling the source most recently used — unless a human chose it.

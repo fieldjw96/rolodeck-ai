@@ -3,7 +3,6 @@ import path from "node:path";
 
 import { closeIngestDb, getIngestDb } from "../db/ingest-connection";
 import { recordTeamPageResults } from "../db/team-pages";
-import { readOwnerId } from "../lib/ingest/env";
 import {
   applyTeamAnswers,
   summariseTeamPagesRun,
@@ -16,13 +15,12 @@ import { teamPagesDirectory } from "./team-pages-directory";
  * Step three of the team-page enrichment: check the model's answers against the pages it was
  * given, and record the run. See docs/adr/0016 and `lib/ingest/team-pages-run.ts`.
  *
- *     ROLODECK_INGEST_DATABASE_URL=... ROLODECK_OWNER_ID=... npm run ingest:team-pages:apply
+ *     ROLODECK_INGEST_DATABASE_URL=... npm run ingest:team-pages:apply
  *
  * Exits non-zero when every candidate taken failed to fetch. A run that read its whole quota
  * and updated nothing is not a failure: most early companies have no team page.
  */
 async function main(): Promise<void> {
-  const ownerId = readOwnerId();
   const directory = teamPagesDirectory();
 
   const { candidates: work } = teamPagesWorkSchema.parse(
@@ -49,7 +47,6 @@ async function main(): Promise<void> {
 
   const { results, report } = applyTeamAnswers(work, answers);
   const { updated } = await recordTeamPageResults(await getIngestDb(), {
-    ownerId,
     results,
     at: new Date(),
   });

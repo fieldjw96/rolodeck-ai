@@ -24,8 +24,10 @@ on:
     secrets:
       ROLODECK_INGEST_DATABASE_URL:
         required: true
-      ROLODECK_OWNER_ID:
-        required: true
+      # Only news reads this: it names the User whose Keeps a News run gathers for, per
+      # docs/adr/0019. Unset for every other caller, which never calls readNewsKeepsUserId().
+      ROLODECK_NEWS_KEEPS_USER_ID:
+        required: false
       # Only sec-form-d reads this; unset for every other caller, and readEdgarContact()
       # never runs for them so an empty value never matters.
       SEC_EDGAR_CONTACT:
@@ -55,7 +57,7 @@ jobs:
       - name: Run ${{ inputs.npm-script }}
         env:
           ROLODECK_INGEST_DATABASE_URL: ${{ secrets.ROLODECK_INGEST_DATABASE_URL }}
-          ROLODECK_OWNER_ID: ${{ secrets.ROLODECK_OWNER_ID }}
+          ROLODECK_NEWS_KEEPS_USER_ID: ${{ secrets.ROLODECK_NEWS_KEEPS_USER_ID }}
           SEC_EDGAR_CONTACT: ${{ secrets.SEC_EDGAR_CONTACT }}
         run: |
           set -o pipefail

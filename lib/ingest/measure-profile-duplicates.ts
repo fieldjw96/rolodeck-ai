@@ -46,17 +46,13 @@ export async function readOnly<T>(
  */
 export async function measureProfileDuplicates(
   db: Database,
-  ownerId: string,
 ): Promise<DuplicateStats> {
-  return readOnly(db, (tx) => measure(tx, ownerId));
+  return readOnly(db, (tx) => measure(tx));
 }
 
-async function measure(db: Database, ownerId: string): Promise<DuplicateStats> {
+async function measure(db: Database): Promise<DuplicateStats> {
   // Get total count of all profiles
-  const totalResult = await db
-    .select({ count: count() })
-    .from(profiles)
-    .where(sql`${profiles.ownerId} = ${ownerId}`);
+  const totalResult = await db.select({ count: count() }).from(profiles);
 
   const totalProfiles = totalResult[0]?.count ?? 0;
 
@@ -76,7 +72,6 @@ async function measure(db: Database, ownerId: string): Promise<DuplicateStats> {
       count(distinct source) as source_count,
       count(*) as profile_count
     from profiles
-    where owner_id = ${ownerId}
     group by name_key
     having count(distinct source) > 1
     order by source_count desc

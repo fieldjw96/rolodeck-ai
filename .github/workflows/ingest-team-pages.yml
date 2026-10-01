@@ -51,7 +51,6 @@ jobs:
         id: gather
         env:
           ROLODECK_INGEST_DATABASE_URL: ${{ secrets.ROLODECK_INGEST_DATABASE_URL }}
-          ROLODECK_OWNER_ID: ${{ secrets.ROLODECK_OWNER_ID }}
         run: |
           set -o pipefail
           npm run ingest:team-pages:gather 2>&1 | tee /tmp/ingest-output.log
@@ -104,7 +103,6 @@ jobs:
       - name: Check the answers and record the run
         env:
           ROLODECK_INGEST_DATABASE_URL: ${{ secrets.ROLODECK_INGEST_DATABASE_URL }}
-          ROLODECK_OWNER_ID: ${{ secrets.ROLODECK_OWNER_ID }}
         run: |
           set -o pipefail
           npm run ingest:team-pages:apply 2>&1 | tee -a /tmp/ingest-output.log
