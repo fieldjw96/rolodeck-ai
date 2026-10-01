@@ -92,6 +92,13 @@
       "when": 1790887632804,
       "tag": "0012_app_role",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1790890193093,
+      "tag": "0013_shared_catalogue",
+      "breakpoints": true
     }
   ]
 }
