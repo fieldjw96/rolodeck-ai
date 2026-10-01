@@ -85,6 +85,13 @@
       "when": 1789759127544,
       "tag": "0011_profile_founders_sought_at",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1790887632804,
+      "tag": "0012_app_role",
+      "breakpoints": true
     }
   ]
 }
