@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 
@@ -8,6 +9,7 @@ import postgres, { type Sql } from "postgres";
 
 import * as schema from "../../db/schema";
 import { seededName, seedProfiles } from "../../db/testing/seed-profiles";
+import { APP_ROLE } from "../../lib/supabase/env";
 import {
   stubBackend,
   type AuthBackend,
@@ -24,6 +26,11 @@ const MIGRATIONS_FOLDER = path.join(process.cwd(), "db/migrations");
  * so both specs in this file share one count rather than each hard-coding it. */
 export const SEEDED_PROFILE_COUNT = 2;
 
+/**
+ * The privileged connection this suite stands its database up with: the shim, the migrations,
+ * and each test's fixtures. The app itself is never given it — see `appDatabaseUrl` — the way
+ * production hands DDL to `MIGRATION_DATABASE_URL` and the running app to something narrower.
+ */
 function databaseUrl(): string {
   const url = process.env.DATABASE_URL;
 
@@ -32,11 +39,41 @@ function databaseUrl(): string {
       "DATABASE_URL is not set. This suite asserts the swipe flow against a real Postgres " +
         "instance (Ticket #13), not the GoTrue-stub-only server `e2e/support/server.ts` " +
         "otherwise builds. Point it at a scratch Postgres — the `e2e-db` CI job provisions " +
-        "one the same way the `migrate` job does — before running `npm run test:e2e:db`.",
+        "one the same way the `migrate` job does — before running `npm run test:e2e:db`. It " +
+        "must be privileged enough to create a role and apply the migrations; the app under " +
+        "test is handed a narrower one built from it.",
     );
   }
 
   return url;
+}
+
+/**
+ * A password for `rolodeck_app` on this scratch database. Random per run, and never anything a
+ * real project uses: migration 0012 deliberately sets no password, because the migration is
+ * committed, so whatever stands a database up sets one. Here that is this file.
+ */
+const APP_ROLE_PASSWORD = `e2e-${randomUUID()}`;
+
+/**
+ * The connection string the app under test reads as `DATABASE_URL`: the privileged one above
+ * with `rolodeck_app` in place of its user. That role cannot bypass RLS and holds no table
+ * privilege until `asUser()` drops to `authenticated`, so this suite — a real browser, a real
+ * sign-in, the real route handlers — is also what proves no request the swipe flow makes has
+ * forgotten its session. See docs/adr/0005 and `db/app-role.test.ts`.
+ *
+ * The project-ref suffix a Supabase pooler user carries is kept, since that is how the pooler
+ * is told which project to reach: `postgres.abc` becomes `rolodeck_app.abc`.
+ */
+function appDatabaseUrl(): string {
+  const url = new URL(databaseUrl());
+  const projectRef = decodeURIComponent(url.username).split(".").slice(1);
+
+  // The setters percent-encode whatever they are given, so neither is encoded here first.
+  url.username = [APP_ROLE, ...projectRef].join(".");
+  url.password = APP_ROLE_PASSWORD;
+
+  return url.toString();
 }
 
 export type RealDbApp = { baseURL: string };
@@ -85,6 +122,16 @@ export const test = base.extend<
         migrationsFolder: MIGRATIONS_FOLDER,
       });
 
+      // The one thing the migration leaves to whoever stands the database up, because the
+      // migration is committed and a password is not. In production Jack does this by hand in
+      // the Supabase SQL editor; here it is a password only this run knows. Interpolated
+      // rather than bound: `alter role` is a utility statement and takes no parameters. Both
+      // halves are this repo's own — a constant and a generated UUID — so there is nothing in
+      // either that could end the string literal early.
+      await client.unsafe(
+        `alter role ${APP_ROLE} with password '${APP_ROLE_PASSWORD}'`,
+      );
+
       try {
         await provide(client);
       } finally {
@@ -105,7 +152,7 @@ export const test = base.extend<
         ...process.env,
         NEXT_PUBLIC_SUPABASE_URL: backend.url,
         NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: backend.publishableKey,
-        DATABASE_URL: databaseUrl(),
+        DATABASE_URL: appDatabaseUrl(),
       };
 
       await buildApp(env);
