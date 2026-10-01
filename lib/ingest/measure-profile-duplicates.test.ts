@@ -9,14 +9,12 @@ import { profiles } from "../../db/schema";
 import { createScratchDb, type ScratchDb } from "../../db/testing/scratch-db";
 
 const JACK = "11111111-1111-1111-1111-111111111111";
-const OTHER_OWNER = "22222222-2222-2222-2222-222222222222";
 
 let scratch: ScratchDb;
 
 beforeAll(async () => {
   scratch = await createScratchDb();
   await scratch.createUser(JACK);
-  await scratch.createUser(OTHER_OWNER);
 }, 60_000);
 
 afterAll(async () => {
@@ -33,7 +31,6 @@ describe("measureProfileDuplicates", () => {
     // Insert the same company from two different sources
     await scratch.db.insert(profiles).values([
       {
-        ownerId: JACK,
         source: "yc",
         name: "Acme Corp",
         description: "A company",
@@ -53,7 +50,6 @@ describe("measureProfileDuplicates", () => {
         },
       },
       {
-        ownerId: JACK,
         source: "sec-form-d",
         name: "Acme Corp",
         description: "A company",
@@ -74,7 +70,7 @@ describe("measureProfileDuplicates", () => {
       },
     ]);
 
-    const stats = await measureProfileDuplicates(scratch.db, JACK);
+    const stats = await measureProfileDuplicates(scratch.db);
 
     expect(stats.totalProfiles).toBe(2);
     expect(stats.profilesInMultipleSources).toBe(2);
@@ -90,7 +86,6 @@ describe("measureProfileDuplicates", () => {
   it("does not find different companies as duplicates", async () => {
     await scratch.db.insert(profiles).values([
       {
-        ownerId: JACK,
         source: "yc",
         name: "Acme Corp",
         description: "A company",
@@ -110,7 +105,6 @@ describe("measureProfileDuplicates", () => {
         },
       },
       {
-        ownerId: JACK,
         source: "sec-form-d",
         name: "Bravo Systems",
         description: "Another company",
@@ -131,7 +125,7 @@ describe("measureProfileDuplicates", () => {
       },
     ]);
 
-    const stats = await measureProfileDuplicates(scratch.db, JACK);
+    const stats = await measureProfileDuplicates(scratch.db);
 
     expect(stats.totalProfiles).toBe(2);
     expect(stats.profilesInMultipleSources).toBe(0);
@@ -143,7 +137,6 @@ describe("measureProfileDuplicates", () => {
     // These all normalize to the same name_key
     await scratch.db.insert(profiles).values([
       {
-        ownerId: JACK,
         source: "yc",
         name: "Acme Corp",
         description: "A company",
@@ -163,7 +156,6 @@ describe("measureProfileDuplicates", () => {
         },
       },
       {
-        ownerId: JACK,
         source: "sec-form-d",
         name: "ACME CORP", // Different case
         description: "A company",
@@ -183,7 +175,6 @@ describe("measureProfileDuplicates", () => {
         },
       },
       {
-        ownerId: JACK,
         source: "show-hn",
         name: "Acme   Corp", // Extra whitespace
         description: "A company",
@@ -204,7 +195,7 @@ describe("measureProfileDuplicates", () => {
       },
     ]);
 
-    const stats = await measureProfileDuplicates(scratch.db, JACK);
+    const stats = await measureProfileDuplicates(scratch.db);
 
     expect(stats.totalProfiles).toBe(3);
     expect(stats.profilesInMultipleSources).toBe(3);
@@ -217,7 +208,6 @@ describe("measureProfileDuplicates", () => {
   it("reports zero duplicates when all companies have unique names", async () => {
     await scratch.db.insert(profiles).values([
       {
-        ownerId: JACK,
         source: "yc",
         name: "Acme Corp",
         description: "A company",
@@ -237,7 +227,6 @@ describe("measureProfileDuplicates", () => {
         },
       },
       {
-        ownerId: JACK,
         source: "yc",
         name: "Bravo Systems",
         description: "Another company",
@@ -258,7 +247,7 @@ describe("measureProfileDuplicates", () => {
       },
     ]);
 
-    const stats = await measureProfileDuplicates(scratch.db, JACK);
+    const stats = await measureProfileDuplicates(scratch.db);
 
     expect(stats.totalProfiles).toBe(2);
     expect(stats.profilesInMultipleSources).toBe(0);
@@ -267,7 +256,7 @@ describe("measureProfileDuplicates", () => {
   });
 
   it("handles empty database", async () => {
-    const stats = await measureProfileDuplicates(scratch.db, JACK);
+    const stats = await measureProfileDuplicates(scratch.db);
 
     expect(stats.totalProfiles).toBe(0);
     expect(stats.profilesInMultipleSources).toBe(0);
@@ -275,10 +264,11 @@ describe("measureProfileDuplicates", () => {
     expect(stats.worstOffenders).toHaveLength(0);
   });
 
-  it("scopes results to the specified owner", async () => {
+  // There is no owner to scope to any more: the Catalogue is one set of rows for every User,
+  // and `(source, name_key)` is unique across all of it. See docs/adr/0019.
+  it("counts the whole Catalogue", async () => {
     await scratch.db.insert(profiles).values([
       {
-        ownerId: JACK,
         source: "yc",
         name: "Acme Corp",
         description: "A company",
@@ -298,13 +288,12 @@ describe("measureProfileDuplicates", () => {
         },
       },
       {
-        ownerId: OTHER_OWNER,
-        source: "yc",
-        name: "Acme Corp",
+        source: "show-hn",
+        name: "Beta Corp",
         description: "A company",
         sector: "saas-enterprise",
         stage: "seed",
-        website: "https://acme.example",
+        website: "https://beta.example",
         location: "San Francisco, CA",
         provenance: {
           name: "scraped",
@@ -319,9 +308,9 @@ describe("measureProfileDuplicates", () => {
       },
     ]);
 
-    const stats = await measureProfileDuplicates(scratch.db, JACK);
+    const stats = await measureProfileDuplicates(scratch.db);
 
-    expect(stats.totalProfiles).toBe(1);
+    expect(stats.totalProfiles).toBe(2);
     expect(stats.profilesInMultipleSources).toBe(0);
   });
 
@@ -329,7 +318,6 @@ describe("measureProfileDuplicates", () => {
     // Insert test data
     await scratch.db.insert(profiles).values([
       {
-        ownerId: JACK,
         source: "yc",
         name: "Acme Corp",
         description: "A company",
@@ -355,7 +343,7 @@ describe("measureProfileDuplicates", () => {
     const countBefore = rowsBefore.length;
 
     // Run the analysis
-    await measureProfileDuplicates(scratch.db, JACK);
+    await measureProfileDuplicates(scratch.db);
 
     // Verify no rows were added/deleted
     const rowsAfter = await scratch.db.select().from(profiles);
@@ -367,7 +355,6 @@ describe("measureProfileDuplicates", () => {
     // Insert test data as superuser
     await scratch.db.insert(profiles).values([
       {
-        ownerId: JACK,
         source: "yc",
         name: "Acme Corp",
         description: "A company",
@@ -387,7 +374,6 @@ describe("measureProfileDuplicates", () => {
         },
       },
       {
-        ownerId: JACK,
         source: "sec-form-d",
         name: "Acme Corp",
         description: "A company",
@@ -412,7 +398,7 @@ describe("measureProfileDuplicates", () => {
     // read correctly through it, which is what this half proves.
     await scratch.as("rolodeck_ingest");
 
-    const stats = await measureProfileDuplicates(scratch.db, JACK);
+    const stats = await measureProfileDuplicates(scratch.db);
     expect(stats.totalProfiles).toBe(2);
     expect(stats.profilesInMultipleSources).toBe(2);
   });
@@ -435,7 +421,6 @@ describe("measureProfileDuplicates", () => {
     // wrong reason while proving nothing about read-only.
     const refusal = await readOnly(scratch.db, (tx) =>
       tx.insert(profiles).values({
-        ownerId: JACK,
         source: "yc",
         name: "Should Never Land",
         description: "A write the report must not be able to make",
@@ -482,7 +467,6 @@ describe("measureProfileDuplicates", () => {
     // is the point. `expect(promise).resolves.not.toThrow()` would not have caught that, since
     // `toThrow` expects a function and a resolved insert result is not one.
     await scratch.db.insert(profiles).values({
-      ownerId: JACK,
       source: "yc",
       name: "Written Outside The Wrapper",
       description:

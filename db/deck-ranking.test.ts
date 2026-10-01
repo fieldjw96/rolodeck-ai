@@ -43,7 +43,6 @@ async function seed(companies: Company[]): Promise<Record<string, string>> {
     .values(
       companies.map((company) => ({
         ...(company.id === undefined ? {} : { id: company.id }),
-        ownerId: JACK,
         source: "seed",
         name: company.name,
         description: "Seeded for the ranked Deck.",

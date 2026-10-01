@@ -51,7 +51,6 @@ async function addEvent(name: string, startDate: string): Promise<string> {
   const [row] = await harness.scratch.db
     .insert(events)
     .values({
-      ownerId: harness.user.id,
       source: "luma",
       externalId: name,
       name,
@@ -140,17 +139,31 @@ describe("GET /api/events", () => {
     ]);
   });
 
-  it("sends nobody else's Events", async () => {
-    await harness.scratch.db.insert(events).values({
-      ownerId: harness.strangerId,
-      source: "luma",
-      externalId: "theirs",
-      name: "Their Event",
-      startDate: FUTURE,
-      url: "https://example.com/theirs",
+  // The two halves of docs/adr/0019 for the Diary: every User sees the Event, and only the
+  // User who Kept the attending company sees it marked.
+  it("sends an Event nobody in particular gathered, to whoever is asking", async () => {
+    await addEvent("Their Event", FUTURE);
+
+    const body = await readOk();
+
+    expect(body.events.map((event) => event.name)).toEqual(["Their Event"]);
+  });
+
+  it("does not mark an Event important for somebody else's Keep", async () => {
+    const [profileId] = await harness.seed(1);
+    const eventId = await addEvent("Sprocket Summit", FUTURE);
+    await harness.scratch.db
+      .insert(eventAttendances)
+      .values({ eventId, profileId: profileId! });
+    await harness.scratch.db.insert(swipes).values({
+      userId: harness.strangerId,
+      profileId: profileId!,
+      decision: "keep",
     });
 
-    await expect(readOk()).resolves.toEqual({ events: [] });
+    const body = await readOk();
+
+    expect(body.events.map((event) => event.important)).toEqual([false]);
   });
 
   it("answers 422 naming the field for an include it does not know", async () => {

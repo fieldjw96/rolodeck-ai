@@ -30,13 +30,11 @@ let scratch: ScratchDb;
 async function companyProfile(
   name: string,
   sector: Sector,
-  ownerId = JACK,
   website: string | null = null,
 ): Promise<string> {
   const [row] = await scratch.db
     .insert(profiles)
     .values({
-      ownerId,
       source: "seed",
       name,
       description: `${name}, for the News tests.`,
@@ -171,11 +169,13 @@ beforeEach(async () => {
 });
 
 describe("fetchNewsForKeptProfiles", () => {
-  it("scores against Kept Company Profiles only — never an unswiped one, a Passed one, or another account's", async () => {
+  it("scores against the gathering User's Kept Company Profiles only — never an unswiped one, a Passed one, or one only somebody else Kept", async () => {
     const ramp = await companyProfile("Ramp", "fintech");
     const mercury = await companyProfile("Mercury", "fintech");
     await companyProfile("Quiet Co", "other");
-    const theirs = await companyProfile("Theirs Inc", "security", SOMEONE_ELSE);
+    // In the same shared Catalogue, but Kept by the other User: docs/adr/0019 narrows
+    // gathering to one User's Keeps even though every User reads the result.
+    const theirs = await companyProfile("Theirs Inc", "security");
 
     await swipe(ramp, "keep");
     await swipe(mercury, "pass");
@@ -183,7 +183,7 @@ describe("fetchNewsForKeptProfiles", () => {
 
     const { client } = fakeClient({ [WIRE.url]: WIRE_FEED });
     const report = await fetchNewsForKeptProfiles(scratch.db, {
-      ownerId: JACK,
+      keepsUserId: JACK,
       feeds: [WIRE],
       client,
       search: NO_HISTORY,
@@ -198,7 +198,38 @@ describe("fetchNewsForKeptProfiles", () => {
     expect(new Set(stored.map((row) => row.profileId))).toEqual(
       new Set([ramp]),
     );
-    expect(stored.every((row) => row.ownerId === JACK)).toBe(true);
+  });
+
+  // The two halves of docs/adr/0019 for News: the article it stores is readable by the User
+  // who did not Keep anything, and that User's own swipes stay theirs.
+  it("stores an article every signed-in User can read, whoever's Keep gathered it", async () => {
+    const ramp = await companyProfile("Ramp", "fintech");
+    await swipe(ramp, "keep");
+
+    const { client } = fakeClient({ [WIRE.url]: WIRE_FEED });
+    await fetchNewsForKeptProfiles(scratch.db, {
+      keepsUserId: JACK,
+      feeds: [WIRE],
+      client,
+      search: NO_HISTORY,
+    });
+
+    await scratch.as("authenticated", SOMEONE_ELSE);
+    const seen = await scratch.db.select().from(newsItems);
+    await scratch.reset();
+
+    expect(seen).toHaveLength(2);
+  });
+
+  it("does not show that User the Keep the gathering was driven by", async () => {
+    const ramp = await companyProfile("Ramp", "fintech");
+    await swipe(ramp, "keep");
+
+    await scratch.as("authenticated", SOMEONE_ELSE);
+    const seen = await scratch.db.select().from(swipes);
+    await scratch.reset();
+
+    expect(seen).toEqual([]);
   });
 
   it("reads every feed once, even when nothing is Kept, and does not call matching nothing a failure", async () => {
@@ -206,7 +237,7 @@ describe("fetchNewsForKeptProfiles", () => {
 
     const { client, requested } = fakeClient({ [WIRE.url]: WIRE_FEED });
     const report = await fetchNewsForKeptProfiles(scratch.db, {
-      ownerId: JACK,
+      keepsUserId: JACK,
       feeds: [WIRE, DAILY],
       client,
       search: NO_HISTORY,
@@ -237,7 +268,7 @@ describe("fetchNewsForKeptProfiles", () => {
 
     const { client } = fakeClient({ [WIRE.url]: WIRE_FEED });
     const report = await fetchNewsForKeptProfiles(scratch.db, {
-      ownerId: JACK,
+      keepsUserId: JACK,
       feeds: [WIRE],
       client,
       search: NO_HISTORY,
@@ -282,7 +313,7 @@ describe("fetchNewsForKeptProfiles", () => {
     });
 
     const report = await fetchNewsForKeptProfiles(scratch.db, {
-      ownerId: JACK,
+      keepsUserId: JACK,
       feeds: [WIRE, DAILY],
       client,
       search: NO_HISTORY,
@@ -306,7 +337,7 @@ describe("fetchNewsForKeptProfiles", () => {
     const { client } = fakeClient({ [WIRE.url]: WIRE_FEED });
 
     await fetchNewsForKeptProfiles(scratch.db, {
-      ownerId: JACK,
+      keepsUserId: JACK,
       feeds: [WIRE],
       client,
       search: NO_HISTORY,
@@ -314,7 +345,7 @@ describe("fetchNewsForKeptProfiles", () => {
     const afterFirst = (await scratch.db.select().from(newsItems)).length;
 
     const second = await fetchNewsForKeptProfiles(scratch.db, {
-      ownerId: JACK,
+      keepsUserId: JACK,
       feeds: [WIRE],
       client,
       search: NO_HISTORY,
@@ -342,7 +373,7 @@ describe("fetchNewsForKeptProfiles", () => {
     });
 
     const report = await fetchNewsForKeptProfiles(scratch.db, {
-      ownerId: JACK,
+      keepsUserId: JACK,
       feeds: [DAILY, broken, WIRE],
       client,
       search: NO_HISTORY,
@@ -369,7 +400,7 @@ describe("fetchNewsForKeptProfiles", () => {
     });
 
     const report = await fetchNewsForKeptProfiles(scratch.db, {
-      ownerId: JACK,
+      keepsUserId: JACK,
       feeds: [WIRE, DAILY],
       client,
       search: NO_HISTORY,
@@ -393,7 +424,7 @@ describe("fetchNewsForKeptProfiles", () => {
     });
 
     const report = await fetchNewsForKeptProfiles(scratch.db, {
-      ownerId: JACK,
+      keepsUserId: JACK,
       feeds: [WIRE],
       client,
       search: NO_HISTORY,
@@ -424,7 +455,7 @@ describe("fetchNewsForKeptProfiles", () => {
     });
 
     const report = await fetchNewsForKeptProfiles(scratch.db, {
-      ownerId: JACK,
+      keepsUserId: JACK,
       feeds: [WIRE],
       client,
       search: NO_HISTORY,
@@ -442,24 +473,19 @@ describe("fetchNewsForKeptProfiles", () => {
 
   it("searches each Kept Company Profile by its own site and its name, over the last twelve months", async () => {
     await swipe(
-      await companyProfile(
-        "Blacksmith",
-        "developer-tools",
-        JACK,
-        "https://blacksmith.sh/",
-      ),
+      await companyProfile("Blacksmith", "developer-tools", "https://blacksmith.sh/"),
       "keep",
     );
     await swipe(await companyProfile("Quiet Co", "other"), "keep");
     // Unswiped, so never searched for.
-    await companyProfile("Ramp", "fintech", JACK, "https://ramp.com");
+    await companyProfile("Ramp", "fintech", "https://ramp.com");
 
     const { client } = fakeClient({ [WIRE.url]: WIRE_FEED });
     const { search, requested } = fakeSearch(() => undefined);
     const urls: string[] = [];
 
     await fetchNewsForKeptProfiles(scratch.db, {
-      ownerId: JACK,
+      keepsUserId: JACK,
       feeds: [WIRE],
       client,
       search: {
@@ -488,7 +514,6 @@ describe("fetchNewsForKeptProfiles", () => {
     const blacksmith = await companyProfile(
       "Blacksmith",
       "developer-tools",
-      JACK,
       "https://blacksmith.sh/",
     );
     const ramp = await companyProfile("Ramp", "fintech");
@@ -526,7 +551,7 @@ describe("fetchNewsForKeptProfiles", () => {
     });
 
     const report = await fetchNewsForKeptProfiles(scratch.db, {
-      ownerId: JACK,
+      keepsUserId: JACK,
       feeds: [WIRE],
       client,
       search,
@@ -574,7 +599,7 @@ describe("fetchNewsForKeptProfiles", () => {
     }));
 
     const report = await fetchNewsForKeptProfiles(scratch.db, {
-      ownerId: JACK,
+      keepsUserId: JACK,
       feeds: [WIRE],
       client,
       search,
@@ -605,7 +630,7 @@ describe("fetchNewsForKeptProfiles", () => {
     }));
     const run = () =>
       fetchNewsForKeptProfiles(scratch.db, {
-        ownerId: JACK,
+        keepsUserId: JACK,
         feeds: [WIRE],
         client,
         search,
@@ -637,7 +662,7 @@ describe("fetchNewsForKeptProfiles", () => {
     );
 
     const report = await fetchNewsForKeptProfiles(scratch.db, {
-      ownerId: JACK,
+      keepsUserId: JACK,
       feeds: [WIRE],
       client,
       search,
@@ -665,7 +690,7 @@ describe("fetchNewsForKeptProfiles", () => {
     const { search } = fakeSearch(() => new Error(outage));
 
     const report = await fetchNewsForKeptProfiles(scratch.db, {
-      ownerId: JACK,
+      keepsUserId: JACK,
       feeds: [WIRE],
       client,
       search,
@@ -697,7 +722,7 @@ describe("fetchNewsForKeptProfiles", () => {
     }));
 
     const report = await fetchNewsForKeptProfiles(scratch.db, {
-      ownerId: JACK,
+      keepsUserId: JACK,
       feeds: [WIRE],
       client,
       search,
