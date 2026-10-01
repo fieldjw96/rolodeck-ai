@@ -12,7 +12,7 @@ import {
 import { persistProfiles, type ProfileCandidate } from "./ingest";
 import type { ProfileInput } from "./profile-input";
 import type { ProfileProvenance, ProvenancedField } from "./provenance";
-import { profiles } from "./schema";
+import { profiles, swipes } from "./schema";
 import { createScratchDb, type ScratchDb } from "./testing/scratch-db";
 
 const JACK = "11111111-1111-1111-1111-111111111111";
@@ -61,7 +61,6 @@ function candidateFor(
 }
 
 let scratch: ScratchDb;
-const ownerIdBefore = process.env.ROLODECK_OWNER_ID;
 
 beforeAll(async () => {
   scratch = await createScratchDb();
@@ -71,17 +70,15 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await scratch?.close();
-  process.env.ROLODECK_OWNER_ID = ownerIdBefore;
 });
 
 beforeEach(async () => {
-  process.env.ROLODECK_OWNER_ID = JACK;
   await scratch.reset();
   await scratch.db.delete(profiles);
 });
 
 describe("persistProfiles", () => {
-  it("writes every accepted record, owned by the account named in the environment", async () => {
+  it("writes every accepted record into the Catalogue, owned by nobody", async () => {
     const report = await persistProfiles(scratch.db, {
       source: "yc",
       candidates: [
@@ -104,46 +101,7 @@ describe("persistProfiles", () => {
 
     const rows = await scratch.db.select().from(profiles);
 
-    expect(rows.map((row) => row.ownerId)).toEqual([JACK, JACK]);
     expect(rows.map((row) => row.source)).toEqual(["yc", "yc"]);
-  });
-
-  it("reads the owner id afresh rather than caching the first one it saw", async () => {
-    await persistProfiles(scratch.db, {
-      source: "yc",
-      candidates: [candidateFor(SPROCKET)],
-    });
-
-    process.env.ROLODECK_OWNER_ID = SOMEONE_ELSE;
-
-    await persistProfiles(scratch.db, {
-      source: "yc",
-      candidates: [
-        candidateFor({ ...SPROCKET, name: "Someone Else's Company" }),
-      ],
-    });
-
-    const rows = await scratch.db.select().from(profiles);
-
-    expect(
-      Object.fromEntries(rows.map((row) => [row.name, row.ownerId])),
-    ).toEqual({
-      Sprocket: JACK,
-      "Someone Else's Company": SOMEONE_ELSE,
-    });
-  });
-
-  it("throws rather than writing invisible rows when the owner id is absent", async () => {
-    delete process.env.ROLODECK_OWNER_ID;
-
-    await expect(
-      persistProfiles(scratch.db, {
-        source: "yc",
-        candidates: [candidateFor(SPROCKET)],
-      }),
-    ).rejects.toThrow(/ROLODECK_OWNER_ID/);
-
-    await expect(scratch.db.select().from(profiles)).resolves.toEqual([]);
   });
 
   it("writes per-field provenance, both kinds on the one record", async () => {
@@ -644,7 +602,7 @@ describe("persisted Profiles under row level security", () => {
     });
   });
 
-  it("is readable by the account that owns it", async () => {
+  it("is readable by the signed-in User", async () => {
     await scratch.as("authenticated", JACK);
 
     const rows = await scratch.db.select().from(profiles);
@@ -658,10 +616,24 @@ describe("persisted Profiles under row level security", () => {
     await expect(scratch.db.select().from(profiles)).resolves.toEqual([]);
   });
 
-  it("is invisible to a signed-in account that does not own it", async () => {
+  // The two halves of docs/adr/0019: the company is shared, the Keep is not.
+  it("is readable by a second signed-in User too", async () => {
     await scratch.as("authenticated", SOMEONE_ELSE);
 
-    await expect(scratch.db.select().from(profiles)).resolves.toEqual([]);
+    const rows = await scratch.db.select().from(profiles);
+
+    expect(rows.map((row) => row.name)).toEqual(["Sprocket"]);
+  });
+
+  it("does not show that second User what the first Kept", async () => {
+    const [sprocket] = await scratch.db.select().from(profiles);
+    await scratch.db
+      .insert(swipes)
+      .values({ userId: JACK, profileId: sprocket!.id, decision: "keep" });
+
+    await scratch.as("authenticated", SOMEONE_ELSE);
+
+    await expect(scratch.db.select().from(swipes)).resolves.toEqual([]);
   });
 
   it("refuses the write to the app's own role, so ingest stays the only writer", async () => {

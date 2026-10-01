@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import type { ProfileProvenance } from "./provenance";
-import { profiles } from "./schema";
+import { profiles, swipes } from "./schema";
 import { createScratchDb, type ScratchDb } from "./testing/scratch-db";
 
 const JACK = "11111111-1111-1111-1111-111111111111";
@@ -58,7 +58,6 @@ describe("profiles provenance", () => {
     const [written] = await scratch.db
       .insert(profiles)
       .values({
-        ownerId: JACK,
         source: "test",
         name: "Sprocket",
         description: "Developer tooling for warehouse robotics.",
@@ -86,7 +85,6 @@ describe("profiles provenance", () => {
     const [written] = await scratch.db
       .insert(profiles)
       .values({
-        ownerId: JACK,
         source: "test",
         name: "Quiet Co",
         description: "Stealth, no site yet.",
@@ -105,7 +103,6 @@ describe("profiles provenance", () => {
     const [written] = await scratch.db
       .insert(profiles)
       .values({
-        ownerId: JACK,
         source: "test",
         name: "Nowhere Co",
         description: "No location stated by its Source.",
@@ -127,7 +124,6 @@ describe("profiles provenance", () => {
 
     const violated = await constraintViolatedBy(
       scratch.db.insert(profiles).values({
-        ownerId: JACK,
         source: "test",
         name: "Sprocket",
         description: "Developer tooling for warehouse robotics.",
@@ -144,7 +140,6 @@ describe("profiles provenance", () => {
   it("rejects an unknown provenance value", async () => {
     const violated = await constraintViolatedBy(
       scratch.db.insert(profiles).values({
-        ownerId: JACK,
         source: "test",
         name: "Sprocket",
         description: "Developer tooling for warehouse robotics.",
@@ -164,7 +159,6 @@ describe("profiles provenance", () => {
   it("rejects provenance for a website the Profile does not have", async () => {
     const violated = await constraintViolatedBy(
       scratch.db.insert(profiles).values({
-        ownerId: JACK,
         source: "test",
         name: "Quiet Co",
         description: "Stealth, no site yet.",
@@ -181,7 +175,6 @@ describe("profiles provenance", () => {
   it("rejects a website left unattributed", async () => {
     const violated = await constraintViolatedBy(
       scratch.db.insert(profiles).values({
-        ownerId: JACK,
         source: "test",
         name: "Sprocket",
         description: "Developer tooling for warehouse robotics.",
@@ -198,7 +191,6 @@ describe("profiles provenance", () => {
   it("rejects a location left unattributed", async () => {
     const violated = await constraintViolatedBy(
       scratch.db.insert(profiles).values({
-        ownerId: JACK,
         source: "test",
         name: "Sprocket",
         description: "Developer tooling for warehouse robotics.",
@@ -212,27 +204,9 @@ describe("profiles provenance", () => {
     expect(violated).toBe("profiles_provenance_covers_every_field");
   });
 
-  it("rejects a Profile owned by nobody in auth.users", async () => {
-    const violated = await constraintViolatedBy(
-      scratch.db.insert(profiles).values({
-        ownerId: "33333333-3333-3333-3333-333333333333",
-        source: "test",
-        name: "Orphan",
-        description: "No owner.",
-        sector: "hardware-robotics",
-        stage: "Seed",
-        website: null,
-        provenance: { ...MIXED_PROVENANCE, website: null },
-      }),
-    );
-
-    expect(violated).toBe("profiles_owner_id_users_id_fk");
-  });
-
   it("rejects a sector off the controlled list, even from the service-role ingest path", async () => {
     const violated = await constraintViolatedBy(
       scratch.db.insert(profiles).values({
-        ownerId: JACK,
         source: "test",
         name: "Sprocket",
         description: "Developer tooling for warehouse robotics.",
@@ -249,28 +223,33 @@ describe("profiles provenance", () => {
 
 describe("profiles row level security", () => {
   beforeEach(async () => {
-    await scratch.db.insert(profiles).values([
-      {
-        ownerId: JACK,
-        source: "test",
-        name: "Sprocket",
-        description: "Developer tooling for warehouse robotics.",
-        sector: "hardware-robotics",
-        stage: "Seed",
-        website: "https://sprocket.example",
-        provenance: MIXED_PROVENANCE,
-      },
-      {
-        ownerId: SOMEONE_ELSE,
-        source: "test",
-        name: "Not Jack's",
-        description: "Belongs to another account.",
-        sector: "fintech",
-        stage: "Series A",
-        website: null,
-        provenance: { ...MIXED_PROVENANCE, website: null },
-      },
-    ]);
+    const written = await scratch.db
+      .insert(profiles)
+      .values([
+        {
+          source: "test",
+          name: "Sprocket",
+          description: "Developer tooling for warehouse robotics.",
+          sector: "hardware-robotics",
+          stage: "Seed",
+          website: "https://sprocket.example",
+          provenance: MIXED_PROVENANCE,
+        },
+        {
+          source: "test",
+          name: "Thimble",
+          description: "A second company in the Catalogue.",
+          sector: "fintech",
+          stage: "Series A",
+          website: null,
+          provenance: { ...MIXED_PROVENANCE, website: null },
+        },
+      ])
+      .returning({ id: profiles.id });
+
+    await scratch.db
+      .insert(swipes)
+      .values({ userId: JACK, profileId: written[0]!.id, decision: "keep" });
   });
 
   it("is enabled on the profiles table", async () => {
@@ -287,27 +266,28 @@ describe("profiles row level security", () => {
     await expect(scratch.db.select().from(profiles)).resolves.toEqual([]);
   });
 
-  it("returns only the signed-in user's own Profiles", async () => {
+  // The two halves of docs/adr/0019, as two assertions: the Catalogue is the same for every
+  // User, and what a User did with it is theirs alone.
+  it("shows the same Company Profiles to both signed-in Users", async () => {
     await scratch.as("authenticated", JACK);
+    const jacks = await scratch.db.select().from(profiles);
 
-    const rows = await scratch.db.select().from(profiles);
+    await scratch.as("authenticated", SOMEONE_ELSE);
+    const theirs = await scratch.db.select().from(profiles);
 
-    expect(rows.map((row) => row.name)).toEqual(["Sprocket"]);
-    expect(rows[0]?.ownerId).toBe(JACK);
+    expect(jacks.map((row) => row.name).sort()).toEqual(["Sprocket", "Thimble"]);
+    expect(theirs.map((row) => row.name).sort()).toEqual(jacks.map((row) => row.name).sort());
   });
 
-  it("hides a Profile from an authenticated user who does not own it", async () => {
+  it("hides one User's Keep from the other", async () => {
     await scratch.as("authenticated", SOMEONE_ELSE);
 
-    const rows = await scratch.db.select().from(profiles);
-
-    expect(rows.map((row) => row.name)).toEqual(["Not Jack's"]);
+    await expect(scratch.db.select().from(swipes)).resolves.toEqual([]);
   });
 });
 
 describe("profiles founders and links", () => {
   const SPROCKET = {
-    ownerId: JACK,
     source: "test",
     name: "Sprocket",
     description: "Developer tooling for warehouse robotics.",
