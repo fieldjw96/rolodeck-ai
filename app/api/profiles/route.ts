@@ -11,8 +11,9 @@ import { authenticated } from "../../../lib/api/authenticated";
 import { unprocessable } from "../../../lib/api/responses";
 
 /**
- * A Profile on the wire. `owner_id` is not on it: it is always the caller, and the Deck has
- * no use for it. Keys are the column names, which is also where `next_cursor` gets its shape.
+ * A Profile on the wire. Keys are the column names, which is also where `next_cursor` gets
+ * its shape. The Deck sends no owner because a Company Profile has none: it is Catalogue, the
+ * same row for every User. See docs/adr/0019.
  */
 function toJson(profile: DeckProfile) {
   return {

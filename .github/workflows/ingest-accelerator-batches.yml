@@ -24,4 +24,3 @@ jobs:
       npm-script: ingest:accelerators
     secrets:
       ROLODECK_INGEST_DATABASE_URL: ${{ secrets.ROLODECK_INGEST_DATABASE_URL }}
-      ROLODECK_OWNER_ID: ${{ secrets.ROLODECK_OWNER_ID }}

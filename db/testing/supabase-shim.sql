@@ -40,7 +40,8 @@ $$;
 
 create schema if not exists auth;
 
--- Only the column `profiles.owner_id` references. The app's auth gate is tested separately,
+-- Only the column `swipes.user_id` and `user_profiles.user_id` reference — the Catalogue
+-- references nothing here, per docs/adr/0019. The app's auth gate is tested separately,
 -- against an in-process Supabase Auth stub (see docs/adr/0004); these tests only need an
 -- auth.users row to exist so the foreign key and the RLS policy have something to match on.
 create table if not exists auth.users (

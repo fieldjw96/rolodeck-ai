@@ -23,22 +23,22 @@ const A_MINUTE = 60_000;
 export const seededName = (index: number) => `Startup ${index}`;
 
 /**
- * `count` Profiles, oldest first: `seedProfiles(3)` returns the ids of Startup 0, 1 and 2, and
- * the Deck deals them back in the opposite order. Written as the superuser, which bypasses
- * RLS — a test arranging its fixtures is not the thing under test.
+ * `count` Company Profiles, oldest first: `seedProfiles(3)` returns the ids of Startup 0, 1 and
+ * 2, and the Deck deals them back in the opposite order. Written as the superuser, which
+ * bypasses RLS — a test arranging its fixtures is not the thing under test.
  *
- * Once per owner: the names repeat, and `(owner_id, source, name_key)` is unique per
- * docs/adr/0008, so a second call for the same owner is a duplicate and Postgres says so.
+ * Once per scratch database, not once per User: the names repeat, `(source, name_key)` is
+ * unique per docs/adr/0008, and nothing owns a Company Profile any more (docs/adr/0019), so a
+ * second call is a duplicate and Postgres says so.
  */
 export async function seedProfiles(
   db: Database,
-  { count, ownerId }: { count: number; ownerId: string },
+  { count }: { count: number },
 ): Promise<string[]> {
   const written = await db
     .insert(profiles)
     .values(
       Array.from({ length: count }, (_unused, index) => ({
-        ownerId,
         source: "seed",
         name: seededName(index),
         description: "Seeded for the Deck.",

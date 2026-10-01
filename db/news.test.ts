@@ -67,11 +67,10 @@ beforeEach(async () => {
 });
 
 describe("persistNewsItems", () => {
-  it("stores every candidate however low its confidence, owned by the account it is given", async () => {
-    const [id] = await seedProfiles(scratch.db, { count: 1, ownerId: JACK });
+  it("stores every candidate however low its confidence", async () => {
+    const [id] = await seedProfiles(scratch.db, { count: 1 });
 
     const report = await persistNewsItems(scratch.db, {
-      ownerId: JACK,
       candidates: [
         candidate(id!, 1, { confidence: 0.9 }),
         candidate(id!, 2, { confidence: 0.1 }),
@@ -88,18 +87,16 @@ describe("persistNewsItems", () => {
 
     const rows = await storedRows();
     expect(rows.map((row) => row.confidence).sort()).toEqual([0, 0.1, 0.9]);
-    expect(new Set(rows.map((row) => row.ownerId))).toEqual(new Set([JACK]));
   });
 
   it("is idempotent on the article url per Company Profile: a second run leaves the row count unchanged", async () => {
-    const [id] = await seedProfiles(scratch.db, { count: 1, ownerId: JACK });
+    const [id] = await seedProfiles(scratch.db, { count: 1 });
     const batch = [candidate(id!, 1), candidate(id!, 2, { confidence: 0.2 })];
 
-    await persistNewsItems(scratch.db, { ownerId: JACK, candidates: batch });
+    await persistNewsItems(scratch.db, { candidates: batch });
     const countAfterFirst = (await storedRows()).length;
 
     const second = await persistNewsItems(scratch.db, {
-      ownerId: JACK,
       candidates: batch,
     });
 
@@ -109,16 +106,14 @@ describe("persistNewsItems", () => {
   });
 
   it("updates a stored article's fields and score on a later run, but not when it was first fetched", async () => {
-    const [id] = await seedProfiles(scratch.db, { count: 1, ownerId: JACK });
+    const [id] = await seedProfiles(scratch.db, { count: 1 });
 
     await persistNewsItems(scratch.db, {
-      ownerId: JACK,
       candidates: [candidate(id!, 1, { confidence: 0.3 })],
     });
     const [before] = await storedRows();
 
     await persistNewsItems(scratch.db, {
-      ownerId: JACK,
       candidates: [
         candidate(id!, 1, { title: "A corrected headline", confidence: 0.8 }),
       ],
@@ -134,10 +129,9 @@ describe("persistNewsItems", () => {
   });
 
   it("treats a url repeated within one batch as one article", async () => {
-    const [id] = await seedProfiles(scratch.db, { count: 1, ownerId: JACK });
+    const [id] = await seedProfiles(scratch.db, { count: 1 });
 
     const report = await persistNewsItems(scratch.db, {
-      ownerId: JACK,
       candidates: [candidate(id!, 1), candidate(id!, 1)],
     });
 
@@ -146,13 +140,9 @@ describe("persistNewsItems", () => {
   });
 
   it("stores the same article once for each Company Profile it is attributed to", async () => {
-    const [first, second] = await seedProfiles(scratch.db, {
-      count: 2,
-      ownerId: JACK,
-    });
+    const [first, second] = await seedProfiles(scratch.db, { count: 2 });
 
     await persistNewsItems(scratch.db, {
-      ownerId: JACK,
       candidates: [candidate(first!, 1), candidate(second!, 1)],
     });
 
@@ -160,10 +150,9 @@ describe("persistNewsItems", () => {
   });
 
   it("rejects a candidate by field name and writes the rest of the batch", async () => {
-    const [id] = await seedProfiles(scratch.db, { count: 1, ownerId: JACK });
+    const [id] = await seedProfiles(scratch.db, { count: 1 });
 
     const report = await persistNewsItems(scratch.db, {
-      ownerId: JACK,
       candidates: [
         candidate(id!, 1, { confidence: 1.5 }),
         candidate(id!, 2, { url: "javascript:alert(1)" }),
@@ -181,23 +170,22 @@ describe("persistNewsItems", () => {
   });
 
   it("is refused underneath by Postgres for a score outside 0 to 1, whatever wrote it", async () => {
-    const [id] = await seedProfiles(scratch.db, { count: 1, ownerId: JACK });
+    const [id] = await seedProfiles(scratch.db, { count: 1 });
 
     await expect(
       scratch.db
         .insert(newsItems)
-        .values({ ...candidate(id!, 1), ownerId: JACK, confidence: 2 }),
+        .values({ ...candidate(id!, 1), confidence: 2 }),
     ).rejects.toThrow();
   });
 });
 
 describe("readNews", () => {
   it("does not return a below-threshold item, although it is persisted", async () => {
-    const [id] = await seedProfiles(scratch.db, { count: 1, ownerId: JACK });
+    const [id] = await seedProfiles(scratch.db, { count: 1 });
     await swipe(id!);
 
     await persistNewsItems(scratch.db, {
-      ownerId: JACK,
       candidates: [
         candidate(id!, 1, {
           title: "At the threshold",
@@ -222,15 +210,11 @@ describe("readNews", () => {
   });
 
   it("groups by company with each company's newest article first, and the freshest company first", async () => {
-    const [older, newer] = await seedProfiles(scratch.db, {
-      count: 2,
-      ownerId: JACK,
-    });
+    const [older, newer] = await seedProfiles(scratch.db, { count: 2 });
     await swipe(older!);
     await swipe(newer!);
 
     await persistNewsItems(scratch.db, {
-      ownerId: JACK,
       candidates: [
         candidate(older!, 1),
         candidate(older!, 5),
@@ -248,13 +232,11 @@ describe("readNews", () => {
   it("returns nothing for a Company Profile that is not currently Kept, even with News stored for it", async () => {
     const [passed, unswiped, keptThenPassed] = await seedProfiles(scratch.db, {
       count: 3,
-      ownerId: JACK,
     });
     await swipe(passed!, "pass");
     await swipe(keptThenPassed!, "keep");
 
     await persistNewsItems(scratch.db, {
-      ownerId: JACK,
       candidates: [
         candidate(passed!, 1),
         candidate(unswiped!, 2),
@@ -269,25 +251,28 @@ describe("readNews", () => {
     expect(await readNews(scratch.db, JACK)).toEqual([]);
   });
 
-  it("returns nobody else's News", async () => {
-    const [theirs] = await seedProfiles(scratch.db, {
-      count: 1,
-      ownerId: SOMEONE_ELSE,
-    });
-    await swipe(theirs!, "keep", SOMEONE_ELSE);
-    await persistNewsItems(scratch.db, {
-      ownerId: SOMEONE_ELSE,
-      candidates: [candidate(theirs!, 1)],
-    });
+  it("returns an article to a second User who has Kept the same company", async () => {
+    const [shared] = await seedProfiles(scratch.db, { count: 1 });
+    await swipe(shared!, "keep", SOMEONE_ELSE);
+    await persistNewsItems(scratch.db, { candidates: [candidate(shared!, 1)] });
 
-    expect(await readNews(scratch.db, JACK)).toEqual([]);
+    expect(titles(await readNews(scratch.db, SOMEONE_ELSE))).toEqual([
+      { company: "Startup 0", titles: ["Headline 1"] },
+    ]);
   });
 
-  it("reads through RLS as the signed-in owner, and the policy alone hides the rows from anyone else", async () => {
-    const [id] = await seedProfiles(scratch.db, { count: 1, ownerId: JACK });
+  it("returns nothing to a User who has not Kept the company the article is about", async () => {
+    const [shared] = await seedProfiles(scratch.db, { count: 1 });
+    await swipe(shared!, "keep", JACK);
+    await persistNewsItems(scratch.db, { candidates: [candidate(shared!, 1)] });
+
+    expect(await readNews(scratch.db, SOMEONE_ELSE)).toEqual([]);
+  });
+
+  it("reads through RLS as the signed-in User, and the policy shows the article to both of them", async () => {
+    const [id] = await seedProfiles(scratch.db, { count: 1 });
     await swipe(id!);
     await persistNewsItems(scratch.db, {
-      ownerId: JACK,
       candidates: [candidate(id!, 1)],
     });
 
@@ -296,9 +281,14 @@ describe("readNews", () => {
       { company: "Startup 0", titles: ["Headline 1"] },
     ]);
 
-    // No `where` clause here: what comes back is the policy's answer and nothing else's.
+    // No `where` clause here: what comes back is the policy's answer and nothing else's. The
+    // article is Catalogue, so the second User sees the row; what they do not see is the Keep
+    // that caused it to be gathered, which is why `readNews` still answers them nothing.
     await scratch.as("authenticated", SOMEONE_ELSE);
-    expect(await storedRows()).toEqual([]);
+    expect((await storedRows()).map((row) => row.title)).toEqual([
+      "Headline 1",
+    ]);
+    expect(await scratch.db.select().from(swipes)).toEqual([]);
 
     await scratch.as("anon");
     expect(await storedRows()).toEqual([]);

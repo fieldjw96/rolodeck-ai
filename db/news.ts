@@ -25,22 +25,28 @@ export type KeptCompany = {
 };
 
 /**
- * The Kept Company Profiles a News run searches for, read the way the ingest role can.
+ * The Company Profiles `keepsUserId` has Kept, which are the ones a News run searches for, read
+ * the way the ingest role can.
+ *
+ * One User's Keeps and not every User's, deliberately: docs/adr/0019 keeps gathering narrow
+ * while the Catalogue it writes into is shared. `lib/news/env.ts` is where that User is named
+ * and why.
  *
  * `readKeptProfiles` in `db/deck.ts` answers the same question for the Watchlist by joining
  * `swipes`, which the ingest role holds no grant on. This asks `ingest.kept_profile_ids` — a
  * function migration `0008_ingest_role` defines and lets that role alone call — for the ids
  * instead, so ingest learns which companies are Kept without being able to read or write
- * anything else about a swipe. See docs/adr/0013.
+ * anything else about a swipe. That function still takes the User to answer for, and so still
+ * carries ADR 0013's second deferred risk: it is unchanged by docs/adr/0019.
  *
  * Ordered by name, not by when each was Kept: the function hands out ids and nothing more, and
  * the order a run searches in only decides which company a spent quota lands on.
  */
 export async function readKeptCompaniesForNews(
   db: Database,
-  ownerId: string,
+  keepsUserId: string,
 ): Promise<KeptCompany[]> {
-  const owner = z.guid().parse(ownerId);
+  const keeper = z.guid().parse(keepsUserId);
 
   return db
     .select({
@@ -51,10 +57,7 @@ export async function readKeptCompaniesForNews(
     })
     .from(profiles)
     .where(
-      and(
-        eq(profiles.ownerId, owner),
-        sql`${profiles.id} in (select ingest.kept_profile_ids(${owner}::uuid))`,
-      ),
+      sql`${profiles.id} in (select ingest.kept_profile_ids(${keeper}::uuid))`,
     )
     .orderBy(asc(profiles.name), asc(profiles.id));
 }
@@ -101,7 +104,9 @@ export type NewsIngestReport = {
 };
 
 /**
- * Stores a batch of candidates, owned by `ownerId`, idempotently on `(profile_id, url)`.
+ * Stores a batch of candidates idempotently on `(profile_id, url)`. Nobody owns them: an
+ * article is Catalogue, read by every User whatever Keep caused it to be fetched. See
+ * docs/adr/0019.
  *
  * Follows `persistProfiles` (docs/adr/0008) point for point: Postgres's unique index is the key
  * rather than a read-then-insert; one statement per candidate, since a batch can carry the same
@@ -110,18 +115,11 @@ export type NewsIngestReport = {
  *
  * An update re-writes the score. A later run scoring the same article under a retuned rule
  * should replace the old number, not sit beside it.
- *
- * `ownerId` is the caller's, not read from the environment here: the caller already read the
- * Kept Company Profiles for that owner, and the two must be the same account.
  */
 export async function persistNewsItems(
   db: Database,
-  {
-    ownerId,
-    candidates,
-  }: { ownerId: string; candidates: Iterable<NewsCandidate> },
+  { candidates }: { candidates: Iterable<NewsCandidate> },
 ): Promise<NewsIngestReport> {
-  const owner = z.guid().parse(ownerId);
   const accepted: z.infer<typeof candidateSchema>[] = [];
   const rejections: IngestRejection[] = [];
 
@@ -148,7 +146,7 @@ export async function persistNewsItems(
     for (const candidate of accepted) {
       const [written] = await tx
         .insert(newsItems)
-        .values({ ...candidate, ownerId: owner })
+        .values(candidate)
         .onConflictDoUpdate({
           target: [newsItems.profileId, newsItems.url],
           set: {
@@ -243,8 +241,10 @@ export function groupNewsByCompany(rows: readonly NewsRow[]): NewsGroup[] {
  * last week and Passed today has News already stored, and News for companies that are not Kept
  * is out of scope — so it disappears from the page rather than lingering until a cleanup.
  *
- * Ownership is written out in the `where` clause as well as carried by the RLS policy, per
- * CLAUDE.md, matching `readKeptProfiles`.
+ * The articles are Catalogue and shared; the Keeps that decide which of them this reader sees
+ * are not. So the reader is written into the join on `swipes.user_id` and nowhere else,
+ * matching `readKeptProfiles`. A User who has Kept a company Jack never did sees no News for
+ * it, because nothing gathered any: docs/adr/0019 accepts that consequence by name.
  */
 export async function readNews(
   db: Database,
@@ -263,10 +263,7 @@ export async function readNews(
       profileSector: profiles.sector,
     })
     .from(newsItems)
-    .innerJoin(
-      profiles,
-      and(eq(profiles.id, newsItems.profileId), eq(profiles.ownerId, userId)),
-    )
+    .innerJoin(profiles, eq(profiles.id, newsItems.profileId))
     .innerJoin(
       swipes,
       and(
@@ -275,12 +272,7 @@ export async function readNews(
         eq(swipes.decision, "keep"),
       ),
     )
-    .where(
-      and(
-        eq(newsItems.ownerId, userId),
-        gte(newsItems.confidence, NEWS_DISPLAY_THRESHOLD),
-      ),
-    )
+    .where(gte(newsItems.confidence, NEWS_DISPLAY_THRESHOLD))
     .orderBy(desc(newsItems.publishedAt), desc(newsItems.id));
 
   return groupNewsByCompany(rows);

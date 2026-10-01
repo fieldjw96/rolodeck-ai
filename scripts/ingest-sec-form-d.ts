@@ -21,7 +21,7 @@ import { SEC_FORM_D_SOURCE } from "../lib/ingest/sec-form-d";
  * writes real rows as the ingest role, and neither belongs in a suite that has to be able to
  * run a hundred times a day.
  *
- * Needs `ROLODECK_INGEST_DATABASE_URL` and `ROLODECK_OWNER_ID` as well as:
+ * Needs `ROLODECK_INGEST_DATABASE_URL` as well as:
  *
  *     SEC_EDGAR_CONTACT=you@example.com npm run ingest:sec-form-d
  *     SEC_EDGAR_CONTACT=you@example.com npm run ingest:sec-form-d -- --since 2026-09-01 --limit 50

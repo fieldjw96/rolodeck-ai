@@ -9,7 +9,7 @@ import { backfillSeedProfiles, MINIMUM_PROFILE_COUNT } from "../db/seed";
  * Idempotent: a table that already holds enough Profiles is left untouched, and running this
  * twice never adds a row twice — see `backfillSeedProfiles` in `db/seed.ts`.
  *
- *     ROLODECK_INGEST_DATABASE_URL=... ROLODECK_OWNER_ID=... npm run ingest:seed
+ *     ROLODECK_INGEST_DATABASE_URL=... npm run ingest:seed
  */
 async function main(): Promise<void> {
   const { before, needed, report } = await backfillSeedProfiles(

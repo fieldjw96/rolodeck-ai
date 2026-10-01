@@ -24,13 +24,16 @@ export type RouteHarness = {
   scratch: ScratchDb;
   backend: AuthBackend;
   user: ThrowawayUser;
-  /** The account that owns nothing this session's user is allowed to see. */
+  /**
+   * A second signed-up User. They own nothing — the Catalogue has no owner, per docs/adr/0019
+   * — so what is theirs and not this session's user's is their swipes and their User Profile.
+   */
   strangerId: string;
   /** What the mocked `next/headers` hands back. Empty is a request with no session. */
   cookies: CookiePair[];
   signIn: () => Promise<void>;
   signOut: () => void;
-  seed: (count: number, ownerId?: string) => Promise<string[]>;
+  seed: (count: number) => Promise<string[]>;
   /** Empties the database and gives the user back a full rate-limit budget. */
   clear: () => Promise<void>;
   close: () => Promise<void>;
@@ -43,7 +46,7 @@ export async function startRouteHarness(): Promise<RouteHarness> {
   const backend = await stubBackend();
   const user = await backend.createUser();
 
-  // `profiles.owner_id` and `swipes.user_id` both point into `auth.users`, which the Auth stub
+  // `swipes.user_id` and `user_profiles.user_id` point into `auth.users`, which the Auth stub
   // knows nothing about: the two halves are joined here, by id.
   await scratch.createUser(user.id);
   await scratch.createUser(STRANGER);
@@ -60,8 +63,7 @@ export async function startRouteHarness(): Promise<RouteHarness> {
     signOut: () => {
       harness.cookies = [];
     },
-    seed: (count, ownerId = user.id) =>
-      seedProfiles(scratch.db, { count, ownerId }),
+    seed: (count) => seedProfiles(scratch.db, { count }),
     clear: async () => {
       // The limiter is module state shared by every handler in the file under test, so a test
       // that made 40 requests would otherwise leave only 20 for the next one.

@@ -10,7 +10,6 @@ import { seedProfiles } from "./testing/seed-profiles";
 const JACK = "11111111-1111-1111-1111-111111111111";
 
 let scratch: ScratchDb;
-const ownerIdBefore = process.env.ROLODECK_OWNER_ID;
 
 beforeAll(async () => {
   scratch = await createScratchDb();
@@ -19,11 +18,9 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await scratch?.close();
-  process.env.ROLODECK_OWNER_ID = ownerIdBefore;
 });
 
 beforeEach(async () => {
-  process.env.ROLODECK_OWNER_ID = JACK;
   await scratch.reset();
   await scratch.db.delete(profiles);
 });
@@ -59,7 +56,7 @@ describe("backfillSeedProfiles", () => {
   });
 
   it("tops up only as many rows as are missing when some already exist", async () => {
-    await seedProfiles(scratch.db, { count: 25, ownerId: JACK });
+    await seedProfiles(scratch.db, { count: 25 });
 
     const result = await backfillSeedProfiles(scratch.db);
 
@@ -72,10 +69,7 @@ describe("backfillSeedProfiles", () => {
   });
 
   it("finds nothing to add once profiles already holds the minimum, and that is a pass", async () => {
-    await seedProfiles(scratch.db, {
-      count: MINIMUM_PROFILE_COUNT,
-      ownerId: JACK,
-    });
+    await seedProfiles(scratch.db, { count: MINIMUM_PROFILE_COUNT });
 
     const result = await backfillSeedProfiles(scratch.db);
 
@@ -93,7 +87,7 @@ describe("backfillSeedProfiles", () => {
   });
 
   it("finds nothing to add when a table well past the minimum already exists", async () => {
-    await seedProfiles(scratch.db, { count: 40, ownerId: JACK });
+    await seedProfiles(scratch.db, { count: 40 });
 
     const result = await backfillSeedProfiles(scratch.db);
 

@@ -97,7 +97,6 @@ describe("GET /api/news", () => {
       .values({ userId: harness.user.id, profileId: id!, decision: "keep" });
 
     await persistNewsItems(harness.scratch.db, {
-      ownerId: harness.user.id,
       candidates: [
         candidate(id!),
         candidate(id!, {
@@ -129,18 +128,38 @@ describe("GET /api/news", () => {
     });
   });
 
-  it("lists nobody else's News", async () => {
-    const [theirs] = await harness.seed(1, harness.strangerId);
+  // The Company Profile and the article are both Catalogue; the Keep that puts the article on
+  // a page is not. So the stranger's Keep gives this reader nothing. See docs/adr/0019.
+  it("lists nothing for a company only somebody else has Kept", async () => {
+    const [shared] = await harness.seed(1);
     await harness.scratch.db.insert(swipes).values({
       userId: harness.strangerId,
-      profileId: theirs!,
+      profileId: shared!,
       decision: "keep",
     });
     await persistNewsItems(harness.scratch.db, {
-      ownerId: harness.strangerId,
-      candidates: [candidate(theirs!)],
+      candidates: [candidate(shared!)],
     });
 
     await expect((await read()).json()).resolves.toEqual({ companies: [] });
+  });
+
+  it("lists that same article once this reader Keeps the company too", async () => {
+    const [shared] = await harness.seed(1);
+    await harness.scratch.db.insert(swipes).values([
+      { userId: harness.strangerId, profileId: shared!, decision: "keep" },
+      { userId: harness.user.id, profileId: shared!, decision: "keep" },
+    ]);
+    await persistNewsItems(harness.scratch.db, {
+      candidates: [candidate(shared!)],
+    });
+
+    const body = (await (await read()).json()) as {
+      companies: { profile: { name: string } }[];
+    };
+
+    expect(body.companies.map((group) => group.profile.name)).toEqual([
+      "Startup 0",
+    ]);
   });
 });

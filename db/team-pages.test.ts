@@ -4,7 +4,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import { persistProfiles } from "./ingest";
 import type { ProfileProvenance } from "./provenance";
-import { profiles } from "./schema";
+import { profiles, swipes } from "./schema";
 import {
   recordTeamPageResults,
   selectTeamPageCandidates,
@@ -35,14 +35,12 @@ const PROVENANCE: ProfileProvenance = {
 };
 
 let scratch: ScratchDb;
-const ownerIdBefore = process.env.ROLODECK_OWNER_ID;
 
 type Arranged = {
   name: string;
   website?: string | null;
   founders?: { name: string }[];
   soughtAt?: Date;
-  ownerId?: string;
   createdAt?: Date;
 };
 
@@ -52,14 +50,12 @@ async function profile({
   website = `https://${name.toLowerCase()}.dev`,
   founders,
   soughtAt,
-  ownerId = JACK,
   createdAt = new Date(NOW.getTime() - 100 * DAY),
 }: Arranged): Promise<string> {
   await scratch.reset();
   const [row] = await scratch.db
     .insert(profiles)
     .values({
-      ownerId,
       source: "angelpad",
       name,
       description: `${name}, for the team-page tests.`,
@@ -95,7 +91,6 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  process.env.ROLODECK_OWNER_ID = ownerIdBefore;
   await scratch.close();
 });
 
@@ -117,11 +112,9 @@ describe("selectTeamPageCandidates", () => {
     const never = await profile({ name: "Never" });
     await profile({ name: "Stated", founders: [{ name: "Ada Lovelace" }] });
     await profile({ name: "Siteless", website: null });
-    await profile({ name: "Theirs", ownerId: SOMEONE_ELSE });
 
     await scratch.as("rolodeck_ingest");
     const candidates = await selectTeamPageCandidates(scratch.db, {
-      ownerId: JACK,
       limit: 10,
       now: NOW,
     });
@@ -143,7 +136,6 @@ describe("selectTeamPageCandidates", () => {
 
     await scratch.as("rolodeck_ingest");
     const candidates = await selectTeamPageCandidates(scratch.db, {
-      ownerId: JACK,
       limit: 1,
       now: NOW,
     });
@@ -159,7 +151,6 @@ describe("recordTeamPageResults", () => {
 
     await scratch.as("rolodeck_ingest");
     const { updated } = await recordTeamPageResults(scratch.db, {
-      ownerId: JACK,
       results: [
         {
           profileId: id,
@@ -185,7 +176,6 @@ describe("recordTeamPageResults", () => {
 
     await scratch.as("rolodeck_ingest");
     const { updated } = await recordTeamPageResults(scratch.db, {
-      ownerId: JACK,
       results: [{ profileId: looked, founders: null }],
       at: NOW,
     });
@@ -209,7 +199,6 @@ describe("recordTeamPageResults", () => {
 
     await scratch.as("rolodeck_ingest");
     const { updated } = await recordTeamPageResults(scratch.db, {
-      ownerId: JACK,
       results: [{ profileId: id, founders: [{ name: "Someone Else" }] }],
       at: NOW,
     });
@@ -221,19 +210,22 @@ describe("recordTeamPageResults", () => {
     expect(row.foundersSoughtAt).toBeNull();
   });
 
-  it("never touches another owner's Profile", async () => {
-    const id = await profile({ name: "Theirs", ownerId: SOMEONE_ELSE });
+  it("fills a Company Profile whoever Kept it, because nobody owns one", async () => {
+    const id = await profile({ name: "Shared" });
+    await scratch.db
+      .insert(swipes)
+      .values({ userId: SOMEONE_ELSE, profileId: id, decision: "keep" });
 
     await scratch.as("rolodeck_ingest");
-    await recordTeamPageResults(scratch.db, {
-      ownerId: JACK,
+    const { updated } = await recordTeamPageResults(scratch.db, {
       results: [{ profileId: id, founders: [{ name: "Joachim Lohse" }] }],
       at: NOW,
     });
 
+    expect(updated).toBe(1);
     expect(await read(id)).toMatchObject({
-      founders: null,
-      foundersSoughtAt: null,
+      founders: [{ name: "Joachim Lohse" }],
+      foundersSoughtAt: NOW,
     });
   });
 });
@@ -258,12 +250,10 @@ describe("a Source re-ingesting a Profile the enrichment filled", () => {
     const id = await profile({ name: "Acme", website: "https://acme.dev" });
     await scratch.as("rolodeck_ingest");
     await recordTeamPageResults(scratch.db, {
-      ownerId: JACK,
       results: [{ profileId: id, founders: [{ name: "Joachim Lohse" }] }],
       at: NOW,
     });
 
-    process.env.ROLODECK_OWNER_ID = JACK;
     await persistProfiles(scratch.db, {
       source: "angelpad",
       candidates: [candidate()],
@@ -278,12 +268,10 @@ describe("a Source re-ingesting a Profile the enrichment filled", () => {
     const id = await profile({ name: "Acme", website: "https://acme.dev" });
     await scratch.as("rolodeck_ingest");
     await recordTeamPageResults(scratch.db, {
-      ownerId: JACK,
       results: [{ profileId: id, founders: [{ name: "Joachim Lohse" }] }],
       at: NOW,
     });
 
-    process.env.ROLODECK_OWNER_ID = JACK;
     await persistProfiles(scratch.db, {
       source: "angelpad",
       candidates: [candidate([{ name: "Ada Lovelace" }])],

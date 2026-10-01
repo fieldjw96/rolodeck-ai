@@ -30,4 +30,5 @@ jobs:
       npm-script: ingest:news
     secrets:
       ROLODECK_INGEST_DATABASE_URL: ${{ secrets.ROLODECK_INGEST_DATABASE_URL }}
-      ROLODECK_OWNER_ID: ${{ secrets.ROLODECK_OWNER_ID }}
+      # News alone needs this: gathering is driven by one User's Keeps, per ADR 0019.
+      ROLODECK_NEWS_KEEPS_USER_ID: ${{ secrets.ROLODECK_NEWS_KEEPS_USER_ID }}

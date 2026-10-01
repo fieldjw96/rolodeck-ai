@@ -24,9 +24,8 @@ const NO_SUCH_PROFILE = "33333333-3333-3333-3333-333333333333";
 
 let scratch: ScratchDb;
 
-/** `count` Profiles for Jack unless another owner is named, oldest first. */
-const seed = (count: number, ownerId = JACK) =>
-  seedProfiles(scratch.db, { count, ownerId });
+/** `count` Company Profiles in the Catalogue, oldest first. Nobody owns them. */
+const seed = (count: number) => seedProfiles(scratch.db, { count });
 
 const names = (page: { profiles: DeckProfile[] }) =>
   page.profiles.map((profile) => profile.name);
@@ -181,14 +180,18 @@ describe("reading a page of the Deck", () => {
     expect(page.nextCursor).not.toBeNull();
   });
 
-  it("deals nobody else's Profiles", async () => {
-    await seed(2, SOMEONE_ELSE);
+  it("deals the same Catalogue to a second User", async () => {
+    await seed(2);
 
-    const page = await asUser(scratch.db, JACK, (tx) =>
+    const jacks = await asUser(scratch.db, JACK, (tx) =>
       readDeckPage(tx, { userId: JACK, limit: DEFAULT_PAGE_SIZE }),
     );
+    const theirs = await asUser(scratch.db, SOMEONE_ELSE, (tx) =>
+      readDeckPage(tx, { userId: SOMEONE_ELSE, limit: DEFAULT_PAGE_SIZE }),
+    );
 
-    expect(page.profiles).toEqual([]);
+    expect(names(jacks)).toEqual(["Startup 1", "Startup 0"]);
+    expect(names(theirs)).toEqual(names(jacks));
   });
 });
 
@@ -260,18 +263,18 @@ describe("recording a swipe", () => {
     ).resolves.toBeNull();
   });
 
-  it("refuses a Profile belonging to somebody else", async () => {
-    const [theirs] = await seed(1, SOMEONE_ELSE);
+  it("records a swipe by a second User against the same Company Profile", async () => {
+    const [shared] = await seed(1);
 
     await expect(
-      asUser(scratch.db, JACK, (tx) =>
+      asUser(scratch.db, SOMEONE_ELSE, (tx) =>
         recordSwipe(tx, {
-          userId: JACK,
-          profileId: theirs!,
+          userId: SOMEONE_ELSE,
+          profileId: shared!,
           decision: "keep",
         }),
       ),
-    ).resolves.toBeNull();
+    ).resolves.toMatchObject({ profileId: shared, decision: "keep" });
   });
 
   it("keeps one user's decisions out of another's Deck", async () => {
@@ -344,11 +347,11 @@ describe("reading the Watchlist", () => {
     expect(kept).toEqual([]);
   });
 
-  it("shows nobody else's Kept Profiles", async () => {
-    const [theirs] = await seed(1, SOMEONE_ELSE);
+  it("shows nobody else's Kept Profiles, though the company itself is shared", async () => {
+    const [shared] = await seed(1);
     await scratch.db
       .insert(swipes)
-      .values({ userId: SOMEONE_ELSE, profileId: theirs!, decision: "keep" });
+      .values({ userId: SOMEONE_ELSE, profileId: shared!, decision: "keep" });
 
     const kept = await asUser(scratch.db, JACK, (tx) =>
       readKeptProfiles(tx, JACK),
@@ -364,17 +367,18 @@ describe("reading the Watchlist", () => {
  * app itself connect as.
  */
 describe("row level security under the Deck", () => {
-  /** The one Profile Jack owns here. Named so a test can point at it without seeding a
-   * second, which is now a duplicate rather than a fixture: `seedProfiles` writes the same
-   * names under the same source, and that is exactly the natural key of docs/adr/0008. */
-  let jacksOnlyProfile: string;
+  /** The one Company Profile in the Catalogue here, which Jack has Kept. Named so a test can
+   * point at it without seeding a second, which is now a duplicate rather than a fixture:
+   * `seedProfiles` writes the same names under the same source, and that is exactly the
+   * natural key of docs/adr/0008. */
+  let theOnlyProfile: string;
 
   beforeEach(async () => {
     const [only] = await seed(1);
-    jacksOnlyProfile = only!;
+    theOnlyProfile = only!;
     await scratch.db
       .insert(swipes)
-      .values({ userId: JACK, profileId: jacksOnlyProfile, decision: "keep" });
+      .values({ userId: JACK, profileId: theOnlyProfile, decision: "keep" });
   });
 
   it("shows the anonymous role no Profiles and no swipes", async () => {
@@ -384,6 +388,15 @@ describe("row level security under the Deck", () => {
     await expect(scratch.db.select().from(swipes)).resolves.toEqual([]);
   });
 
+  // The two halves of docs/adr/0019, as two assertions.
+  it("shows a second signed-in User the same Company Profile", async () => {
+    await scratch.as("authenticated", SOMEONE_ELSE);
+
+    const rows = await scratch.db.select().from(profiles);
+
+    expect(rows.map((row) => row.id)).toEqual([theOnlyProfile]);
+  });
+
   it("shows an authenticated user none of another account's swipes", async () => {
     await scratch.as("authenticated", SOMEONE_ELSE);
 
@@ -391,29 +404,30 @@ describe("row level security under the Deck", () => {
   });
 
   it("refuses a swipe recorded against somebody else", async () => {
-    const [theirs] = await seed(1, SOMEONE_ELSE);
     await scratch.as("authenticated", SOMEONE_ELSE);
 
     await expect(
       refusalFrom(
-        scratch.db
-          .insert(swipes)
-          .values({ userId: JACK, profileId: theirs!, decision: "keep" }),
+        scratch.db.insert(swipes).values({
+          userId: JACK,
+          profileId: theOnlyProfile,
+          decision: "keep",
+        }),
       ),
     ).resolves.toMatch(/row-level security/i);
   });
 
-  it("refuses a swipe about a Profile the user cannot see", async () => {
+  it("refuses a swipe about a Company Profile that does not exist", async () => {
     await scratch.as("authenticated", SOMEONE_ELSE);
 
     await expect(
       refusalFrom(
         scratch.db.insert(swipes).values({
           userId: SOMEONE_ELSE,
-          profileId: jacksOnlyProfile,
+          profileId: NO_SUCH_PROFILE,
           decision: "keep",
         }),
       ),
-    ).resolves.toMatch(/row-level security/i);
+    ).resolves.toMatch(/row-level security|foreign key/i);
   });
 });

@@ -14,6 +14,7 @@ import {
   startRouteHarness,
   type RouteHarness,
 } from "../../../lib/api/testing/route-harness";
+import { swipes } from "../../../db/schema";
 import { POST as keep } from "./[id]/keep/route";
 import { POST as pass } from "./[id]/pass/route";
 import { GET } from "./route";
@@ -160,10 +161,11 @@ describe("GET /api/profiles", () => {
     });
   });
 
-  it("deals nobody else's Profiles", async () => {
-    await harness.seed(2, harness.strangerId);
+  // The Catalogue half of docs/adr/0019: the Deck is the same for every signed-in User.
+  it("deals a Company Profile nobody has swiped, whoever is asking", async () => {
+    await harness.seed(2);
 
-    await expect(dealt()).resolves.toEqual({ profiles: [], next_cursor: null });
+    expect(names(await dealt())).toEqual(["Startup 1", "Startup 0"]);
   });
 });
 
@@ -190,8 +192,14 @@ describe("GET /api/profiles?filter=kept", () => {
     ]);
   });
 
+  // The personal half: another User's Keep of a shared Company Profile is not this one's.
   it("deals nobody else's Kept Profiles", async () => {
-    await harness.seed(2, harness.strangerId);
+    const [shared] = await harness.seed(2);
+    await harness.scratch.db.insert(swipes).values({
+      userId: harness.strangerId,
+      profileId: shared!,
+      decision: "keep",
+    });
 
     await expect(dealt("?filter=kept")).resolves.toEqual({
       profiles: [],

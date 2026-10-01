@@ -58,8 +58,10 @@ export async function provisionSingleAccount(
     );
   }
 
-  // The single-account rule, enforced rather than described. A second account would mean a
-  // second `owner_id`, and RLS would then hide half the Deck from whoever signed in.
+  // The single-account rule, enforced rather than described. The Catalogue is shared and
+  // nothing owns it (docs/adr/0019), so a second account would not hide anything; what this
+  // guards now is that the password path exists for one operator-made account, and open
+  // sign-up arrives through Google SSO instead. See docs/adr/0020 and docs/adr/0021.
   const [first] = existing.data.users;
   if (first !== undefined) {
     throw new Error(

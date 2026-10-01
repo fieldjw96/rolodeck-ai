@@ -96,7 +96,8 @@ BEGIN
   END IF;
 
   -- Its RLS policies are `with check (true)`, so the column grant is all that stops an update
-  -- moving a row into another account.
+  -- rewriting a row's identity. `owner_id` was the other column named here until docs/adr/0019
+  -- took it off all four tables; what remains to protect is the primary key.
   SELECT string_agg(format('%I.%I', c.relname, a.attname), ', ' ORDER BY c.relname, a.attname)
   INTO broader
   FROM pg_class c
@@ -108,7 +109,7 @@ BEGIN
     AND has_column_privilege(ingest_role, c.oid, a.attnum, 'UPDATE');
 
   IF broader IS NOT NULL THEN
-    RAISE EXCEPTION 'rolodeck_ingest may not update a row''s id or owner, but can update %', broader;
+    RAISE EXCEPTION 'rolodeck_ingest may not update a row''s id, but can update %', broader;
   END IF;
 
   -- Postgres makes every new function executable by PUBLIC, so this counts all of those. A

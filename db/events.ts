@@ -1,7 +1,6 @@
 import { and, asc, eq, inArray, isNull, or, sql, type SQL } from "drizzle-orm";
 import { z } from "zod";
 
-import { readOwnerId } from "../lib/ingest/env";
 import { citiesInArea } from "../lib/location/bay-area";
 import { issueField } from "../lib/zod/issues";
 import type { Database } from "./connection";
@@ -37,20 +36,21 @@ export type EventIngestReport = {
 };
 
 /**
- * Writes a batch of Events from one Source, owned by the single account, idempotently.
+ * Writes a batch of Events from one Source, idempotently. Nobody owns them: an Event and the
+ * Attendance a Source states at it are Catalogue, per docs/adr/0019.
  *
- * Idempotent on `(owner_id, source, external_id)`, in the spirit of docs/adr/0008: re-running a
- * Source updates the Events it wrote before rather than adding them again. The Source's own id
- * is the key rather than the name because both events Sources publish one, and it is what
- * survives Techmeme correcting a name or a date.
+ * Idempotent on `(source, external_id)`, in the spirit of docs/adr/0008: re-running a Source
+ * updates the Events it wrote before rather than adding them again. The Source's own id is the
+ * key rather than the name because both events Sources publish one, and it is what survives
+ * Techmeme correcting a name or a date.
  *
  * Attendance is replaced, not accumulated: each Event's links are rebuilt from what the Source
  * states today, so a company a Source stops listing stops being linked. Each attendee name is
- * matched to the owner's Company Profiles on `name_key`, through `nameKeyOf` — the expression
- * that column is generated from — so a name matches here exactly when it would collide there.
- * A name that matches nothing is not stored; nothing is invented to hold it.
+ * matched to the Catalogue's Company Profiles on `name_key`, through `nameKeyOf` — the
+ * expression that column is generated from — so a name matches here exactly when it would
+ * collide there. A name that matches nothing is not stored; nothing is invented to hold it.
  *
- * Throws on a Source name or owner id that is wrong, for the reason `persistProfiles` gives.
+ * Throws on a Source name that is wrong, for the reason `persistProfiles` gives.
  */
 export async function persistEvents(
   db: Database,
@@ -60,7 +60,6 @@ export async function persistEvents(
   }: { source: string; events: Iterable<EventInput> },
 ): Promise<EventIngestReport> {
   const sourceName = sourceSchema.parse(source);
-  const ownerId = readOwnerId();
 
   const accepted: EventInput[] = [];
   const rejections: IngestRejection[] = [];
@@ -92,7 +91,6 @@ export async function persistEvents(
       const [written] = await tx
         .insert(events)
         .values({
-          ownerId,
           source: sourceName,
           externalId: event.externalId,
           name: event.name,
@@ -102,7 +100,7 @@ export async function persistEvents(
           url: event.url,
         })
         .onConflictDoUpdate({
-          target: [events.ownerId, events.source, events.externalId],
+          target: [events.source, events.externalId],
           set: {
             name: sql`excluded.name`,
             startDate: sql`excluded.start_date`,
@@ -139,12 +137,7 @@ export async function persistEvents(
       const matched = await tx
         .select({ id: profiles.id })
         .from(profiles)
-        .where(
-          and(
-            eq(profiles.ownerId, ownerId),
-            sql`${profiles.nameKey} in (${attendeeKeys})`,
-          ),
-        );
+        .where(sql`${profiles.nameKey} in (${attendeeKeys})`);
 
       if (matched.length === 0) {
         continue;
@@ -225,11 +218,15 @@ export type DiaryEvent = {
 const eventLocationCity = sql`lower(regexp_replace(split_part(${events.location}, ',', 1), '^[[:space:]]+|[[:space:]]+$', '', 'g'))`;
 
 /**
- * The reader's own Events in their area, in date order, soonest first, with past ones left out
+ * The Events in the reader's area, in date order, soonest first, with past ones left out
  * unless asked for. An Event is past once its last day is before `today`, so a three-day
  * conference stays in the Diary until it is over.
  *
- * "Their area" is `userProfiles.area`, read through `readUserProfile` so an owner who has never
+ * Every signed-in User reads the same Events: they are Catalogue, per docs/adr/0019. What
+ * differs between two Users reading the same Diary is which of those Events is `important`,
+ * since that is decided by their own Keeps.
+ *
+ * "Their area" is `userProfiles.area`, read through `readUserProfile` so a User who has never
  * saved one still gets its "Bay Area" default rather than an unfiltered Diary — unlike the
  * Deck, which ranks and so treats a never-saved User Profile as stating nothing at all. An
  * Event is filtered out only when its `location` states a city and that city is outside every
@@ -246,9 +243,10 @@ const eventLocationCity = sql`lower(regexp_replace(split_part(${events.location}
  * Every Event that survives the area filter is returned whether or not anyone is known to
  * attend it: attendance only ever marks an Event, it never decides whether one is shown.
  *
- * Ownership is written into the `where` clause, the attendance join and the swipe join, as well
- * as being carried by RLS underneath — see CLAUDE.md on RLS as a backstop, never the only
- * control.
+ * The reader is written into the swipe join as well as being carried by RLS underneath — see
+ * CLAUDE.md on RLS as a backstop, never the only control. There is no owner to write into the
+ * `where` clause any more, and the attendance join no longer carries one either: both ends of
+ * an Attendance are Catalogue.
  */
 export async function readDiary(
   db: Database,
@@ -260,7 +258,7 @@ export async function readDiary(
 ): Promise<DiaryEvent[]> {
   /** The reader's Kept Company Profiles that attend the Event on the current row. */
   const keptAttendees = (selection: SQL) =>
-    sql`select ${selection} from ${eventAttendances} inner join ${profiles} on ${profiles.id} = ${eventAttendances.profileId} inner join ${swipes} on ${swipes.profileId} = ${profiles.id} where ${eventAttendances.eventId} = ${events.id} and ${profiles.ownerId} = ${userId} and ${swipes.userId} = ${userId} and ${swipes.decision} = 'keep'`;
+    sql`select ${selection} from ${eventAttendances} inner join ${profiles} on ${profiles.id} = ${eventAttendances.profileId} inner join ${swipes} on ${swipes.profileId} = ${profiles.id} where ${eventAttendances.eventId} = ${events.id} and ${swipes.userId} = ${userId} and ${swipes.decision} = 'keep'`;
 
   const userProfile = await readUserProfile(db, userId);
   const areaCities = citiesInArea(userProfile.area);
@@ -283,7 +281,6 @@ export async function readDiary(
     .from(events)
     .where(
       and(
-        eq(events.ownerId, userId),
         includePast
           ? undefined
           : sql`coalesce(${events.endDate}, ${events.startDate}) >= ${today}::date`,

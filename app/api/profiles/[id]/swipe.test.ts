@@ -132,15 +132,23 @@ describe.each([["keep", keep] as const, ["pass", pass] as const])(
       await expect(response.json()).resolves.toEqual({ error: "not found" });
     });
 
-    it("answers 404, not 403, for somebody else's Profile", async () => {
-      const [theirs] = await harness.seed(1, harness.strangerId);
+    // The Catalogue is shared, so there is no such thing as somebody else's Company Profile
+    // to be refused: a second User swiping one the first already Kept is the ordinary case.
+    // See docs/adr/0019.
+    it("records a swipe against a Company Profile another User has already Kept", async () => {
+      const [shared] = await harness.seed(1);
+      await harness.scratch.db.insert(swipes).values({
+        userId: harness.strangerId,
+        profileId: shared!,
+        decision: "keep",
+      });
 
-      const response = await swipe(route, theirs!);
+      const response = await swipe(route, shared!);
 
-      expect(response.status).toBe(404);
-      await expect(harness.scratch.db.select().from(swipes)).resolves.toEqual(
-        [],
-      );
+      expect(response.status).toBe(200);
+      await expect(
+        harness.scratch.db.select().from(swipes),
+      ).resolves.toHaveLength(2);
     });
   },
 );

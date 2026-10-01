@@ -3,7 +3,6 @@ import path from "node:path";
 
 import { closeIngestDb, getIngestDb } from "../db/ingest-connection";
 import { selectTeamPageCandidates } from "../db/team-pages";
-import { readOwnerId } from "../lib/ingest/env";
 import { createTeamSiteClient } from "../lib/ingest/team-page-fetch";
 import {
   gatherTeamPages,
@@ -22,14 +21,12 @@ import { teamPagesDirectory } from "./team-pages-directory";
  * - `pages/<profile id>.txt`, one per company whose site could be read, for the model;
  * - an empty `answers/`, where the model writes `<profile id>.json`.
  *
- *     ROLODECK_INGEST_DATABASE_URL=... ROLODECK_OWNER_ID=... npm run ingest:team-pages:gather
+ *     ROLODECK_INGEST_DATABASE_URL=... npm run ingest:team-pages:gather
  */
 async function main(): Promise<void> {
-  const ownerId = readOwnerId();
   const directory = teamPagesDirectory();
 
   const candidates = await selectTeamPageCandidates(await getIngestDb(), {
-    ownerId,
     limit: TEAM_PAGE_CANDIDATES_PER_RUN,
   });
   // Nothing more to ask the database, and reading sites takes minutes.

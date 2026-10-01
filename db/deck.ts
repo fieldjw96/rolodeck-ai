@@ -124,11 +124,10 @@ export const pagingQuerySchema = z.object({
 });
 
 /**
- * The Profile as the Deck deals it. `owner_id` is left out because it is always the reader;
- * `source` and `name_key` because they are ingest's bookkeeping — which pipeline wrote the row
- * and what it deduplicates on — and say nothing about the company on the card. `founders` and
- * `links` are dealt as stored, null where the Source stated none, for the card's Team and
- * Contact tabs.
+ * The Profile as the Deck deals it. `source` and `name_key` are left out because they are
+ * ingest's bookkeeping — which pipeline wrote the row and what it deduplicates on — and say
+ * nothing about the company on the card. `founders` and `links` are dealt as stored, null
+ * where the Source stated none, for the card's Team and Contact tabs.
  */
 const deckColumns = {
   id: profiles.id,
@@ -148,7 +147,7 @@ const deckColumns = {
 // neither reads nor shows it. See docs/adr/0016.
 export type DeckProfile = Omit<
   Profile,
-  "ownerId" | "source" | "nameKey" | "foundersSoughtAt"
+  "source" | "nameKey" | "foundersSoughtAt"
 >;
 
 export type DeckPage = {
@@ -195,14 +194,16 @@ function deckScore(userProfile: UserProfile): SQL<number> {
 }
 
 /**
- * One page of the Deck: the reader's own Profiles, minus the ones they have already Kept or
- * Passed and the ones in a Sector their User Profile excludes, ranked by that User Profile and
- * newest first within a rank. Ranked rather than filtered: a Profile matching nothing the
- * owner stated is still dealt, at the bottom. See docs/adr/0011.
+ * One page of the Deck: the whole Catalogue of Company Profiles, minus the ones this reader has
+ * already Kept or Passed and the ones in a Sector their User Profile excludes, ranked by that
+ * User Profile and newest first within a rank. Ranked rather than filtered: a Profile matching
+ * nothing the reader stated is still dealt, at the bottom. See docs/adr/0011.
  *
- * Ownership and the swipe exclusion are both written out here rather than left to RLS. Per
- * CLAUDE.md the policies are a backstop and never the only control, and the exclusion is not
- * something RLS could express in the first place.
+ * Every User deals from the same Catalogue, per docs/adr/0019. What makes one reader's Deck
+ * differ from another's is their own swipes and their own User Profile, both of which are
+ * written out in this query against `userId` rather than left to RLS: per CLAUDE.md the
+ * policies are a backstop and never the only control, and neither the swipe exclusion nor the
+ * ranking is something RLS could express in the first place.
  */
 export async function readDeckPage(
   db: Database,
@@ -223,7 +224,6 @@ export async function readDeckPage(
     .from(profiles)
     .where(
       and(
-        eq(profiles.ownerId, userId),
         notInArray(profiles.sector, userProfile.excludedSectors),
         sql`not exists (select 1 from ${swipes} where ${swipes.profileId} = ${profiles.id} and ${swipes.userId} = ${userId})`,
         cursor === undefined
@@ -255,9 +255,9 @@ export async function readDeckPage(
  * paginated: the Watchlist is meant to show everything in one place, and per the Ticket
  * paging it is out of scope.
  *
- * Ownership is written out in the `where` clause as well as carried by the join and the RLS
- * policy, matching `readDeckPage` — see CLAUDE.md on RLS as a backstop, never the only
- * control.
+ * The Company Profiles are Catalogue and shared; the Keeps are not. So the reader is written
+ * into the join on `swipes.user_id` and nowhere else, which is the whole of what makes this
+ * one User's Watchlist rather than everybody's. See docs/adr/0019.
  */
 export async function readKeptProfiles(
   db: Database,
@@ -270,7 +270,7 @@ export async function readKeptProfiles(
       swipes,
       and(eq(swipes.profileId, profiles.id), eq(swipes.userId, userId)),
     )
-    .where(and(eq(profiles.ownerId, userId), eq(swipes.decision, "keep")))
+    .where(eq(swipes.decision, "keep"))
     .orderBy(desc(swipes.decidedAt), desc(profiles.id));
 }
 
@@ -281,11 +281,13 @@ export type SwipeRecord = {
 };
 
 /**
- * Records a Keep or a Pass, or returns null when the Profile is not one this user can see.
+ * Records a Keep or a Pass, or returns null when there is no such Company Profile.
  *
- * The visibility check is not ceremony: a foreign key does not consult RLS, so an id
- * belonging to somebody else would otherwise be accepted and would sit in `swipes` for ever.
- * The insert policy in `db/schema.ts` refuses the same write underneath.
+ * Every Company Profile is visible to every signed-in User now that the Catalogue is shared
+ * (docs/adr/0019), so this asks whether the row exists rather than who holds it. That is still
+ * worth asking: without it a made-up id would come back as a foreign key violation — a 500 —
+ * rather than as the 404 the route turns a null into. The insert policy in `db/schema.ts`
+ * makes the same check underneath, in its `exists` clause.
  */
 export async function recordSwipe(
   db: Database,
@@ -298,7 +300,7 @@ export async function recordSwipe(
   const [visible] = await db
     .select({ id: profiles.id })
     .from(profiles)
-    .where(and(eq(profiles.id, profileId), eq(profiles.ownerId, userId)))
+    .where(eq(profiles.id, profileId))
     .limit(1);
 
   if (visible === undefined) {

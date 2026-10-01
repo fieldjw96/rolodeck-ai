@@ -38,24 +38,6 @@ const ingestDatabaseSchema = z.object({
     }),
 });
 
-/**
- * The one account every Profile belongs to. V1 is single-player per CLAUDE.md, but the id is
- * read from the environment rather than compiled in, because it differs between the real
- * project and any scratch one.
- *
- * Getting this wrong is the quietest failure in the app: a Profile written with an `owner_id`
- * nobody signs in as is not wrong-looking, it is invisible — no RLS policy matches it — and
- * ingest, which bypasses RLS on the tables it writes, would never notice. Hence a parse rather
- * than a read.
- *
- * `z.guid()` rather than `z.uuid()`, matching `db/deck.ts`: Postgres's `uuid` type accepts any
- * 128 bits laid out as hex, and a boundary stricter than the column it guards would reject an
- * id the database is perfectly happy to hold.
- */
-const ownerSchema = z.object({
-  ROLODECK_OWNER_ID: z.guid(),
-});
-
 /** Read on every call, not at module scope, so importing an ingest module needs no environment. */
 export function readIngestDatabaseUrl(): string {
   return parseEnv(
@@ -65,12 +47,4 @@ export function readIngestDatabaseUrl(): string {
     },
     "Ingest's database connection",
   ).ROLODECK_INGEST_DATABASE_URL;
-}
-
-export function readOwnerId(): string {
-  return parseEnv(
-    ownerSchema,
-    { ROLODECK_OWNER_ID: process.env.ROLODECK_OWNER_ID },
-    "The account that owns every Profile",
-  ).ROLODECK_OWNER_ID;
 }

@@ -247,7 +247,9 @@ describe("logged in as the app role", () => {
    * is why this does not share a database with the block above.
    */
   let session: ScratchDb;
-  let jacksProfiles: string[];
+  /** Every Company Profile in the Catalogue, which both Users read. */
+  let catalogue: string[];
+  /** The one the other User has Kept. Nobody owns it. */
   let theirProfile: string;
   /** What the same `asUser()` calls returned before the session became the app role. */
   let asPostgres: {
@@ -274,15 +276,13 @@ describe("logged in as the app role", () => {
     await session.createUser(JACK);
     await session.createUser(SOMEONE_ELSE);
 
-    jacksProfiles = await seedProfiles(session.db, { count: 3, ownerId: JACK });
-    const theirs = await seedProfiles(session.db, {
-      count: 1,
-      ownerId: SOMEONE_ELSE,
-    });
-    theirProfile = theirs[0]!;
+    // One Catalogue, shared. `theirProfile` is not theirs by ownership — nothing owns a
+    // Company Profile, per docs/adr/0019 — it is the one the other User has Kept.
+    catalogue = await seedProfiles(session.db, { count: 4 });
+    theirProfile = catalogue[3]!;
     await session.db.insert(swipes).values({
       userId: JACK,
-      profileId: jacksProfiles[0]!,
+      profileId: catalogue[0]!,
       decision: "keep",
     });
     await session.db.insert(swipes).values({
@@ -431,8 +431,9 @@ describe("logged in as the app role", () => {
     expect(kept).toEqual(asPostgres.kept);
     expect(userProfile).toEqual(asPostgres.userProfile);
 
-    // Not vacuous: the Deck has Jack's unswiped Profiles in it and the Watchlist has his Keep.
-    expect(deck.profiles).toHaveLength(2);
+    // Not vacuous: the Deck has the unswiped Company Profiles in it, including the one the
+    // other User Kept, and the Watchlist has Jack's own Keep.
+    expect(deck.profiles).toHaveLength(3);
     expect(kept).toHaveLength(1);
   });
 
@@ -440,11 +441,11 @@ describe("logged in as the app role", () => {
     const recorded = await asUser(session.db, JACK, (tx) =>
       recordSwipe(tx, {
         userId: JACK,
-        profileId: jacksProfiles[1]!,
+        profileId: catalogue[1]!,
         decision: "keep",
       }),
     );
-    expect(recorded).toMatchObject({ profileId: jacksProfiles[1]! });
+    expect(recorded).toMatchObject({ profileId: catalogue[1]! });
 
     const written = await asUser(session.db, JACK, (tx) =>
       writeUserProfile(tx, JACK, {
@@ -464,6 +465,22 @@ describe("logged in as the app role", () => {
       readKeptProfiles(tx, JACK),
     );
     expect(kept).toHaveLength(2);
+  });
+
+  // The two halves of docs/adr/0019, through the app role and `asUser()`: the Catalogue is
+  // the same for both Users, and a Keep is only ever its own User's.
+  it("reads the same Company Profiles for both Users inside asUser()", async () => {
+    const jacks = await asUser(session.db, JACK, (tx) =>
+      tx.select({ id: profiles.id }).from(profiles),
+    );
+    const theirs = await asUser(session.db, SOMEONE_ELSE, (tx) =>
+      tx.select({ id: profiles.id }).from(profiles),
+    );
+
+    expect(jacks.map((row) => row.id).sort()).toEqual([...catalogue].sort());
+    expect(theirs.map((row) => row.id).sort()).toEqual(
+      jacks.map((row) => row.id).sort(),
+    );
   });
 
   it("still gets RLS between accounts inside asUser(), which is what the policies are for", async () => {

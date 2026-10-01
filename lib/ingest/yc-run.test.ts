@@ -31,7 +31,6 @@ const SLUGS = ["stripe", "razorpay", "buxfer", "dropbox", "lawdingo"];
 
 let fixtures: CompanyFixture[];
 let scratch: ScratchDb;
-const ownerIdBefore = process.env.ROLODECK_OWNER_ID;
 
 const pageUrl = (slug: string) =>
   `https://www.ycombinator.com/companies/${slug}`;
@@ -82,11 +81,9 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await scratch?.close();
-  process.env.ROLODECK_OWNER_ID = ownerIdBefore;
 });
 
 beforeEach(async () => {
-  process.env.ROLODECK_OWNER_ID = JACK;
   await scratch.reset();
   await scratch.db.delete(profiles);
 });

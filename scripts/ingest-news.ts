@@ -1,5 +1,5 @@
 import { closeIngestDb, getIngestDb } from "../db/ingest-connection";
-import { readOwnerId } from "../lib/ingest/env";
+import { readNewsKeepsUserId } from "../lib/news/env";
 import { createNewsFeedClient } from "../lib/news/feed-fetch";
 import { NEWS_FEEDS } from "../lib/news/feeds";
 import { createHistorySearchClient } from "../lib/news/history-search-fetch";
@@ -19,7 +19,7 @@ import {
  * `lib/news/feeds.ts`; the search, and why its queries are what they are, is
  * `lib/news/history-search.ts`.
  *
- *     ROLODECK_INGEST_DATABASE_URL=... ROLODECK_OWNER_ID=... npm run ingest:news
+ *     ROLODECK_INGEST_DATABASE_URL=... ROLODECK_NEWS_KEEPS_USER_ID=... npm run ingest:news
  *
  * Exits non-zero when not one feed could be read, or when there was a company to search for and
  * not one search succeeded, saying which. A feed or a search that failed beside one that did not
@@ -27,11 +27,11 @@ import {
  * `newsRunFailures`.
  */
 async function main(): Promise<void> {
-  // Read before anything is fetched, so a missing owner fails on the first line.
-  const ownerId = readOwnerId();
+  // Read before anything is fetched, so a missing or malformed id fails on the first line.
+  const keepsUserId = readNewsKeepsUserId();
 
   const report = await fetchNewsForKeptProfiles(await getIngestDb(), {
-    ownerId,
+    keepsUserId,
     feeds: NEWS_FEEDS,
     client: createNewsFeedClient(),
     search: createHistorySearchClient(),

@@ -57,15 +57,13 @@ const candidate = (name: string): ProfileCandidate => ({
 });
 
 let scratch: ScratchDb;
-const ownerIdBefore = process.env.ROLODECK_OWNER_ID;
 
-/** A Company Profile owned by `ownerId`, arranged as the superuser. Returns its id. */
-async function companyProfile(name: string, ownerId = JACK): Promise<string> {
+/** A Company Profile in the Catalogue, arranged as the superuser. Returns its id. */
+async function companyProfile(name: string): Promise<string> {
   const [row] = await scratch.db
     .insert(profiles)
     .values({
       ...candidate(name).input,
-      ownerId,
       source: "seed",
       website: null,
       provenance: candidate(name).provenance,
@@ -83,11 +81,9 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await scratch?.close();
-  process.env.ROLODECK_OWNER_ID = ownerIdBefore;
 });
 
 beforeEach(async () => {
-  process.env.ROLODECK_OWNER_ID = JACK;
   await scratch.reset();
   await scratch.db.delete(eventAttendances);
   await scratch.db.delete(events);
@@ -154,7 +150,7 @@ describe("the ingest role itself", () => {
     ]);
   });
 
-  it("may update every column of its tables but id and owner_id, and nothing else by column", async () => {
+  it("may update every column of its tables but id, and nothing else by column", async () => {
     const { rows } = await scratch.client.query(
       `select n.nspname || '.' || c.relname as "table",
               x.privilege_type as privilege,
@@ -258,7 +254,6 @@ describe("logged in as the ingest role", () => {
       .insert(profiles)
       .values({
         ...candidate("Sprocket").input,
-        ownerId: JACK,
         source: "seed",
         website: null,
         provenance: candidate("Sprocket").provenance,
@@ -337,16 +332,11 @@ describe("logged in as the ingest role", () => {
     );
   });
 
-  // Its update policies are `with check (true)`, so only the column grant stands between an
-  // update and a row moved into another account.
-  it("cannot move a Company Profile into another account, but can still correct one", async () => {
-    expect(
-      await refusal("update profiles set owner_id = $1 where id = $2", [
-        SOMEONE_ELSE,
-        keptProfileId,
-      ]),
-    ).toMatch(/permission denied for table profiles/);
-
+  // There is no `owner_id` on any Catalogue table to move a row by any more (docs/adr/0019),
+  // so the column grants that stood between ingest and that move now stand between it and the
+  // only other column it must not write: the row's own id, below. Correcting a row is still
+  // the thing ingest is for.
+  it("can still correct a Company Profile", async () => {
     expect(
       await refusal("update profiles set description = $1 where id = $2", [
         "Sprocket, corrected by ingest.",
@@ -354,20 +344,18 @@ describe("logged in as the ingest role", () => {
       ]),
     ).toBeNull();
     const { rows } = await session.client.query(
-      "select owner_id, description from profiles where id = $1",
+      "select description from profiles where id = $1",
       [keptProfileId],
     );
-    expect(rows).toEqual([
-      { owner_id: JACK, description: "Sprocket, corrected by ingest." },
-    ]);
+    expect(rows).toEqual([{ description: "Sprocket, corrected by ingest." }]);
   });
 
-  it.each(["news_items", "events"])(
-    "cannot move a row of %s into another account",
+  it.each(["profiles", "news_items", "events"])(
+    "has no owner column on %s to write at all",
     async (table) => {
       expect(
-        await refusal(`update ${table} set owner_id = $1`, [SOMEONE_ELSE]),
-      ).toMatch(new RegExp(`permission denied for table ${table}`));
+        await refusal(`update ${table} set owner_id = $1`, [JACK]),
+      ).toMatch(/column "owner_id" of relation .* does not exist/);
     },
   );
 
@@ -435,7 +423,7 @@ describe("the function that tells ingest what is Kept", () => {
 });
 
 describe("what ingest does, as the ingest role", () => {
-  it("writes and re-writes Company Profiles owned by the account, not by itself", async () => {
+  it("writes and re-writes Company Profiles into the Catalogue, owned by nobody", async () => {
     await scratch.as("rolodeck_ingest");
 
     const first = await persistProfiles(scratch.db, {
@@ -453,7 +441,7 @@ describe("what ingest does, as the ingest role", () => {
     expect(second).toMatchObject({ inserted: 0, updated: 1 });
 
     const rows = await scratch.db.select().from(profiles);
-    expect(rows.map((row) => row.ownerId)).toEqual([JACK, JACK]);
+    expect(rows.map((row) => row.name).sort()).toEqual(["Cog", "Sprocket"]);
   });
 
   it("tops up the seed Profiles, which counts before it writes", async () => {
@@ -495,7 +483,9 @@ describe("what ingest does, as the ingest role", () => {
     const ramp = await companyProfile("Ramp");
     const mercury = await companyProfile("Mercury");
     await companyProfile("Quiet Co");
-    const theirs = await companyProfile("Theirs Inc", SOMEONE_ELSE);
+    // Kept by the other User and not by the one this run gathers for: the company is in the
+    // same shared Catalogue, but the Keep that would have gathered it is not Jack's.
+    const theirs = await companyProfile("Theirs Inc");
     await scratch.db.insert(swipes).values([
       { userId: JACK, profileId: ramp, decision: "keep" },
       { userId: JACK, profileId: mercury, decision: "pass" },
@@ -513,7 +503,7 @@ describe("what ingest does, as the ingest role", () => {
 
     await scratch.as("rolodeck_ingest");
     const report = await fetchNewsForKeptProfiles(scratch.db, {
-      ownerId: JACK,
+      keepsUserId: JACK,
       feeds: [
         {
           name: "wire",
@@ -533,9 +523,7 @@ describe("what ingest does, as the ingest role", () => {
     });
 
     const stored = await scratch.db.select().from(newsItems);
-    expect(stored.map((row) => [row.profileId, row.ownerId])).toEqual([
-      [ramp, JACK],
-    ]);
+    expect(stored.map((row) => row.profileId)).toEqual([ramp]);
   });
 });
 
@@ -628,11 +616,6 @@ describe("the check on the role", () => {
       "a grant to PUBLIC on a sequence",
       "create sequence public.escape_seq; grant select on sequence public.escape_seq to public",
       "drop sequence public.escape_seq",
-    ],
-    [
-      "update on owner_id",
-      "grant update (owner_id) on news_items to rolodeck_ingest",
-      "revoke update (owner_id) on news_items from rolodeck_ingest",
     ],
     [
       "update on id",

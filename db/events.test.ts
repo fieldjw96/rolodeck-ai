@@ -87,20 +87,15 @@ const AUSTIN_MIXER: EventInput = {
 };
 
 let scratch: ScratchDb;
-const ownerIdBefore = process.env.ROLODECK_OWNER_ID;
 
 /** A Company Profile, written as the superuser: arranging fixtures is not what is under test. */
 async function company(
   name: string,
-  {
-    ownerId = JACK,
-    source = "seed",
-  }: { ownerId?: string; source?: string } = {},
+  { source = "seed" }: { source?: string } = {},
 ): Promise<string> {
   const [row] = await scratch.db
     .insert(profiles)
     .values({
-      ownerId,
       source,
       name,
       description: "A company.",
@@ -148,11 +143,9 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await scratch?.close();
-  process.env.ROLODECK_OWNER_ID = ownerIdBefore;
 });
 
 beforeEach(async () => {
-  process.env.ROLODECK_OWNER_ID = JACK;
   await scratch.reset();
   await scratch.db.delete(events);
   await scratch.db.delete(swipes);
@@ -161,7 +154,7 @@ beforeEach(async () => {
 });
 
 describe("persistEvents", () => {
-  it("stores every field, owned by the account named in the environment", async () => {
+  it("stores every field, owned by nobody", async () => {
     const report = await persistEvents(scratch.db, {
       source: "techmeme-events",
       events: [SUMMIT],
@@ -178,7 +171,6 @@ describe("persistEvents", () => {
     const [row] = await scratch.db.select().from(events);
 
     expect(row).toMatchObject({
-      ownerId: JACK,
       source: "techmeme-events",
       externalId: "summit@example.com",
       name: "Sprocket Summit",
@@ -224,14 +216,6 @@ describe("persistEvents", () => {
     ).rejects.toThrow();
 
     expect(await eventRowCount()).toBe(0);
-  });
-
-  it("throws rather than writing invisible rows when the owner id is absent", async () => {
-    delete process.env.ROLODECK_OWNER_ID;
-
-    await expect(
-      persistEvents(scratch.db, { source: "luma", events: [SUMMIT] }),
-    ).rejects.toThrow(/ROLODECK_OWNER_ID/);
   });
 });
 
@@ -352,15 +336,16 @@ describe("attendance", () => {
     expect(rows.map((row) => row.profileId)).toEqual([quietCo]);
   });
 
-  it("never links a company belonging to another account", async () => {
-    await company("Sprocket", { ownerId: SOMEONE_ELSE });
+  it("links a company no matter who Kept it, because nobody owns one", async () => {
+    const sprocket = await company("Sprocket");
+    await keep(sprocket, SOMEONE_ELSE);
 
     const report = await persistEvents(scratch.db, {
       source: "luma",
       events: [SUMMIT],
     });
 
-    expect(report.attendances).toBe(0);
+    expect(report.attendances).toBe(1);
   });
 
   it("links every Company Profile a name matches, whichever Source found it", async () => {
@@ -498,11 +483,20 @@ describe("reading the Diary", () => {
     expect(meetup?.important).toBe(false);
   });
 
-  it("shows nobody else's Events", async () => {
-    process.env.ROLODECK_OWNER_ID = SOMEONE_ELSE;
-    await persistEvents(scratch.db, { source: "luma", events: [SUMMIT] });
+  it("shows a second User the same Events, marked by their own Keeps and not Jack's", async () => {
+    const sprocket = await company("Sprocket");
+    await persistEvents(scratch.db, { source: "luma", events: [MEETUP] });
+    await keep(sprocket, JACK);
 
-    await expect(diary()).resolves.toEqual([]);
+    const theirs = await asUser(scratch.db, SOMEONE_ELSE, (tx) =>
+      readDiary(tx, { userId: SOMEONE_ELSE, today: TODAY }),
+    );
+
+    expect(theirs.map((event) => event.name)).toEqual(
+      (await diary()).map((event) => event.name),
+    );
+    expect(theirs.map((event) => event.important)).toEqual([false]);
+    expect((await diary()).map((event) => event.important)).toEqual([true]);
   });
 });
 
@@ -648,7 +642,7 @@ describe("row level security under the Diary", () => {
     await persistEvents(scratch.db, { source: "luma", events: [MEETUP] });
   });
 
-  it("lets the owner read their Events and attendances", async () => {
+  it("lets a signed-in User read the Events and attendances", async () => {
     await scratch.as("authenticated", JACK);
 
     await expect(scratch.db.select().from(events)).resolves.toHaveLength(1);
@@ -666,13 +660,23 @@ describe("row level security under the Diary", () => {
     );
   });
 
-  it("shows another signed-in account none of them", async () => {
+  // The two halves of docs/adr/0019: the Event and its Attendance are shared, the Keep is not.
+  it("shows another signed-in User the same Events and attendances", async () => {
     await scratch.as("authenticated", SOMEONE_ELSE);
 
-    await expect(scratch.db.select().from(events)).resolves.toEqual([]);
-    await expect(scratch.db.select().from(eventAttendances)).resolves.toEqual(
-      [],
-    );
+    await expect(scratch.db.select().from(events)).resolves.toHaveLength(1);
+    await expect(
+      scratch.db.select().from(eventAttendances),
+    ).resolves.toHaveLength(1);
+  });
+
+  it("does not show that User the Keep that marks the Event important", async () => {
+    const [sprocket] = await scratch.db.select().from(profiles);
+    await keep(sprocket!.id, JACK);
+
+    await scratch.as("authenticated", SOMEONE_ELSE);
+
+    await expect(scratch.db.select().from(swipes)).resolves.toEqual([]);
   });
 
   it("refuses the write to the app's own role, so ingest stays the only writer", async () => {

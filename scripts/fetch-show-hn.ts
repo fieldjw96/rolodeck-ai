@@ -14,7 +14,7 @@ import {
  * CI: `lib/ingest/show-hn.test.ts` covers the parsing offline, against committed fixtures, and
  * this is the one place that actually calls the API and the database.
  *
- *     ROLODECK_INGEST_DATABASE_URL=... ROLODECK_OWNER_ID=... npm run source:show-hn
+ *     ROLODECK_INGEST_DATABASE_URL=... npm run source:show-hn
  *
  * Exits non-zero when the run wrote no Profiles at all, by the same inserted-plus-updated rule
  * every other Source fails on (`wroteNothing`, `lib/ingest/form-d-run.ts`): a source that has

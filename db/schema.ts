@@ -63,8 +63,9 @@ export const nameKeyOf = (value: SQL): SQL =>
 export const ingestRole = pgRole("rolodeck_ingest").existing();
 
 /**
- * Ingest writes rows owned by the account, not by itself, so no ownership policy could ever
- * match it; these admit it to one table outright. A policy is scoped to its table, so they
+ * Ingest writes Catalogue rows, which nobody owns and ingest does not sign in to read, so no
+ * policy written for a signed-in User could match it; these admit it to one table outright
+ * instead, and it bypasses RLS on those four. A policy is scoped to its table, so they
  * reach nothing else: `swipes`, `user_profiles` and `auth` carry no policy for this role and
  * no grant to it, and a missing grant fails before RLS is ever consulted. Not `for: "all"`,
  * which would read as a delete right on tables ingest has no business deleting from.
@@ -120,13 +121,6 @@ export const profiles = pgTable(
   "profiles",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    /**
-     * V1 is single-player, but every Profile is owned from day one so RLS has something to
-     * match on and multi-user stays additive rather than a migration. See CLAUDE.md.
-     */
-    ownerId: uuid("owner_id")
-      .notNull()
-      .references(() => authUsers.id, { onDelete: "cascade" }),
     /**
      * Which ingest path wrote this row: `yc`, `sec-form-d`, and so on. Not a Profile field and
      * so not provenanced — `provenance` says what kind of value each field is, per CONTEXT.md,
@@ -185,36 +179,32 @@ export const profiles = pgTable(
       sql.raw(`sector in (${sectorLiterals})`),
     ),
     /**
-     * The natural key ingest is idempotent on: one Profile per company name, per source, per
-     * owner. It is a constraint rather than a convention because the write path runs as the
-     * ingest role, which bypasses RLS on this table, and a duplicate it created would be
-     * a second card for the same company in the Deck, not an error anything would raise. See
-     * docs/adr/0008.
+     * The natural key ingest is idempotent on: one Company Profile per company name, per
+     * Source, globally. It is a constraint rather than a convention because the write path
+     * runs as the ingest role, which bypasses RLS on this table, and a duplicate it created
+     * would be a second card for the same company in the Deck, not an error anything would
+     * raise. Formerly `(owner_id, source, name_key)`; see docs/adr/0008 and docs/adr/0019.
      */
-    uniqueIndex("profiles_owner_id_source_name_key_idx").on(
-      table.ownerId,
-      table.source,
-      table.nameKey,
-    ),
+    uniqueIndex("profiles_source_name_key_idx").on(table.source, table.nameKey),
     /**
-     * Narrows `readDeckPage` to one owner's rows, newest first. It no longer carries the whole
-     * `order by`: the Deck ranks by a score computed from the User Profile, which no index can
-     * hold, and sorting one owner's rows is cheap at single-player volume. See docs/adr/0011.
+     * Orders `readDeckPage`'s rows newest first. It no longer carries the whole `order by`:
+     * the Deck ranks by a score computed from the User Profile, which no index can hold, and
+     * sorting the Catalogue is cheap at this volume. See docs/adr/0011.
      */
-    index("profiles_owner_id_created_at_id_idx").on(
-      table.ownerId,
+    index("profiles_created_at_id_idx").on(
       table.createdAt.desc(),
       table.id.desc(),
     ),
     /**
-     * The only way to read a Profile is to be signed in as its owner. Defining any policy
-     * makes Drizzle enable RLS on the table, so the anonymous role — which Supabase grants
-     * table privileges to by default — matches no policy and sees no rows.
+     * A Company Profile is Catalogue, so any signed-in User reads it and nobody owns it — see
+     * docs/adr/0019. Defining any policy makes Drizzle enable RLS on the table, so the
+     * anonymous role — which Supabase grants table privileges to by default — matches no
+     * policy and still sees no rows. `authenticated`, never `anon`.
      */
-    pgPolicy("profiles_select_own", {
+    pgPolicy("profiles_select_catalogue", {
       for: "select",
       to: authenticatedRole,
-      using: sql`${authUid} = ${table.ownerId}`,
+      using: sql`true`,
     }),
     ...ingestPolicies("profiles"),
   ],
@@ -382,13 +372,6 @@ export const newsItems = pgTable(
     profileId: uuid("profile_id")
       .notNull()
       .references(() => profiles.id, { onDelete: "cascade" }),
-    /**
-     * Carried on the row, rather than reached through `profiles`, so the RLS policy below is a
-     * plain equality like every other table's — the same reason `swipes` carries `user_id`.
-     */
-    ownerId: uuid("owner_id")
-      .notNull()
-      .references(() => authUsers.id, { onDelete: "cascade" }),
     title: text("title").notNull(),
     /** Stored although nothing displays it yet: it is half of what the matcher read, so a
      * retuned rule can re-score what is already here. */
@@ -421,20 +404,18 @@ export const newsItems = pgTable(
      * one article about two Kept companies is news about each. See docs/adr/0010.
      */
     uniqueIndex("news_items_profile_id_url_idx").on(table.profileId, table.url),
-    /** The News page reads one owner's items newest first. */
-    index("news_items_owner_id_published_at_idx").on(
-      table.ownerId,
-      table.publishedAt.desc(),
-    ),
+    /** The News page reads items newest first. */
+    index("news_items_published_at_idx").on(table.publishedAt.desc()),
     /**
-     * Read-only to the app, and only to the owner. There is no insert or update policy for
-     * `authenticated`: nothing in the app writes News, only the ingest script, as the ingest
-     * role — docs/adr/0013.
+     * Read-only to the app, and readable by any signed-in User: an article is gathered
+     * because a company is Kept, and once gathered it is Catalogue — docs/adr/0019. There is
+     * no insert or update policy for `authenticated`: nothing in the app writes News, only
+     * the ingest script, as the ingest role — docs/adr/0013.
      */
-    pgPolicy("news_items_select_own", {
+    pgPolicy("news_items_select_catalogue", {
       for: "select",
       to: authenticatedRole,
-      using: sql`${authUid} = ${table.ownerId}`,
+      using: sql`true`,
     }),
     ...ingestPolicies("news_items"),
   ],
@@ -452,10 +433,6 @@ export const events = pgTable(
   "events",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    /** Owned from day one for the reason `profiles.owner_id` is. See CLAUDE.md. */
-    ownerId: uuid("owner_id")
-      .notNull()
-      .references(() => authUsers.id, { onDelete: "cascade" }),
     /** Which ingest path wrote this row, as on `profiles`: `techmeme-events`, and so on. */
     source: text("source").notNull(),
     /**
@@ -484,17 +461,17 @@ export const events = pgTable(
      * The natural key events ingest is idempotent on, and a constraint rather than a
      * convention for the reason `profiles` gives: the write path bypasses RLS.
      */
-    uniqueIndex("events_owner_id_source_external_id_idx").on(
-      table.ownerId,
+    uniqueIndex("events_source_external_id_idx").on(
       table.source,
       table.externalId,
     ),
-    /** The Diary reads by owner in date order, so the index carries both. */
-    index("events_owner_id_start_date_idx").on(table.ownerId, table.startDate),
-    pgPolicy("events_select_own", {
+    /** The Diary reads in date order. */
+    index("events_start_date_idx").on(table.startDate),
+    /** An Event is Catalogue: the same row for every User. See docs/adr/0019. */
+    pgPolicy("events_select_catalogue", {
       for: "select",
       to: authenticatedRole,
-      using: sql`${authUid} = ${table.ownerId}`,
+      using: sql`true`,
     }),
     ...ingestPolicies("events"),
   ],
@@ -520,15 +497,17 @@ export const eventAttendances = pgTable(
     /** The other direction: every Event one Company Profile attends. */
     index("event_attendances_profile_id_idx").on(table.profileId),
     /**
-     * Visible exactly when both ends are. There is no owner column to match on, so the policy
-     * reads `events` and `profiles` through their own policies instead, the way
-     * `swipes_insert_own` does. There is no write policy for `authenticated`: ingest is the
-     * only writer.
+     * Visible exactly when both ends are, which is now always: an Attendance is a statement
+     * about an Event and a Company Profile, both Catalogue, so it is Catalogue too — see
+     * docs/adr/0019. Written as `true` rather than as the two `exists` clauses it replaces,
+     * because those read `events` and `profiles` through policies that now say `true`
+     * themselves, and a check that cannot fail reads as one that can. There is no write
+     * policy for `authenticated`: ingest is the only writer.
      */
-    pgPolicy("event_attendances_select_own", {
+    pgPolicy("event_attendances_select_catalogue", {
       for: "select",
       to: authenticatedRole,
-      using: sql`exists (select 1 from ${events} where ${events.id} = ${table.eventId}) and exists (select 1 from ${profiles} where ${profiles.id} = ${table.profileId})`,
+      using: sql`true`,
     }),
     ...ingestPolicies("event_attendances"),
     /**

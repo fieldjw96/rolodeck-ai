@@ -247,8 +247,10 @@ async function searchCompany(
 }
 
 /**
- * Fetches every feed and searches for every Kept Company Profile, and scores and stores what
- * they carry for `ownerId`.
+ * Fetches every feed and searches for every Company Profile `keepsUserId` has Kept, then scores
+ * and stores what they carry. What it stores is Catalogue: every User reads it, whoever's Keep
+ * caused it to be gathered. See docs/adr/0019, and `lib/news/env.ts` for why gathering is one
+ * User's Keeps rather than everybody's.
  *
  * Kept comes from `readKeptCompaniesForNews`, which asks the one function the ingest role may
  * call about `swipes` rather than reading the table, since this runs as that role — see
@@ -272,13 +274,14 @@ async function searchCompany(
 export async function fetchNewsForKeptProfiles(
   db: Database,
   {
-    ownerId,
+    keepsUserId,
     feeds,
     client,
     search,
     now = new Date(),
   }: {
-    ownerId: string;
+    /** The User whose Keeps this run gathers for; see `readNewsKeepsUserId`. */
+    keepsUserId: string;
     feeds: readonly NewsFeed[];
     client: NewsFeedClient;
     search: HistorySearchClient;
@@ -286,7 +289,7 @@ export async function fetchNewsForKeptProfiles(
     now?: Date;
   },
 ): Promise<NewsRunReport> {
-  const kept = await readKeptCompaniesForNews(db, ownerId);
+  const kept = await readKeptCompaniesForNews(db, keepsUserId);
 
   const read = await readFeeds(feeds, client);
   const feedCandidates = kept.flatMap((profile) =>
@@ -320,7 +323,6 @@ export async function fetchNewsForKeptProfiles(
   }
 
   const stored = await persistNewsItems(db, {
-    ownerId,
     candidates: [...feedCandidates, ...searchCandidates],
   });
 
