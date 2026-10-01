@@ -13,9 +13,20 @@ Runs work, and [[CONTEXT]] plus `docs/adr/` for this repo's own vocabulary and d
 **Founders are the subject of this product, not users of it.** There is no claim flow, no
 founder login, and no founder-facing surface. Do not add one.
 
-**V1 is single-player.** Jack is the only account. Auth exists from day one anyway, so
-the app is not publicly readable and multi-user is additive later, not a migration. Do not
-build sharing, invites, or per-audience visibility.
+**Anyone may sign up, and a signed-in User reads the whole Catalogue.** This reverses the rule
+that stood here until 2026-10-01, that V1 was single-player and the app was not publicly
+readable. Sign-in is Google SSO; there is no allowlist, no email-domain restriction and no
+approval step. See ADR 0020 for the decision and ADR 0021 for the mechanism.
+
+**The Catalogue is shared and nothing owns it.** Company Profiles, Founders, News, Events and
+Attendances carry no `owner_id` and are the same rows for every User. What is private is the
+personal half: a User's swipes and their User Profile, both owner-scoped and both enforced by
+RLS. That line is the one to keep: a new table belongs on one side of it, deliberately. See
+ADR 0019.
+
+**Still do not build sharing, invites, or per-audience visibility.** Multi-user means many
+people reading one Catalogue, not people showing each other things. There is no role above
+User and no administrator surface.
 
 **This repo is unrelated to Jack's MBA notes vault.** Do not read from it, write to it, or
 design toward integrating with it.
@@ -31,11 +42,14 @@ unit and integration, Playwright for end to end. Zod at every external boundary.
 **Nothing in the browser talks to Postgres directly.** Reads and writes go through server
 components and route handlers using the signed-in user's session. RLS is enabled on every
 table as a hard backstop, never as the only control, so authorisation stays testable in
-TypeScript.
+TypeScript. For that backstop to be real, `DATABASE_URL` must connect as a non-superuser role
+that is merely a member of `authenticated`: Supabase's `postgres` role bypasses RLS, which makes
+a query that forgets `asUser()` unprotected rather than merely untidy. See ADR 0005.
 
-**The service role key never leaves the server laptop.** It bypasses RLS completely. It is
-for provisioning the one account and for running the auth tests against a real project, and it
-never reaches a browser, a client bundle, OneDrive, or GitHub. Ingest does not use it.
+**The service role key never leaves the server laptop.** It bypasses RLS completely. It is for
+running the auth tests against a real project, and it never reaches a browser, a client bundle,
+OneDrive, or GitHub. Ingest does not use it, and account provisioning no longer needs it now
+that Google SSO creates accounts.
 
 **Ingest connects as `rolodeck_ingest`, and that is the one exception.** The role can select,
 insert and update `profiles`, `news_items`, `events` and `event_attendances`, bypassing RLS on

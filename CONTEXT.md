@@ -11,9 +11,16 @@ another Run, and there is one kind of agent.
 
 ## Language
 
+**User**:
+A person with an account, who works through the Deck and Keeps what interests them. Anyone may
+become one; see `docs/adr/0020`. A User is never a Founder: Founders are the subject of the
+product and the two never meet. There is no role above User and no administrator.
+_Avoid_: owner, member, account, customer
+
 **Company Profile**:
-One startup's record in the Deck: name, description, sector, stage, and provenance. Formerly
-just "Profile"; qualify it always now that **User Profile** below is a distinct thing.
+One startup's record in the Deck: name, description, sector, stage, and provenance. Part of the
+Catalogue, so the same Company Profile is the same row for every User. Formerly just "Profile";
+qualify it always now that **User Profile** below is a distinct thing.
 _Avoid_: card, entry, listing, and the bare word Profile
 
 **Founder**:
@@ -25,8 +32,15 @@ of the product and never its users, and not entities of their own: someone who f
 companies is two Founders.
 _Avoid_: team member, contact, person
 
+**Catalogue**:
+Everything the pipeline gathers and every User sees identically: Company Profiles, Founders,
+News, Events and Attendances. Nothing owns it. The line it draws is with the personal half, a
+User's own swipes and User Profile, which nobody else can read. See `docs/adr/0019`.
+_Avoid_: library, dataset, corpus, the pool
+
 **User Profile**:
-The owner's stated preferences, which rank the Deck: sectors, stages, area, exclusions.
+One User's stated preferences, which rank their Deck: sectors, stages, area, exclusions. Private
+to that User. Ranks rather than filters, except exclusions; see `docs/adr/0011`.
 _Avoid_: settings, preferences, brief
 
 **Deck**:
@@ -68,7 +82,8 @@ what kind of value each of its fields is.
 _Avoid_: feed, provider, site
 
 **News**:
-Articles about a Kept Company Profile.
+Articles about a Kept Company Profile. Part of the Catalogue: an article is gathered because
+Jack Kept the company, and once gathered every User sees it. See `docs/adr/0019`.
 _Avoid_: dispatch, feed, updates
 
 **Feed**:
@@ -98,6 +113,7 @@ _Avoid_: meetup, conference
 
 **Attendance**:
 A Source's own statement that a Company Profile takes part in an Event — hosting it, presenting
-at it. Never inferred. An Event one of the owner's Kept Company Profiles attends is marked
-important in the Diary; an Event with no known Attendance is still shown.
+at it. Never inferred. An Event attended by a Company Profile the viewing User has Kept is marked
+important in their Diary, so the same Event can be important to one User and not another; an Event
+with no known Attendance is still shown.
 _Avoid_: participant, guest, RSVP
