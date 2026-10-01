@@ -1,8 +1,16 @@
 ---
 status: accepted
+amended-by: 0019
 ---
 
 # Ingest connects as a scoped Postgres role, and that is the one database credential GitHub Actions may hold
+
+**Amended.** The credential rule below is unchanged and still load-bearing: ingest's scoped role is
+the one database credential GitHub Actions may hold. ADR 0019 resolves one of the two risks this
+ADR deferred "only while V1 has one account". `INSERT` accepting any `owner_id` is gone, because
+there is no `owner_id` on the tables ingest writes. The other is not resolved: Keeps are still
+owned, so `ingest.kept_profile_ids(for_owner)` still answers for whichever owner it is asked
+about, and still needs the care given to it here.
 
 Scheduled ingest is moving to GitHub Actions. Whatever credential it runs under will then live in
 a third place, alongside the server laptop and `C:\agent-secrets`, and Actions secrets are the

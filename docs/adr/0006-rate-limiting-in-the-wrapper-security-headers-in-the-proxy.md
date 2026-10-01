@@ -1,8 +1,17 @@
 ---
 status: accepted
+amended-by: 0020
 ---
 
 # The rate limit goes in the route wrapper, the security headers go in the Proxy
+
+**Amended.** The reasoning below rests on _"V1 has exactly one account and no unauthenticated
+surface but `/login`"_, and ADR 0020 removes both halves of that. The limiter nevertheless stays
+exactly as described, in memory and keyed on `user.id`, because a per-user limit is weak against
+open sign-up for a different reason: the attack becomes more accounts rather than more requests,
+and the real control is that there is nothing in an account worth taking. The weakness stated
+plainly below, that the effective limit is per instance rather than overall, is therefore accepted
+for longer than this ADR expected. `createRateLimiter()` remains the seam.
 
 Two checks that both apply to every request, put in two different places, for the same reason
 ADR 0004 gives for writing the auth gate twice: each goes where the thing it protects is.

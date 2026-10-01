@@ -1,8 +1,16 @@
 ---
 status: accepted
+amended-by: [0020, 0021]
 ---
 
 # The whole app is gated twice: once in the Proxy, once in the route segment
+
+**Amended.** Both gates below are unchanged and still correct. What changed is who gets through
+them. ADR 0020 opens sign-up to anyone, so this ADR's paragraph about there being no sign-up flow,
+and about `lib/auth/provisioning.ts` refusing a second account, no longer describes the product.
+ADR 0021 makes Google SSO the front door, revisits the rejection of magic links recorded below,
+and explains why the password path survives unlisted. The claim below that Supabase's hosted reset
+flow covers a forgotten password was never true for anyone but Jack; ADR 0021 says why.
 
 Supabase Auth protects every route except `/login`. The check is written down in two places
 on purpose.

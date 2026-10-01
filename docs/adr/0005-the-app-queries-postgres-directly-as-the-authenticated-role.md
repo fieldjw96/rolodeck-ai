@@ -1,8 +1,26 @@
 ---
 status: accepted
+amended-by: 0019
 ---
 
 # Route handlers query Postgres through Drizzle, as the `authenticated` role
+
+**Amended, in two ways that pull in opposite directions.**
+
+ADR 0019 removes the ownership filter from Catalogue queries, so the "written twice" property in
+Consequences below now applies only to `swipes` and `user_profiles`. Catalogue reads are
+deliberately unfiltered, and the test asserting the anon role sees nothing is what stays
+load-bearing there.
+
+The second is a correction. Consequences below says _"The connection role must be a member of
+`authenticated`, which Supabase's `postgres` role already is"_. True, and it understates the
+problem: `postgres` also **bypasses RLS**, so a query that forgets `asUser()` has no backstop at
+all. With one account such a query returned the owner's own rows and looked correct, which is why
+`app/api/health/route.ts` could ship one unnoticed. Under ADR 0020 the same mistake returns
+everyone's. `DATABASE_URL` is therefore being narrowed to a non-superuser role that is merely a
+member of `authenticated`, which is what makes CLAUDE.md's "RLS is a hard backstop" true rather
+than aspirational. This ADR and ADR 0014 both anticipated the narrowing, so it is execution of what
+they said and not a new decision.
 
 Every read and write the app makes goes through `asUser()` in `db/rls.ts`: a transaction that
 sets `request.jwt.claims` to the signed-in user's id and then `set local role authenticated`,
