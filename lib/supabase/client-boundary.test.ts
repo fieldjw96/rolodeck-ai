@@ -17,6 +17,7 @@ import {
  */
 const SERVER_ONLY_MODULES = [
   "lib/supabase/server",
+  "lib/supabase/route-handler",
   "lib/supabase/admin",
   "lib/auth/session",
   "lib/api/authenticated",
@@ -27,6 +28,7 @@ const SERVER_ONLY_MODULES = [
 /** The modules that must carry the `server-only` marker, which makes this a build error too. */
 const MUST_BE_MARKED = [
   "lib/supabase/server.ts",
+  "lib/supabase/route-handler.ts",
   "lib/auth/session.ts",
   "lib/api/authenticated.ts",
 ];

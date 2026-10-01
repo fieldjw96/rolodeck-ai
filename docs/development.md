@@ -16,16 +16,21 @@
 
 Copy `.env.example` to `.env.local` and fill in the Supabase values, then `npm run dev`.
 
-Every route is behind Supabase Auth except `/login`. There is no sign-up: V1 has one account,
-and it is created by
+Every route is behind Supabase Auth except `/login` and `/auth/callback`. Sign-up is open and
+runs through Google SSO, which needs a Google OAuth client and the Supabase project's Google
+provider configured; locally, add `http://localhost:3000/auth/callback` to the project's
+redirect allow-list. See `docs/adr/0020` and `docs/adr/0021`.
+
+`/login/password` is the unlisted email-and-password form the deploy smoke test signs in
+through. Its one account is created, and later rotated, by
 
 ```
-npm run account:provision -- you@example.com
+npm run account:provision -- smoke@example.com
 ```
 
-which needs `SUPABASE_SECRET_KEY`, generates the password, prints it once, and refuses to run
-if the project already has an account. See `docs/adr/0004` for why the gate is written in two
-places, and why the auth tests run against an in-process stub by default.
+which needs `SUPABASE_SECRET_KEY`, generates the password and prints it once. See
+`docs/adr/0004` for why the gate is written in two places, and why the auth tests run against
+an in-process stub by default.
 
 To run those tests against a real Supabase project instead of the stub, set `SUPABASE_TEST_URL`,
 `SUPABASE_TEST_PUBLISHABLE_KEY` and `SUPABASE_SECRET_KEY`. Use a scratch project: the tests

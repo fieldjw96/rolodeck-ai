@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
-import { HOME_PATH, LOGIN_PATH } from "../../lib/auth/paths";
+import { HOME_PATH, PASSWORD_SIGN_IN_PATH } from "../../lib/auth/paths";
 import { createSupabaseServerClient } from "../../lib/supabase/server";
 import type { SignInError } from "./errors";
 
@@ -18,12 +18,15 @@ const credentialsSchema = z.object({
 });
 
 function failedWith(error: SignInError): never {
-  redirect(`${LOGIN_PATH}?error=${error}`);
+  redirect(`${PASSWORD_SIGN_IN_PATH}?error=${error}`);
 }
 
 /**
- * The only way into the app. There is no sign-up counterpart, by design: CLAUDE.md's V1 is
- * single-player, and the one account is provisioned by `scripts/provision-account.ts`.
+ * The unlisted way in. Google SSO is the front door (docs/adr/0021) and this path survives for
+ * one caller: `.github/workflows/deploy.yml`'s smoke test, which has to sign in and cannot
+ * generate a sign-in link, because that needs Supabase's secret key and ADR 0013 forbids that
+ * key in GitHub Actions. Nothing on `/login` links here; `scripts/provision-account.ts` creates
+ * and rotates the one account that uses it.
  */
 export async function signIn(formData: FormData): Promise<never> {
   const credentials = credentialsSchema.safeParse({

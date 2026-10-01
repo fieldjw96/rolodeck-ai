@@ -35,10 +35,15 @@ npm install
 npm run dev
 ```
 
-There is no sign-up. Create the single account with:
+Anyone may sign up, and sign-in is Google SSO: `/login` offers one button. That needs a
+Google OAuth client and the Supabase project's Google provider configured — see
+[`docs/adr/0021`](docs/adr/0021-google-is-the-front-door-and-the-password-path-survives-for-the-smoke-test.md).
+
+`/login/password` is an unlisted email-and-password form, which exists so the deploy smoke
+test can sign in. Its one account is created, and later rotated, with:
 
 ```
-npm run account:provision -- you@example.com
+npm run account:provision -- smoke@example.com
 ```
 
 ## Testing

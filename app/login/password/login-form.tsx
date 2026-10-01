@@ -1,17 +1,20 @@
-import { signIn } from "./actions";
-import { signInErrorMessage } from "./errors";
-import styles from "./login-form.module.css";
+import { signIn } from "../actions";
+import { signInErrorMessage } from "../errors";
+import styles from "../panel.module.css";
 
 /**
- * The whole of the unauthenticated surface. A plain form posting to a Server Action, with no
- * client component anywhere in it, so nothing on this page can reach for a Supabase client of
- * its own. There is deliberately no "create an account" link: see CLAUDE.md on V1.
+ * The unlisted door. A plain form posting to a Server Action, with no client component
+ * anywhere in it, so nothing on this page can reach for a Supabase client of its own.
+ *
+ * Nothing links here, deliberately: Google is the front door (docs/adr/0021) and this exists
+ * for the deploy smoke test, which cannot use it. There is no "create an account" link either
+ * — anyone may sign up, but they do it through Google, which owns the credential.
  */
 export function LoginForm({ error }: { error?: unknown }) {
   const message = signInErrorMessage(error);
 
   return (
-    <form action={signIn} className={styles.form}>
+    <form action={signIn} className={styles.panel}>
       <p className={styles.wordmark}>Rolodeck AI</p>
       <h1 className={styles.title}>Sign in</h1>
       <p className={styles.subtitle}>

@@ -58,13 +58,31 @@ async function main(): Promise<void> {
 
   try {
     results.push(
-      await check("login page renders", async () => {
+      await check("login page offers Google", async () => {
         await page.goto(`${options.baseUrl}/login`, {
+          waitUntil: "networkidle",
+        });
+        // The front door, and the only one a person uses (docs/adr/0021). The round trip
+        // itself cannot be driven from here — it ends at Google's own consent screen — so what
+        // this asserts is that the way in is on the page and points at our own handler.
+        const google = page.locator('a[href="/login/google"]');
+        if ((await google.count()) === 0)
+          throw new Error("no Google sign-in link on /login");
+        return await page.title();
+      }),
+    );
+
+    results.push(
+      await check("password page renders", async () => {
+        // Unlisted, and reached by typing the path: ADR 0013 forbids Supabase's secret key in
+        // Actions, so this workflow cannot generate a sign-in link and signs in with the one
+        // password `npm run account:provision` creates and rotates.
+        await page.goto(`${options.baseUrl}/login/password`, {
           waitUntil: "networkidle",
         });
         const email = page.locator('input[name="email"]');
         if ((await email.count()) === 0)
-          throw new Error("no email field on /login");
+          throw new Error("no email field on /login/password");
         return await page.title();
       }),
     );

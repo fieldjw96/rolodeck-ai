@@ -77,6 +77,26 @@ describe.each(authBackends())("the auth gate, against $name", ({ start }) => {
     expect(response.headers.get("location")).toBeNull();
   });
 
+  it("lets an unauthenticated request reach the OAuth callback", async () => {
+    // The whole of ADR 0021's addition to the public list. It has to be public because it is
+    // reached before a session exists: a redirect to /login here would strip the code and
+    // make signing in with Google impossible.
+    const response = await applyAuthGate(request("/auth/callback?code=abc"));
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("location")).toBeNull();
+  });
+
+  it.each(["/login/google", "/login/password"])(
+    "lets an unauthenticated request reach %s, under the /login prefix",
+    async (path) => {
+      const response = await applyAuthGate(request(path));
+
+      expect(response.status).toBe(200);
+      expect(response.headers.get("location")).toBeNull();
+    },
+  );
+
   it("returns 200 for / once the throwaway user is signed in", async () => {
     const response = await applyAuthGate(request("/", signedIn));
 

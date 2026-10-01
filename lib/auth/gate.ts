@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { NOT_SIGNED_IN } from "../api/responses";
+import { withNoStore } from "../http/no-store";
 import {
   createNonce,
   CSP_HEADER,
@@ -11,17 +12,6 @@ import {
 } from "../http/security-headers";
 import { readBrowserSafeEnv } from "../supabase/env";
 import { HOME_PATH, isApiPath, isPublicPath, LOGIN_PATH } from "./paths";
-
-/**
- * A response that sets auth cookies must never be cached by a CDN or a reverse proxy, or one
- * visitor's session token gets served to the next. `@supabase/ssr` hands these headers to
- * `setAll`; a redirect carrying refreshed cookies needs them just as much.
- */
-const NO_STORE: Record<string, string> = {
-  "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
-  Expires: "0",
-  Pragma: "no-cache",
-};
 
 /**
  * Moves any cookies the session refresh just wrote onto the response being sent instead.
@@ -34,11 +24,8 @@ function carryingCookies(
   for (const cookie of refreshed.cookies.getAll()) {
     response.cookies.set(cookie);
   }
-  for (const [name, value] of Object.entries(NO_STORE)) {
-    response.headers.set(name, value);
-  }
 
-  return response;
+  return withNoStore(response);
 }
 
 /** Sends the browser somewhere else, keeping the refreshed cookies. */
@@ -82,10 +69,11 @@ function passThrough(request: NextRequest, nonce: string): NextResponse {
 }
 
 /**
- * The single-account gate. Every request Next routes through the Proxy either carries a valid
- * Supabase session or is turned away — sent to `/login`, or answered 401 if it was a request
- * to a route handler — so the app is never publicly readable even though V1 has exactly one
- * account.
+ * The gate. Every request Next routes through the Proxy either carries a valid Supabase session
+ * or is turned away — sent to `/login`, or answered 401 if it was a request to a route handler.
+ * Anyone may sign up (docs/adr/0020), so what this guards is no longer "one account" but the
+ * line between a signed-in reader of the Catalogue and the public: the whole app bar `/login`
+ * and the OAuth callback is behind it.
  *
  * This is the optimistic half of the check that Next's authentication guide describes: it
  * centralises the refusal and, just as importantly, is the only place that can write refreshed

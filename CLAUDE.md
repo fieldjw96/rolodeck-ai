@@ -56,8 +56,9 @@ kind of reason, in a comment, or it needs `asUser()`.
 
 **The service role key never leaves the server laptop.** It bypasses RLS completely. It is for
 running the auth tests against a real project, and it never reaches a browser, a client bundle,
-OneDrive, or GitHub. Ingest does not use it, and account provisioning no longer needs it now
-that Google SSO creates accounts.
+OneDrive, or GitHub. Ingest does not use it, and no User needs it now that Google SSO creates
+accounts: what still spends it is `npm run account:provision`, which creates and rotates the one
+password account the deploy smoke test signs in with. See ADR 0021.
 
 **Ingest connects as `rolodeck_ingest`, and that is the one exception.** The role can select,
 insert and update `profiles`, `news_items`, `events` and `event_attendances`, bypassing RLS on
