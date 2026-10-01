@@ -226,7 +226,7 @@ const eventLocationCity = sql`lower(regexp_replace(split_part(${events.location}
  * differs between two Users reading the same Diary is which of those Events is `important`,
  * since that is decided by their own Keeps.
  *
- * "Their area" is `userProfiles.area`, read through `readUserProfile` so an owner who has never
+ * "Their area" is `userProfiles.area`, read through `readUserProfile` so a User who has never
  * saved one still gets its "Bay Area" default rather than an unfiltered Diary — unlike the
  * Deck, which ranks and so treats a never-saved User Profile as stating nothing at all. An
  * Event is filtered out only when its `location` states a city and that city is outside every
