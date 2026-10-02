@@ -16,7 +16,9 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 const SHIM_PATH = fileURLToPath(
   new URL("./testing/supabase-shim.sql", import.meta.url),
 );
-const MIGRATIONS_FOLDER = fileURLToPath(new URL("./migrations", import.meta.url));
+const MIGRATIONS_FOLDER = fileURLToPath(
+  new URL("./migrations", import.meta.url),
+);
 
 const BACKFILL_MIGRATION = "0015_backfill_user_profiles.sql";
 
