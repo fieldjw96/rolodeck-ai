@@ -51,6 +51,33 @@ test("a User who has never saved a User Profile is asked before the Deck, and st
   await expect(page.getByText(EMPTY_DECK_MESSAGE)).toBeVisible();
 });
 
+test("a User who navigates straight to the Deck is still asked first", async ({
+  page,
+  app,
+  newUser,
+}) => {
+  await login(page, app.baseURL, newUser);
+  await expect(page).toHaveURL(`${app.baseURL}/onboarding`);
+
+  // The hole this closes: the sign-in redirects only cover a User arriving through sign-in. A
+  // bookmark, a typed URL or a link reaches none of them, so the authoritative check is on the
+  // `(app)` layout — docs/adr/0004's argument, applied to the first-run screen.
+  await page.goto(`${app.baseURL}/deck`);
+  await expect(page).toHaveURL(`${app.baseURL}/onboarding`);
+
+  // Same for every other route in the group, so this is a property of the layout rather than of
+  // `/deck` having been remembered.
+  await page.goto(`${app.baseURL}/settings`);
+  await expect(page).toHaveURL(`${app.baseURL}/onboarding`);
+
+  await page.getByRole("button", { name: "Skip for now" }).click();
+  await expect(page).toHaveURL(`${app.baseURL}/deck`);
+
+  // And once asked, direct navigation works normally rather than looping.
+  await page.goto(`${app.baseURL}/settings`);
+  await expect(page).toHaveURL(`${app.baseURL}/settings`);
+});
+
 test("the same User signing in again is not asked a second time", async ({
   page,
   app,
