@@ -97,18 +97,41 @@ failure is expected and costs nothing: migrations already applied, and nothing h
 
 Then, in the Supabase SQL editor, now that migration 0012 has run and the role exists:
 
-1. `alter role rolodeck_app with password '<a long random password>';`
-2. Build the connection string from the pooler's, under Project Settings → Database, with
-   `rolodeck_app.<project-ref>` as the user in place of `postgres.<project-ref>`, and the
-   password from step 1. Keep the port the dashboard gives for the app (6543, transaction
-   mode); `db/connection.ts` sets `prepare: false` for it.
-3. Put it in the `production` environment as `SUPABASE_POOLER_URL`, replacing the placeholder,
-   and in `.env.local` on the laptop as `DATABASE_URL`.
+1. `alter role rolodeck_app with password '<a long random password>';` Use letters and digits
+   only: anything else has to be percent-encoded inside a connection string, and a wrong
+   encoding fails as an authentication error rather than as a parse error.
+2. Build the connection string from the pooler's, with `rolodeck_app.<project-ref>` as the user
+   in place of `postgres.<project-ref>`, and the password from step 1. The dashboard's current
+   path to it is the **Connect** button in the project's top bar, which offers Direct,
+   Transaction pooler and Session pooler; take **Transaction pooler**, port 6543, since
+   `db/connection.ts` sets `prepare: false` for it. Delete any query parameter the dashboard
+   appends, such as `?pgbouncer=true`: the preflight allows none but `sslmode`.
+3. Put it in the `production` environment as `SUPABASE_POOLER_URL`, replacing the placeholder.
+   That is the only place it goes. The deploy writes Vercel's own `DATABASE_URL` from it — see
+   **Set the production environment variables** in the workflow — so there is nothing to paste
+   into the Vercel dashboard.
 
 Re-run the Deploy run (or merge again) once step 3 is done. Migration 0012 is guarded with
 `IF NOT EXISTS` and re-runs harmlessly, **Check the app role the migration created** now passes,
 and the deploy ships. Until then, the workflow is behaving as intended: the role is the whole
 guarantee, and nothing in this repository can change a GitHub secret on its own.
+
+Note that a re-run of the _failed_ run will not do: it refuses to ship a commit `main` has moved
+past, by design (Ticket #149). Re-run the Deploy run for the current tip, or merge anything.
+
+### Running the app locally, without putting a credential in OneDrive
+
+This section used to end by saying to put the same string in `.env.local` as `DATABASE_URL`.
+**Do not.** This repository's working directory is itself a OneDrive-synced folder, and
+CLAUDE.md's rule is absolute: secrets never enter OneDrive, "not in a `.env`, not in a script,
+not temporarily". `.gitignore` does nothing about sync, version history, or a share link. The
+instruction and the rule could not both be followed, and the rule wins.
+
+Set `DATABASE_URL` as a **machine-level environment variable** instead, or keep it in a file
+under `C:\agent-secrets`, which is on local disk and is where the other runtime credentials
+already live. `next dev` reads the process environment, so an exported variable is all it wants,
+and `C:\agent-runs\dev` is the working directory CLAUDE.md already nominates for a dev server
+for the same reason.
 
 `SUPABASE_SECRET_KEY` is deliberately not among them, and neither is
 `ROLODECK_INGEST_DATABASE_URL`: the running app reads neither, so neither belongs in Vercel
