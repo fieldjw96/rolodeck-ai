@@ -3,6 +3,7 @@ import path from "node:path";
 
 import { closeIngestDb, getIngestDb } from "../db/ingest-connection";
 import { selectTeamPageCandidates } from "../db/team-pages";
+import { describeFailure } from "../lib/ingest/driver-error";
 import { createTeamSiteClient } from "../lib/ingest/team-page-fetch";
 import {
   gatherTeamPages,
@@ -58,7 +59,7 @@ async function main(): Promise<void> {
 
 main()
   .catch((error: unknown) => {
-    console.error(error instanceof Error ? error.message : error);
+    console.error(describeFailure(error));
     process.exitCode = 1;
   })
   .finally(closeIngestDb);

@@ -6,6 +6,7 @@ import {
   ANGELPAD_SOURCE,
   parseAngelPadPortfolio,
 } from "../lib/ingest/angelpad";
+import { describeFailure } from "../lib/ingest/driver-error";
 import {
   describeEmptySources,
   emptySources,
@@ -148,7 +149,7 @@ async function main(): Promise<void> {
 
 main()
   .catch((error: unknown) => {
-    console.error(error instanceof Error ? error.message : error);
+    console.error(describeFailure(error));
     process.exitCode = 1;
   })
   .finally(closeIngestDb);

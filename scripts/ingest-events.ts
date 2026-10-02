@@ -2,6 +2,7 @@ import { persistEvents } from "../db/events";
 import { closeIngestDb, getIngestDb } from "../db/ingest-connection";
 import type { IngestRejection } from "../db/profile-input";
 import { createAcceleratorClient } from "../lib/ingest/accelerator-fetch";
+import { describeFailure } from "../lib/ingest/driver-error";
 import {
   describeFailedSources,
   failedSourceRejection,
@@ -136,7 +137,7 @@ async function main(): Promise<void> {
 
 main()
   .catch((error: unknown) => {
-    console.error(error instanceof Error ? error.message : error);
+    console.error(describeFailure(error));
     process.exitCode = 1;
   })
   .finally(closeIngestDb);
