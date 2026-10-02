@@ -1,10 +1,7 @@
 // @vitest-environment node
-import postgres from "postgres";
 import { describe, expect, it } from "vitest";
 
 import { describeDriverError, describeFailure } from "./driver-error";
-
-const { PostgresError } = postgres;
 
 /** What `DrizzleQueryError` actually looks like: `message` is the query, `cause` is the reason. */
 function drizzleQueryError(cause: unknown): Error {
@@ -15,33 +12,44 @@ function drizzleQueryError(cause: unknown): Error {
   return error;
 }
 
-const NOT_NULL_VIOLATION = Object.assign(
-  new PostgresError(
-    'null value in column "external_id" violates not-null constraint',
-  ),
-  {
-    code: "23502",
+/**
+ * Shaped the way postgres.js's own `PostgresError` is: a real `Error`, named `PostgresError`,
+ * carrying `code` and whichever of `constraint_name`, `column_name`, `table_name` and `detail`
+ * the failure named. Built by hand rather than with the real class, whose only constructor
+ * `postgres` exports takes a parsed wire message rather than these fields directly.
+ */
+function postgresError(fields: {
+  readonly message: string;
+  readonly code: string;
+  readonly table_name?: string;
+  readonly column_name?: string;
+  readonly constraint_name?: string;
+  readonly detail?: string;
+}): Error {
+  return Object.assign(new Error(fields.message), {
+    name: "PostgresError",
     severity: "ERROR",
     severity_local: "ERROR",
-    table_name: "events",
-    column_name: "external_id",
-    detail: "Failing row contains (1, techmeme-events, null, ...).",
-  },
-);
+    ...fields,
+  });
+}
 
-const CHECK_CONSTRAINT_VIOLATION = Object.assign(
-  new PostgresError(
+const NOT_NULL_VIOLATION = postgresError({
+  message: 'null value in column "external_id" violates not-null constraint',
+  code: "23502",
+  table_name: "events",
+  column_name: "external_id",
+  detail: "Failing row contains (1, techmeme-events, null, ...).",
+});
+
+const CHECK_CONSTRAINT_VIOLATION = postgresError({
+  message:
     'new row for relation "profiles" violates check constraint "profiles_provenance_covers_every_field"',
-  ),
-  {
-    code: "23514",
-    severity: "ERROR",
-    severity_local: "ERROR",
-    table_name: "profiles",
-    constraint_name: "profiles_provenance_covers_every_field",
-    detail: "Failing row contains (...).",
-  },
-);
+  code: "23514",
+  table_name: "profiles",
+  constraint_name: "profiles_provenance_covers_every_field",
+  detail: "Failing row contains (...).",
+});
 
 const CONNECTION_FAILURE = Object.assign(
   new Error("write ECONNREFUSED 127.0.0.1:5432"),
@@ -55,9 +63,7 @@ describe("describeDriverError", () => {
     expect(report).toContain("code: 23502");
     expect(report).toContain("column: external_id");
     expect(report).toContain("table: events");
-    expect(report).toContain(
-      "message: null value in column",
-    );
+    expect(report).toContain("message: null value in column");
     expect(report).toContain("detail: Failing row contains");
   });
 

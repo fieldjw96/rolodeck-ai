@@ -148,7 +148,9 @@ describe("a Source that went quiet", () => {
       'Failed query: insert into "events" ("id") values ($1)\nparams: techmeme-events',
     );
     queryError.cause = Object.assign(
-      new Error('null value in column "external_id" violates not-null constraint'),
+      new Error(
+        'null value in column "external_id" violates not-null constraint',
+      ),
       { code: "23502", column_name: "external_id", table_name: "events" },
     );
 
