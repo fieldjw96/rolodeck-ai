@@ -163,22 +163,15 @@ export type DeckPage = {
  */
 const locationCity = sql`case when strpos(${profiles.location}, ',') > 0 then lower(regexp_replace(split_part(${profiles.location}, ',', 1), '^[[:space:]]+|[[:space:]]+$', '', 'g')) end`;
 
-/**
- * What the Deck ranks by for an owner who has never saved a User Profile: nothing, so it deals
- * newest-first. Not `EMPTY_USER_PROFILE` itself, whose `area` is the settings form's starting
- * value rather than a place anybody chose — ranking by it would reorder a Deck whose owner has
- * stated nothing. See docs/adr/0011.
- */
-const NOTHING_STATED: UserProfile = { ...EMPTY_USER_PROFILE, area: "" };
-
 const weighted = (matches: SQL, weight: number) =>
   sql`case when ${matches} then ${weight}::int else 0 end`;
 
 /**
  * A Company Profile's score under `userProfile`, as SQL, so the Deck is ordered inside
- * Postgres rather than by fetching every row. Each empty preference compiles to `false` and
+ * Postgres rather than by fetching every row. Each unstated preference compiles to `false` and
  * adds nothing, which is how a User Profile that states nothing deals the Deck newest-first
- * without anyone checking for it.
+ * without anyone checking for it: an empty array for the three list preferences, and a null
+ * `area`, which `citiesInArea` answers with no cities.
  */
 function deckScore(userProfile: UserProfile): SQL<number> {
   return sql<number>`(${weighted(
@@ -213,8 +206,11 @@ export async function readDeckPage(
     cursor,
   }: { userId: string; limit: number; cursor?: DeckCursor },
 ): Promise<DeckPage> {
+  // `EMPTY_USER_PROFILE` is now safe to rank by, which it was not while its `area` was
+  // "Bay Area": a User who has saved nothing and a User with no row at all state the same
+  // nothing, and both deal the Deck newest-first. See docs/adr/0011.
   const userProfile =
-    (await readSavedUserProfile(db, userId)) ?? NOTHING_STATED;
+    (await readSavedUserProfile(db, userId)) ?? EMPTY_USER_PROFILE;
   const score = deckScore(userProfile);
 
   // One more row than asked for: whether it comes back is the whole of the "is there a next

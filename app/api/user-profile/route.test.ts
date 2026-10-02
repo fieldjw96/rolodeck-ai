@@ -37,14 +37,15 @@ vi.mock("../../../db/connection", () => ({
 type UserProfileBody = {
   sectors: string[];
   stages: string[];
-  area: string;
+  area: string | null;
   excluded_sectors: string[];
 };
 
+/** What a User who has stated nothing reads back: every list empty, and no area. */
 const EMPTY_BODY: UserProfileBody = {
   sectors: [],
   stages: [],
-  area: "Bay Area",
+  area: null,
   excluded_sectors: [],
 };
 

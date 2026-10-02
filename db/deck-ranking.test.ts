@@ -432,3 +432,54 @@ describe("matching a location to the area in Postgres", () => {
     await expect(dealPage()).resolves.toEqual(expected);
   });
 });
+
+/**
+ * The invariant Ticket #191 broke and then fixed, asserted directly so it cannot break again.
+ *
+ * `user_profiles.area` used to be `NOT NULL DEFAULT 'Bay Area'`, so the moment a User saved any
+ * preference at all — including by clicking Skip on the first-run screen — their row claimed an
+ * area they had never chosen, area ranking switched on at weight 1, and their Deck came back in
+ * a different order from the one an identical User with no row got. See docs/adr/0011, which
+ * says the Deck ranks by what a User stated.
+ */
+describe("a saved User Profile that states nothing", () => {
+  const MIXED = [
+    { name: "In area", minute: 0, location: "San Francisco, CA" },
+    { name: "Out of area", minute: 1, location: "New York, NY" },
+    { name: "No location", minute: 2, location: null },
+  ];
+
+  it("ranks the Deck exactly as having no User Profile at all does", async () => {
+    await seed(MIXED);
+
+    const withNoRow = await dealPage();
+
+    await statePreferences({ area: null });
+
+    await expect(dealPage()).resolves.toEqual(withNoRow);
+  });
+
+  it("deals newest first, unreordered by area", async () => {
+    await seed(MIXED);
+    await statePreferences({ area: null });
+
+    // Seeded a minute apart, so newest first is the reverse of the seed order. An out-of-area
+    // company still outranks an older in-area one, because nothing has been stated to rank by.
+    await expect(dealPage()).resolves.toEqual([
+      "No location",
+      "Out of area",
+      "In area",
+    ]);
+  });
+
+  it("still ranks by area once a User actually states one", async () => {
+    await seed(MIXED);
+    await statePreferences({ area: "Bay Area" });
+
+    await expect(dealPage()).resolves.toEqual([
+      "In area",
+      "No location",
+      "Out of area",
+    ]);
+  });
+});

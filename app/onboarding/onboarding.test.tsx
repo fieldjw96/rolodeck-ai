@@ -102,13 +102,13 @@ describe("Onboarding", () => {
     const body = JSON.parse(init.body as string) as {
       sectors: string[];
       stages: string[];
-      area: string;
+      area: string | null;
       excluded_sectors: string[];
     };
 
     expect(body.sectors).not.toContain("fintech");
     expect(body.stages).not.toContain("growth");
-    expect(body.area).toBe("Bay Area");
+    expect(body.area).toBeNull();
     expect(body.excluded_sectors).toEqual([]);
   });
 
@@ -131,14 +131,14 @@ describe("Onboarding", () => {
     const body = JSON.parse(init.body as string) as {
       sectors: string[];
       stages: string[];
-      area: string;
+      area: string | null;
       excluded_sectors: string[];
     };
 
     expect(body).toEqual({
       sectors: [],
       stages: [],
-      area: "Bay Area",
+      area: null,
       excluded_sectors: [],
     });
   });

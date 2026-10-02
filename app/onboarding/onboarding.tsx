@@ -10,7 +10,7 @@ import styles from "./onboarding.module.css";
 type UserProfileBody = {
   sectors: string[];
   stages: string[];
-  area: string;
+  area: string | null;
   excluded_sectors: string[];
 };
 
@@ -22,10 +22,19 @@ type SaveState =
 export const SAVE_ERROR_MESSAGE =
   "Couldn't save your preferences. Check your connection and try again.";
 
-/** `area` is out of scope for this screen (see the Ticket's own notes), and this screen never
- * offers an exclusion — both are written at the one value a never-saved User Profile already
- * reads back, so saving or skipping here changes nothing this Ticket did not ask for. */
-const AREA = "Bay Area";
+/**
+ * `area` is out of scope for this screen (see the Ticket's own notes) and this screen never
+ * offers an exclusion, so both are written as the User having stated nothing: null, and the
+ * empty list.
+ *
+ * It mattered which "nothing" that is. This first wrote "Bay Area", on the reasoning that it is
+ * what a never-saved User Profile reads back — which was true of `EMPTY_USER_PROFILE` and not
+ * of what the Deck ranks by, because `db/deck.ts` kept a separate constant that blanked the area
+ * out. So every User who passed through this screen, including by skipping it, silently switched
+ * on area ranking at weight 1 and got a reordered Deck, which docs/adr/0011 and this Ticket both
+ * forbid. `user_profiles.area` is nullable now precisely so this line can be honest.
+ */
+const AREA = null;
 
 async function putUserProfile(body: UserProfileBody): Promise<boolean> {
   const response = await fetch("/api/user-profile", {

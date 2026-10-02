@@ -8,20 +8,26 @@ import type { UserProfileInput } from "./user-profile-input";
 export type UserProfile = {
   sectors: Sector[];
   stages: Stage[];
-  area: string;
+  /** Null where the User has stated no area, which is a different claim from stating one. */
+  area: string | null;
   excludedSectors: Sector[];
 };
 
 /**
- * What a User Profile is before the owner has ever saved one: every set empty, `area` at its
- * one supported value. This is what `readUserProfile` returns for a never-saved owner, rather
- * than null or a thrown error, so a first-run app is not a special case scattered through the
- * callers — see the Ticket's own notes.
+ * What a User Profile is before a User has stated anything: every set empty and no area. This
+ * is what `readUserProfile` returns for a User who has never saved one, rather than null or a
+ * thrown error, so a first-run app is not a special case scattered through the callers — see
+ * the Ticket's own notes.
+ *
+ * `area` is null rather than "Bay Area" because nothing here was chosen by anybody, and the
+ * Deck ranks on what was chosen. It used to be "Bay Area", which made this value unusable as a
+ * ranking input and forced `db/deck.ts` to keep a second constant that blanked the area out.
+ * That second constant is gone, and the one honest answer is here: see docs/adr/0011.
  */
 export const EMPTY_USER_PROFILE: UserProfile = {
   sectors: [],
   stages: [],
-  area: "Bay Area",
+  area: null,
   excludedSectors: [],
 };
 
@@ -34,9 +40,11 @@ export async function readUserProfile(
 }
 
 /**
- * The owner's User Profile as they last saved it, or null if they never have. For a reader
- * that has to tell "never said anything" from "said the defaults" — the Deck, which does not
- * rank by `EMPTY_USER_PROFILE`'s `area` because nobody chose it. See docs/adr/0011.
+ * A User's own User Profile as they last saved it, or null if they never have, for a reader
+ * that has to tell "never saved anything" from "saved, and stated nothing". Those two now rank
+ * the Deck identically, because `area` can be null in a saved row, so the distinction is no
+ * longer load-bearing for ranking — but it is still what decides whether a User has been
+ * through the first-run screen. See docs/adr/0011.
  */
 export async function readSavedUserProfile(
   db: Database,

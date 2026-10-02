@@ -76,7 +76,24 @@ describe("readSavedUserProfile", () => {
     await expect(readSavedUserProfile(scratch.db, JACK)).resolves.toBeNull();
   });
 
-  it("returns what was saved, even when it is exactly the defaults", async () => {
+  it("returns what was saved, even when it is nothing at all", async () => {
+    await writeUserProfile(scratch.db, JACK, {
+      sectors: [],
+      stages: [],
+      area: null,
+      excluded_sectors: [],
+    });
+
+    await expect(readSavedUserProfile(scratch.db, JACK)).resolves.toEqual(
+      EMPTY_USER_PROFILE,
+    );
+  });
+
+  // The distinction the nullable `area` exists for, and the one that used to be impossible to
+  // make: a User who typed "Bay Area" has stated a preference, and a User who stated nothing
+  // has not. Before, both read back as "Bay Area", so the Deck could not tell them apart and
+  // ranked by an area the second User never chose. See docs/adr/0011 and Ticket #191.
+  it("tells a stated area apart from no area, where both used to read back the same", async () => {
     await writeUserProfile(scratch.db, JACK, {
       sectors: [],
       stages: [],
@@ -84,9 +101,10 @@ describe("readSavedUserProfile", () => {
       excluded_sectors: [],
     });
 
-    await expect(readSavedUserProfile(scratch.db, JACK)).resolves.toEqual(
-      EMPTY_USER_PROFILE,
-    );
+    await expect(readSavedUserProfile(scratch.db, JACK)).resolves.toEqual({
+      ...EMPTY_USER_PROFILE,
+      area: "Bay Area",
+    });
   });
 });
 
