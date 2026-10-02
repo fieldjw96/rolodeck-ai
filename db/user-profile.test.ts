@@ -7,6 +7,7 @@ import { userProfiles } from "./schema";
 import { createScratchDb, type ScratchDb } from "./testing/scratch-db";
 import {
   EMPTY_USER_PROFILE,
+  ensureUserProfile,
   readSavedUserProfile,
   readUserProfile,
   writeUserProfile,
@@ -167,6 +168,51 @@ describe("writeUserProfile", () => {
     expect(rows).toHaveLength(1);
     expect(rows[0]?.sectors).toEqual(["fintech"]);
     expect(rows[0]?.excludedSectors).toEqual(["ai-ml"]);
+  });
+});
+
+describe("ensureUserProfile", () => {
+  // The write `scripts/provision-account.ts` makes right after creating an account (Ticket
+  // #207): a freshly provisioned account must sign straight in to the Deck rather than land on
+  // `/onboarding`, and an empty row is what `needsOnboarding` reads as "already asked".
+  it("writes an empty row for an owner who has none", async () => {
+    await ensureUserProfile(scratch.db, JACK);
+
+    await expect(readSavedUserProfile(scratch.db, JACK)).resolves.toEqual(
+      EMPTY_USER_PROFILE,
+    );
+  });
+
+  // Provisioning rotates the smoke account's password on every deploy; it must not also reset
+  // a real User's stated preferences each time it runs.
+  it("leaves an existing row's stated preferences alone", async () => {
+    await writeUserProfile(scratch.db, JACK, {
+      sectors: ["ai-ml"],
+      stages: ["seed"],
+      area: "Bay Area",
+      excluded_sectors: [],
+    });
+
+    await ensureUserProfile(scratch.db, JACK);
+
+    await expect(readSavedUserProfile(scratch.db, JACK)).resolves.toEqual({
+      sectors: ["ai-ml"],
+      stages: ["seed"],
+      area: "Bay Area",
+      excludedSectors: [],
+    });
+  });
+
+  it("is idempotent: calling it twice still leaves exactly one row", async () => {
+    await ensureUserProfile(scratch.db, JACK);
+    await ensureUserProfile(scratch.db, JACK);
+
+    const rows = await scratch.db
+      .select()
+      .from(userProfiles)
+      .where(eq(userProfiles.userId, JACK));
+
+    expect(rows).toHaveLength(1);
   });
 });
 

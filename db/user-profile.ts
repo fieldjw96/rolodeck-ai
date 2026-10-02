@@ -69,6 +69,24 @@ export async function readSavedUserProfile(
 }
 
 /**
+ * Writes an empty row for `userId` if it has none, and leaves an existing row exactly as it
+ * was. Unlike `writeUserProfile`, this never overwrites — it is for
+ * `scripts/provision-account.ts`, which must not reset a real User's stated preferences just
+ * because rotating the smoke test's password happens to touch the same account again. See
+ * Ticket #207 and migration `0015_backfill_user_profiles`, which is this same write for every
+ * account that already existed when the first-run screen shipped.
+ */
+export async function ensureUserProfile(
+  db: Database,
+  userId: string,
+): Promise<void> {
+  await db
+    .insert(userProfiles)
+    .values({ userId })
+    .onConflictDoNothing({ target: userProfiles.userId });
+}
+
+/**
  * Writes the owner's stated preferences, replacing whatever was there before. An upsert
  * keyed on `user_id` rather than an insert: the owner has exactly one row, per the Ticket, so
  * a second `PUT` is a correction to the same row rather than a conflict a caller has to avoid.

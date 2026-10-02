@@ -4,6 +4,7 @@ import {
   parseSmokeOptions,
   summarise,
   redact,
+  describeWrongPath,
   type CheckResult,
 } from "../lib/smoke/options";
 
@@ -99,8 +100,7 @@ async function main(): Promise<void> {
         ]);
         const path = new URL(page.url()).pathname;
         // Not merely "left /login": an error redirect also leaves it.
-        if (path !== "/deck")
-          throw new Error(`landed on ${path}, expected /deck`);
+        if (path !== "/deck") throw new Error(describeWrongPath(path, "/deck"));
         return path;
       }),
     );
@@ -157,9 +157,7 @@ async function main(): Promise<void> {
         // password and watching this check report ok.
         const path = new URL(page.url()).pathname;
         if (path !== "/watchlist") {
-          throw new Error(
-            `redirected to ${path}, so the session was not established`,
-          );
+          throw new Error(describeWrongPath(path, "/watchlist"));
         }
 
         const body = await textOf(page);
