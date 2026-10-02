@@ -174,11 +174,15 @@ export function isBayArea(location: string | null): boolean {
  * answers.
  *
  * "Bay Area" is the one area with a list. Any other area is empty — it matches no Company
- * Profile rather than raising — because `area` is free text and an owner who types somewhere
+ * Profile rather than raising — because `area` is free text and a User who types somewhere
  * this module does not know should get the Deck unranked by place, not an error.
+ *
+ * Null is the same answer for a different reason: a User who has stated no area at all, which
+ * `user_profiles.area` can now hold. Taking it here rather than making every caller guard
+ * keeps "unstated ranks by nothing" in one place.
  */
-export function citiesInArea(area: string): readonly string[] {
-  return area.trim().toLowerCase() === "bay area" ? [...BAY_AREA_CITIES] : [];
+export function citiesInArea(area: string | null): readonly string[] {
+  return area?.trim().toLowerCase() === "bay area" ? [...BAY_AREA_CITIES] : [];
 }
 
 /**

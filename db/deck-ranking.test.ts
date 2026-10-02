@@ -294,6 +294,31 @@ describe("ranking the Deck by the User Profile", () => {
     await expect(dealPage()).resolves.toEqual(["Newest", "Middle", "Oldest"]);
   });
 
+  it("deals a User who stated preferences the same Deck, reordered, not a shorter one (Ticket #191)", async () => {
+    const SOMEONE_ELSE = "22222222-2222-2222-2222-222222222222";
+    await scratch.createUser(SOMEONE_ELSE);
+
+    await seed([
+      { name: "Ai", minute: 0, sector: "ai-ml", stage: "series-a" },
+      { name: "Fintech", minute: 1, sector: "fintech" },
+      { name: "Security", minute: 2, sector: "security", stage: "seed" },
+      { name: "Climate", minute: 3, sector: "climate-energy" },
+      { name: "Other", minute: 4 },
+    ]);
+    await statePreferences({ sectors: ["ai-ml"], stages: ["series-a"] });
+
+    const stated = await dealPage();
+    const none = await asUser(scratch.db, SOMEONE_ELSE, (tx) =>
+      readDeckPage(tx, { userId: SOMEONE_ELSE, limit: 50 }),
+    ).then((page) => page.profiles.map((profile) => profile.name));
+
+    // The property the screen promises: every Company Profile still appears, in a different
+    // order, because stating a preference ranks rather than filters. See docs/adr/0011.
+    expect(stated).toHaveLength(none.length);
+    expect(stated).not.toEqual(none);
+    expect([...stated].sort()).toEqual([...none].sort());
+  });
+
   it("ranks nothing by place for an area it has no cities for, rather than erroring", async () => {
     await seed([
       { name: "In San Francisco", minute: 0, location: "San Francisco, CA" },
@@ -405,5 +430,56 @@ describe("matching a location to the area in Postgres", () => {
       .map((row) => row.name);
 
     await expect(dealPage()).resolves.toEqual(expected);
+  });
+});
+
+/**
+ * The invariant Ticket #191 broke and then fixed, asserted directly so it cannot break again.
+ *
+ * `user_profiles.area` used to be `NOT NULL DEFAULT 'Bay Area'`, so the moment a User saved any
+ * preference at all — including by clicking Skip on the first-run screen — their row claimed an
+ * area they had never chosen, area ranking switched on at weight 1, and their Deck came back in
+ * a different order from the one an identical User with no row got. See docs/adr/0011, which
+ * says the Deck ranks by what a User stated.
+ */
+describe("a saved User Profile that states nothing", () => {
+  const MIXED = [
+    { name: "In area", minute: 0, location: "San Francisco, CA" },
+    { name: "Out of area", minute: 1, location: "New York, NY" },
+    { name: "No location", minute: 2, location: null },
+  ];
+
+  it("ranks the Deck exactly as having no User Profile at all does", async () => {
+    await seed(MIXED);
+
+    const withNoRow = await dealPage();
+
+    await statePreferences({ area: null });
+
+    await expect(dealPage()).resolves.toEqual(withNoRow);
+  });
+
+  it("deals newest first, unreordered by area", async () => {
+    await seed(MIXED);
+    await statePreferences({ area: null });
+
+    // Seeded a minute apart, so newest first is the reverse of the seed order. An out-of-area
+    // company still outranks an older in-area one, because nothing has been stated to rank by.
+    await expect(dealPage()).resolves.toEqual([
+      "No location",
+      "Out of area",
+      "In area",
+    ]);
+  });
+
+  it("still ranks by area once a User actually states one", async () => {
+    await seed(MIXED);
+    await statePreferences({ area: "Bay Area" });
+
+    await expect(dealPage()).resolves.toEqual([
+      "In area",
+      "No location",
+      "Out of area",
+    ]);
   });
 });

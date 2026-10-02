@@ -35,6 +35,14 @@ export const PUBLIC_PATHS = [LOGIN_PATH, AUTH_CALLBACK_PATH] as const;
 /** Where the gate sends a signed-in user who lands on `/login`. */
 export const HOME_PATH = "/deck";
 
+/**
+ * Where a User who has never saved a User Profile is sent instead of `HOME_PATH`, by both
+ * sign-in paths — the OAuth callback and the password Server Action — so the question is asked
+ * before the Deck rather than from inside it. Not in `PUBLIC_PATHS`: reaching it still needs a
+ * session, same as everything else past sign-in. See Ticket #191.
+ */
+export const ONBOARDING_PATH = "/onboarding";
+
 /** Everything under here is a route handler, and answers in JSON. */
 export const API_PREFIX = "/api";
 

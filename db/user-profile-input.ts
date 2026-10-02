@@ -13,7 +13,11 @@ export const userProfileInputSchema = z
     sectors: z.array(sectorSchema),
     // Stated stages only: `not-stated` marks a Source's silence, and is not something to prefer.
     stages: z.array(statedStageSchema),
-    area: z.string().min(1, "must not be blank"),
+    // Null is "I have stated no area", which is a real answer and the one a User who skips the
+    // first-run screen gives. A present `area` still may not be blank: an empty string would be
+    // a second spelling of the same claim, and two spellings of one state is how `area` came to
+    // reorder Decks nobody had asked to reorder. See db/schema.ts and docs/adr/0011.
+    area: z.string().min(1, "must not be blank").nullable(),
     excluded_sectors: z.array(sectorSchema),
   })
   .superRefine((value, ctx) => {

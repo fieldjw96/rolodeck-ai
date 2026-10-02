@@ -218,6 +218,15 @@ export type DiaryEvent = {
 const eventLocationCity = sql`lower(regexp_replace(split_part(${events.location}, ',', 1), '^[[:space:]]+|[[:space:]]+$', '', 'g'))`;
 
 /**
+ * The area the Diary filters by for a User who has stated none. Not a statement by that User —
+ * `user_profiles.area` is null for them — but the Diary's own answer to "near where?", which it
+ * has to have one of: an unfiltered Diary is every startup event on earth, which is less useful
+ * than a wrong guess and much less useful than this one, since CLAUDE.md's whole product is Bay
+ * Area companies. The Deck makes the opposite choice for the opposite reason; see `readDiary`.
+ */
+export const DIARY_DEFAULT_AREA = "Bay Area";
+
+/**
  * The Events in the reader's area, in date order, soonest first, with past ones left out
  * unless asked for. An Event is past once its last day is before `today`, so a three-day
  * conference stays in the Diary until it is over.
@@ -226,14 +235,20 @@ const eventLocationCity = sql`lower(regexp_replace(split_part(${events.location}
  * differs between two Users reading the same Diary is which of those Events is `important`,
  * since that is decided by their own Keeps.
  *
- * "Their area" is `userProfiles.area`, read through `readUserProfile` so a User who has never
- * saved one still gets its "Bay Area" default rather than an unfiltered Diary — unlike the
- * Deck, which ranks and so treats a never-saved User Profile as stating nothing at all. An
- * Event is filtered out only when its `location` states a city and that city is outside every
+ * "Their area" is `userProfiles.area` where the User stated one, and `DIARY_DEFAULT_AREA` where
+ * they did not, so a User who has stated nothing gets a Bay Area Diary rather than a worldwide
+ * one. That fallback is the Diary's own product decision and is written here, by name, on
+ * purpose: it used to arrive by reading `EMPTY_USER_PROFILE`, whose `area` was "Bay Area", which
+ * meant one constant was quietly answering two opposite questions. The Deck wants a User who
+ * stated nothing to rank by nothing; the Diary wants them filtered to the Bay Area anyway. Both
+ * are right, and they cannot be the same value, so only one of them gets to be the default
+ * nobody chose — and it is this one, where the asymmetry is explained.
+ *
+ * An Event is filtered out only when its `location` states a city and that city is outside every
  * city `citiesInArea` lists for the area; a `location` of null is always kept, per the Ticket,
  * since a Source that states no location is not a Source that stated a distant one. An area
- * `citiesInArea` has no list for — including one nobody has ever typed, or the empty string —
- * filters nothing at all, matching `citiesInArea`'s own contract.
+ * `citiesInArea` has no list for — including one nobody has ever typed — filters nothing at all,
+ * matching `citiesInArea`'s own contract.
  *
  * This is deliberately unlike `db/deck.ts`, which ranks a Company Profile by area rather than
  * hiding it: see docs/adr/0011. An unranked Company Profile is still worth a swipe; an Event on
@@ -261,7 +276,7 @@ export async function readDiary(
     sql`select ${selection} from ${eventAttendances} inner join ${profiles} on ${profiles.id} = ${eventAttendances.profileId} inner join ${swipes} on ${swipes.profileId} = ${profiles.id} where ${eventAttendances.eventId} = ${events.id} and ${swipes.userId} = ${userId} and ${swipes.decision} = 'keep'`;
 
   const userProfile = await readUserProfile(db, userId);
-  const areaCities = citiesInArea(userProfile.area);
+  const areaCities = citiesInArea(userProfile.area ?? DIARY_DEFAULT_AREA);
 
   return db
     .select({

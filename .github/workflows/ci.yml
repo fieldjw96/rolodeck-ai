@@ -54,15 +54,41 @@ jobs:
       - run: npm run build
 
   # Ticket #16: an explicit, enforced budget for `/deck` rather than an implicit "it feels
-  # fine". The spec builds and starts its own server against the in-process Supabase Auth
-  # stub — see `e2e/deck-performance.spec.ts` — so, like `migrate`, it needs no secret this
-  # repo's CI does not already have.
+  # fine", plus the accessibility and layout specs. They build and start their own server
+  # against the in-process Supabase Auth stub — see `e2e/deck-performance.spec.ts` — so, like
+  # `migrate`, this needs no secret this repo's CI does not already have. It does now need a
+  # Postgres, for the reason below.
   perf:
     runs-on: ubuntu-latest
     # Without this the job inherits GitHub's 6-hour default, so a suite that wedges is reported
     # hours later as a red check with nothing readable attached. Playwright's own `globalTimeout`
     # is set below this so the run fails, and prints why, before the job is killed for time.
     timeout-minutes: 30
+    # This suite mocks `/api/*` in the browser and needed no database until Ticket #191 put the
+    # first-run check on the `(app)` layout, which reads the User Profile on the server. A
+    # server-side query is not something `page.route` can answer, so with no Postgres every page
+    # in the group redirects to `/onboarding` and every spec here fails to find what it looks
+    # for. A Postgres of its own rather than one shared with `e2e-db`:
+    # `e2e/support/scratch-database.ts` sets a password on `rolodeck_app` once per process, and
+    # two jobs doing that to one cluster would lock each other out.
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      # Privileged on purpose: the suite applies the shim, applies the migrations and sets the
+      # app role's password with this, then hands the app under test a `rolodeck_app` string
+      # built from it. Production splits those two jobs across `MIGRATION_DATABASE_URL` and
+      # `SUPABASE_POOLER_URL`; see docs/adr/0005 and docs/adr/0014.
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v5
@@ -75,8 +101,9 @@ jobs:
 
   # Ticket #13: the core swipe flow — Keep, Pass, the Watchlist, and the Deck's empty state —
   # against a real Postgres and a real browser, not the mocked `/api/profiles` the `perf` job's
-  # specs use. Its own job, with its own service container, so a Postgres this suite needs is
-  # never assumed to be there for `perf`, which has none.
+  # specs use. Its own job with its own service container, and `perf` now has one too: both
+  # stand a database up through `e2e/support/scratch-database.ts`, which sets a password on
+  # `rolodeck_app`, so sharing one cluster between them would have each lock the other out.
   e2e-db:
     runs-on: ubuntu-latest
     timeout-minutes: 30

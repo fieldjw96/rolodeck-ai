@@ -298,7 +298,15 @@ export const userProfiles = pgTable(
     // A plain string rather than an enum: there is exactly one value today, and inventing a
     // region taxonomy before there is a second region is speculative. See CLAUDE.md and the
     // Ticket's own notes.
-    area: text("area").notNull().default("Bay Area"),
+    //
+    // Nullable, and with no default, because "not stated" has to be representable in a saved
+    // row. `sectors`, `stages` and `excluded_sectors` each say that with an empty array, and
+    // `area` had no way to say it at all: `NOT NULL DEFAULT 'Bay Area'` meant every row that
+    // existed stated an area whether its User had chosen one or not, so saving any preference
+    // switched on area ranking at weight 1 and quietly reordered the Deck. `db/deck.ts` worked
+    // around it by treating a *missing row* as `area: ""`, which left a saved row with nothing
+    // stated impossible to express. Null is that state. See docs/adr/0011 and Ticket #191.
+    area: text("area"),
     excludedSectors: text("excluded_sectors")
       .array()
       .$type<Sector[]>()

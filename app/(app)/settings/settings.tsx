@@ -9,13 +9,18 @@ import styles from "./settings.module.css";
 type UserProfileBody = {
   sectors: string[];
   stages: string[];
-  area: string;
+  area: string | null;
   excluded_sectors: string[];
 };
 
 type FormValues = {
   sectors: Set<string>;
   stages: Set<string>;
+  /**
+   * The text in the Area box, which is "" while it is empty. An empty box means the User has
+   * stated no area, and `toBody` sends that as null: the boundary schema refuses a blank string
+   * on purpose, so that "unstated" has exactly one spelling. See db/user-profile-input.ts.
+   */
   area: string;
   excludedSectors: Set<string>;
 };
@@ -44,10 +49,14 @@ const LOADING_SETTINGS_DETAIL = "Reading back what you last told the Deck.";
 const LOAD_ERROR_DETAIL = "Check your connection, then reload the page.";
 
 function toBody(values: FormValues): UserProfileBody {
+  const area = values.area.trim();
+
   return {
     sectors: [...values.sectors],
     stages: [...values.stages],
-    area: values.area,
+    // An empty box is "no area stated", which is null rather than "". Trimmed first, so that a
+    // box holding only spaces is the same claim as an empty one.
+    area: area === "" ? null : area,
     excluded_sectors: [...values.excludedSectors],
   };
 }
@@ -56,7 +65,7 @@ function toValues(body: UserProfileBody): FormValues {
   return {
     sectors: new Set(body.sectors),
     stages: new Set(body.stages),
-    area: body.area,
+    area: body.area ?? "",
     excludedSectors: new Set(body.excluded_sectors),
   };
 }
@@ -290,6 +299,10 @@ export function Settings() {
           <label className={styles.label} htmlFor="area">
             Area
           </label>
+          {/* Not `required`. Leaving it empty is a real answer — "rank my Deck by nothing in
+              particular" — and it is the answer a User who skipped the first-run screen already
+              has stored. Marking it required would make the one state most Users are in
+              unreachable from the form that is supposed to show it back to them. */}
           <input
             className={styles.input}
             id="area"
@@ -297,7 +310,6 @@ export function Settings() {
             type="text"
             value={values.area}
             onChange={(event) => setArea(event.target.value)}
-            required
           />
         </div>
 

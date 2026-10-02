@@ -76,7 +76,24 @@ describe("readSavedUserProfile", () => {
     await expect(readSavedUserProfile(scratch.db, JACK)).resolves.toBeNull();
   });
 
-  it("returns what was saved, even when it is exactly the defaults", async () => {
+  it("returns what was saved, even when it is nothing at all", async () => {
+    await writeUserProfile(scratch.db, JACK, {
+      sectors: [],
+      stages: [],
+      area: null,
+      excluded_sectors: [],
+    });
+
+    await expect(readSavedUserProfile(scratch.db, JACK)).resolves.toEqual(
+      EMPTY_USER_PROFILE,
+    );
+  });
+
+  // The distinction the nullable `area` exists for, and the one that used to be impossible to
+  // make: a User who typed "Bay Area" has stated a preference, and a User who stated nothing
+  // has not. Before, both read back as "Bay Area", so the Deck could not tell them apart and
+  // ranked by an area the second User never chose. See docs/adr/0011 and Ticket #191.
+  it("tells a stated area apart from no area, where both used to read back the same", async () => {
     await writeUserProfile(scratch.db, JACK, {
       sectors: [],
       stages: [],
@@ -84,9 +101,45 @@ describe("readSavedUserProfile", () => {
       excluded_sectors: [],
     });
 
-    await expect(readSavedUserProfile(scratch.db, JACK)).resolves.toEqual(
-      EMPTY_USER_PROFILE,
-    );
+    await expect(readSavedUserProfile(scratch.db, JACK)).resolves.toEqual({
+      ...EMPTY_USER_PROFILE,
+      area: "Bay Area",
+    });
+  });
+});
+
+describe("the record of having been asked (Ticket #191)", () => {
+  it("is unresolved for an owner who has never saved a User Profile", async () => {
+    await expect(readSavedUserProfile(scratch.db, JACK)).resolves.toBeNull();
+  });
+
+  it("is resolved, and stays resolved, for an owner who stated preferences", async () => {
+    await writeUserProfile(scratch.db, JACK, {
+      sectors: ["fintech"],
+      stages: ["seed"],
+      area: "Bay Area",
+      excluded_sectors: [],
+    });
+
+    await expect(
+      readSavedUserProfile(scratch.db, JACK),
+    ).resolves.not.toBeNull();
+  });
+
+  it("is resolved, not unresolved, for an owner who skipped and left every preference empty", async () => {
+    // Skipping still writes the row — `writeUserProfile` upserts whatever it is given, empty
+    // arrays included — which is the whole of why row existence, not row content, is what
+    // being asked means. See `EMPTY_USER_PROFILE` above.
+    await writeUserProfile(scratch.db, JACK, {
+      sectors: [],
+      stages: [],
+      area: "Bay Area",
+      excluded_sectors: [],
+    });
+
+    await expect(
+      readSavedUserProfile(scratch.db, JACK),
+    ).resolves.not.toBeNull();
   });
 });
 
