@@ -64,7 +64,8 @@ describe("describeDriverError", () => {
     expect(report).toContain("column: external_id");
     expect(report).toContain("table: events");
     expect(report).toContain("message: null value in column");
-    expect(report).toContain("detail: Failing row contains");
+    expect(report).toContain("detail: Failing row contains [redacted].");
+    expect(report).not.toContain("techmeme-events");
   });
 
   it("finds a PostgresError holding a check-constraint violation, naming the constraint", () => {
@@ -77,6 +78,26 @@ describe("describeDriverError", () => {
       "constraint: profiles_provenance_covers_every_field",
     );
     expect(report).toContain("table: profiles");
+    expect(report).toContain("detail: Failing row contains [redacted].");
+  });
+
+  it("redacts a detail's parenthesised row content, naming only that a row failed", () => {
+    const report = describeDriverError(
+      drizzleQueryError(
+        postgresError({
+          message: "duplicate key value violates unique constraint",
+          code: "23505",
+          table_name: "profiles",
+          constraint_name: "profiles_slug_key",
+          detail: "Key (slug)=(a-real-startup-name) already exists.",
+        }),
+      ),
+    );
+
+    expect(report).toContain(
+      "detail: Key [redacted]=[redacted] already exists.",
+    );
+    expect(report).not.toContain("a-real-startup-name");
   });
 
   it("finds a connection failure, which carries a code and nothing else", () => {

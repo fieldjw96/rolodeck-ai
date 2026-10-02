@@ -19,7 +19,17 @@
  * and widening what prints on failure — even by an error's own fields — is how a Company Profile
  * or Event row, or eventually a credential, ends up in a public log. `message`, `code`,
  * `constraint_name`, `column_name`, `table_name` and `detail` are the only fields read here.
+ *
+ * `detail` still needs its own guard even though it is the driver's own field: for a `NOT NULL`
+ * or check-constraint violation, postgres.js fills it with "Failing row contains (...)" — the
+ * row itself, parenthesised. `redactParens` strips every parenthesised group from it before it is
+ * printed, which is the row content in those two shapes and a key/value pair in a foreign-key or
+ * uniqueness violation's `detail`; either way, what is left still names which constraint behaviour
+ * (a failing row, an absent key) applied, without the values that made it fail.
  */
+function redactParens(detail: string): string {
+  return detail.replace(/\([^()]*\)/g, "[redacted]");
+}
 
 type DriverError = Error & { readonly code: string } & Partial<
     Record<"constraint_name" | "column_name" | "table_name" | "detail", string>
@@ -63,7 +73,7 @@ export function describeDriverError(error: unknown): string | undefined {
         fields.push(`table: ${driver.table_name}`);
       }
       if (driver.detail !== undefined) {
-        fields.push(`detail: ${driver.detail}`);
+        fields.push(`detail: ${redactParens(driver.detail)}`);
       }
 
       return fields.join(", ");
