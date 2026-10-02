@@ -1,6 +1,7 @@
 import type { EventInput } from "../../db/event-input";
 import type { EventIngestReport } from "../../db/events";
 import type { IngestRejection } from "../../db/profile-input";
+import { describeFailure } from "./driver-error";
 
 /**
  * Everything `scripts/ingest-events.ts` does that is worth testing, the way `form-d-run.ts` and
@@ -61,7 +62,10 @@ export function noEventsRejection(
  * exit code is settled at the end.
  *
  * "Failed" rather than "could not be fetched" because this covers the write too: a Source whose
- * page arrived and whose rows would not go in has still not ingested anything this run.
+ * page arrived and whose rows would not go in has still not ingested anything this run. The
+ * reason a write failed comes from `describeFailure` rather than `error.message` directly: a
+ * failed write throws a drizzle error whose `message` is the query it ran, not why, with the
+ * driver's actual reason on `cause` — see `driver-error.ts`.
  */
 export function failedSourceRejection(
   source: string,
@@ -69,9 +73,7 @@ export function failedSourceRejection(
 ): IngestRejection {
   return {
     field: source,
-    reason: `${source} failed this run: ${
-      error instanceof Error ? error.message : String(error)
-    }`,
+    reason: `${source} failed this run: ${describeFailure(error)}`,
     raw: error,
   };
 }

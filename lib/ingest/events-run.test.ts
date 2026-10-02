@@ -143,6 +143,24 @@ describe("a Source that went quiet", () => {
     ).toContain("just a string");
   });
 
+  it("carries the Postgres reason for a failed write, not only the query that failed", () => {
+    const queryError = new Error(
+      'Failed query: insert into "events" ("id") values ($1)\nparams: techmeme-events',
+    );
+    queryError.cause = Object.assign(
+      new Error(
+        'null value in column "external_id" violates not-null constraint',
+      ),
+      { code: "23502", column_name: "external_id", table_name: "events" },
+    );
+
+    const rejection = failedSourceRejection("techmeme-events", queryError);
+
+    expect(rejection.reason).toContain("Failed query:");
+    expect(rejection.reason).toContain("code: 23502");
+    expect(rejection.reason).toContain("column: external_id");
+  });
+
   it("names every Source that could not be read, and says the others ran", () => {
     const message = describeFailedSources([
       failedSourceRejection("luma-ai-events-sf", new Error("503")),

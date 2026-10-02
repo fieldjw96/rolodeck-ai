@@ -1,4 +1,5 @@
 import { closeIngestDb, getIngestDb } from "../db/ingest-connection";
+import { describeFailure } from "../lib/ingest/driver-error";
 import { createYcClient } from "../lib/ingest/yc-fetch";
 import {
   runYcIngest,
@@ -57,7 +58,7 @@ async function main(): Promise<void> {
 
 main()
   .catch((error: unknown) => {
-    console.error(error instanceof Error ? error.message : error);
+    console.error(describeFailure(error));
     process.exitCode = 1;
   })
   .finally(closeIngestDb);

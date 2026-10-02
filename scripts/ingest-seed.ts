@@ -1,5 +1,6 @@
 import { closeIngestDb, getIngestDb } from "../db/ingest-connection";
 import { backfillSeedProfiles, MINIMUM_PROFILE_COUNT } from "../db/seed";
+import { describeFailure } from "../lib/ingest/driver-error";
 
 /**
  * Guarantees `profiles` holds at least `MINIMUM_PROFILE_COUNT` real rows, regardless of how
@@ -45,7 +46,7 @@ async function main(): Promise<void> {
 
 main()
   .catch((error: unknown) => {
-    console.error(error instanceof Error ? error.message : error);
+    console.error(describeFailure(error));
     process.exitCode = 1;
   })
   .finally(closeIngestDb);
