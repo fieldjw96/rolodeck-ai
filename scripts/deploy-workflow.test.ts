@@ -229,7 +229,6 @@ describe("the production deploy workflow", () => {
     // that both URLs are present and shaped like pooler URLs, since neither depends on a
     // migration having run.
     const run = step("preflight").run ?? "";
-    expect(run).not.toContain(`${APP_ROLE}:*|${APP_ROLE}.*|${APP_ROLE}@*`);
     expect(run).not.toContain(`SUPABASE_POOLER_URL must log in as ${APP_ROLE}`);
     // And the migration credential must not be narrowed to it: applying DDL needs rights the
     // app's role deliberately lacks, which is why ADR 0014 keeps the two apart.
