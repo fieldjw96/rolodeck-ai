@@ -30,9 +30,8 @@ Zod at every external boundary, Vitest and Playwright.
 Requires Node 22.x and a Supabase project.
 
 ```
-cp .env.example .env.local   # fill in the Supabase values
 npm install
-npm run dev
+npm run dev   # with the variables .env.example lists already in the environment
 ```
 
 Anyone may sign up, and sign-in is Google SSO: `/login` offers one button. That needs a

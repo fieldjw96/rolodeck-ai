@@ -123,8 +123,10 @@ Setting it up, once the migration has been applied (by hand, never by a Run):
    `rolodeck_ingest.<project-ref>` as the user in place of `postgres.<project-ref>`. The pooler
    is what an IPv4-only host such as a GitHub Actions runner can reach; on a host with IPv6 the
    direct connection works too, with plain `rolodeck_ingest` as the user.
-3. Put it in `.env.local` on the machine that runs ingest by hand and, for the scheduled workflows, in the
-   repository's Actions secrets under the same name.
+3. Put it in the environment of the machine that runs ingest by hand — a machine-level variable,
+   or a file under `C:\agent-secrets`, never a `.env.local` in this OneDrive-synced working
+   directory — and, for the scheduled workflows, in the repository's Actions secrets under the
+   same name. It is the one database credential allowed there; see `docs/adr/0013`.
 
 `getIngestDb()` refuses a connection string whose user is anything but `rolodeck_ingest`, or that
 carries any query parameter but `sslmode`, so pasting the `postgres` one in its place fails on the
