@@ -4,6 +4,7 @@ import {
   parseSmokeOptions,
   summarise,
   redact,
+  describeWrongPath,
   DEFAULT_BASE_URL,
   type CheckResult,
 } from "./options";
@@ -102,6 +103,31 @@ describe("summarise", () => {
    */
   it("exits 1 when nothing was checked at all", () => {
     expect(summarise([]).exitCode).toBe(1);
+  });
+});
+
+describe("describeWrongPath", () => {
+  /**
+   * The failure this Ticket exists to fix: a redirect to `/onboarding` used to read as a
+   * failed sign-in, when it actually means the account has no `user_profiles` row. Nothing
+   * here should say "session" at all.
+   */
+  it("names the missing User Profile row for a redirect to /onboarding", () => {
+    const message = describeWrongPath("/onboarding", "/deck");
+    expect(message).toContain("User Profile row");
+    expect(message).not.toMatch(/session/i);
+  });
+
+  it("names the missing User Profile row regardless of what was expected", () => {
+    expect(describeWrongPath("/onboarding", "/watchlist")).toContain(
+      "User Profile row",
+    );
+  });
+
+  it("falls back to naming the two paths for any other redirect", () => {
+    expect(describeWrongPath("/login", "/deck")).toBe(
+      "landed on /login, expected /deck",
+    );
   });
 });
 

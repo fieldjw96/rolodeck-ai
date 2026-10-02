@@ -91,6 +91,22 @@ export function summarise(results: CheckResult[]): {
   return { text: lines.join("\n"), exitCode };
 }
 
+/**
+ * The message for a check that expected to land on `expected` and landed somewhere else. A
+ * redirect to `/onboarding` is not a failed sign-in: it is `app/(app)/layout.tsx`'s first-run
+ * gate, working exactly as Ticket #191 built it, for an account that has no `user_profiles`
+ * row. Saying so by name is the point — "redirected ..., so the session was not established"
+ * is the wording this replaced, and it was actively misleading for the one redirect this
+ * smoke test is most likely to hit. See Ticket #207.
+ */
+export function describeWrongPath(landedOn: string, expected: string): string {
+  if (landedOn === "/onboarding") {
+    return "redirected to /onboarding: the account has no User Profile row, not a failed sign-in";
+  }
+
+  return `landed on ${landedOn}, expected ${expected}`;
+}
+
 /** Redacts a secret from text before it is printed or logged. */
 export function redact(text: string, secret: string): string {
   if (secret === "") return text;
