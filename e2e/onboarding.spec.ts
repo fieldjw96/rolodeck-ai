@@ -33,8 +33,17 @@ test("a User who has never saved a User Profile is asked before the Deck, and st
 
   // Both groups default to everything selected, which is the Acceptance Criterion: stating
   // nothing read back as every box checked, not as a blank form.
-  await expect(page.getByRole("checkbox", { name: "ai-ml" })).toBeChecked();
-  await expect(page.getByRole("checkbox", { name: "seed" })).toBeChecked();
+  //
+  // `exact` is load-bearing on every name matched in this file. Playwright's `name` option is a
+  // case-insensitive *substring* match by default, and this screen renders a closed list with
+  // values that contain each other: "seed" is a substring of "pre-seed", so without `exact` the
+  // locator resolves to two checkboxes and fails on strict mode rather than on the assertion.
+  await expect(
+    page.getByRole("checkbox", { name: "ai-ml", exact: true }),
+  ).toBeChecked();
+  await expect(
+    page.getByRole("checkbox", { name: "seed", exact: true }),
+  ).toBeChecked();
 
   await page.getByRole("button", { name: "Save and see my Deck" }).click();
 
@@ -73,15 +82,23 @@ test("skipping is one click, saves every preference empty, and is still editable
   await page.getByRole("link", { name: "Settings" }).click();
   await expect(page).toHaveURL(`${app.baseURL}/settings`);
 
-  const sectors = page.getByRole("group", { name: "Sectors" });
+  // `exact` matters twice over here. Settings renders three fieldsets — "Sectors", "Excluded
+  // sectors" and "Stages" — so a substring match on "Sectors" selects two groups and every
+  // checkbox lookup inside it then resolves to two elements. Scoping the Stage to its own group
+  // rather than the page keeps that assertion honest about which control it read.
+  const sectors = page.getByRole("group", { name: "Sectors", exact: true });
+  const stages = page.getByRole("group", { name: "Stages", exact: true });
+
   await expect(
-    sectors.getByRole("checkbox", { name: "ai-ml" }),
+    sectors.getByRole("checkbox", { name: "ai-ml", exact: true }),
   ).not.toBeChecked();
-  await expect(page.getByRole("checkbox", { name: "seed" })).not.toBeChecked();
+  await expect(
+    stages.getByRole("checkbox", { name: "seed", exact: true }),
+  ).not.toBeChecked();
 
   // Not a one-time-only screen: the User who skipped can still state a preference later from
   // the same Settings page everyone else edits.
-  await sectors.getByRole("checkbox", { name: "fintech" }).click();
+  await sectors.getByRole("checkbox", { name: "fintech", exact: true }).click();
   await page.getByRole("button", { name: /save/i }).click();
   await expect(page.getByRole("status")).toContainText("Saved.");
 });
