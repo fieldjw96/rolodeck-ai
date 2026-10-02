@@ -14,7 +14,11 @@
 
 ## Running it locally
 
-Copy `.env.example` to `.env.local` and fill in the Supabase values, then `npm run dev`.
+Set the variables `.env.example` lists, then `npm run dev`. Put the secret ones in
+machine-level environment variables or under `C:\agent-secrets` rather than in a `.env.local`
+here: this working directory is OneDrive-synced, and CLAUDE.md does not allow a credential in
+it. See `docs/deploying.md`, "Running the app locally, without putting a credential in
+OneDrive".
 
 Every route is behind Supabase Auth except `/login` and `/auth/callback`. Sign-up is open and
 runs through Google SSO, which needs a Google OAuth client and the Supabase project's Google
@@ -42,7 +46,7 @@ create and delete users through the Admin API.
 - `npm run test` runs Vitest, unit and integration, against an in-process Postgres and the
   stub Supabase Auth backend from the section above. Nothing needs to be running first.
 - `npm run test:e2e` runs Playwright against that same stub; the suite builds and starts its
-  own server, so it needs no `.env.local` either.
+  own server, so it needs no database connection either.
 - `npm run test:e2e:db` runs Playwright's swipe-flow suite (Ticket #13) against a real
   Postgres instead. Point `DATABASE_URL` at a scratch database, apply
   `db/testing/supabase-shim.sql` to it first (the same as `npm run db:migrate`; see "Database"
