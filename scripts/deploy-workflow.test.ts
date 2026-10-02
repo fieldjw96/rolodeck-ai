@@ -177,6 +177,7 @@ describe("the production deploy workflow", () => {
       "link",
       "environment",
       "migrate",
+      "verify_app_role",
       "tip_before_deploy",
       "deploy",
       "smoke",
@@ -184,13 +185,15 @@ describe("the production deploy workflow", () => {
     expect(order).toEqual([...order].sort((a, b) => a - b));
   });
 
-  it("puts nothing between the migration and the deploy but the tip-of-main check", () => {
+  it("puts nothing between the migration and the deploy but the app-role and tip-of-main checks", () => {
     // Once the schema has moved, anything that fails before the deploy strands it ahead of the
-    // running code. The check is the one exception, and it is deliberate.
+    // running code. Those two checks are the deliberate exceptions: the app's role cannot be
+    // verified until the migration that creates it has run (Ticket #203), and the tip-of-main
+    // check is repeated because migrating took time.
     const between = job.steps
       .slice(indexOf("migrate") + 1, indexOf("deploy"))
       .map((s) => s.id);
-    expect(between).toEqual(["tip_before_deploy"]);
+    expect(between).toEqual(["verify_app_role", "tip_before_deploy"]);
   });
 
   it("lets nothing run after a failed step except the failure report", () => {
@@ -219,19 +222,15 @@ describe("the production deploy workflow", () => {
     }
   });
 
-  it("refuses a pooler URL that does not log in as the app's own role", () => {
-    // Ticket #188: this secret becomes the running app's DATABASE_URL, and `readDatabaseUrl()`
-    // refuses a string that does not log in as `rolodeck_app`, which cannot bypass RLS. The
-    // preflight asks the same question where failing costs nothing, so the alternative — a
-    // green deploy whose every request 500s — cannot happen. Built from the constant the app
-    // reads, so renaming the role without revisiting this file fails here.
+  it("does not demand the app's role before the migration that creates it exists", () => {
+    // Ticket #203: migration 0012 creates `rolodeck_app`. A database that has never run it has
+    // no such role, so a check for it here would refuse every first deploy forever. The
+    // preflight may still check that MIGRATION_DATABASE_URL is the privileged connection, and
+    // that both URLs are present and shaped like pooler URLs, since neither depends on a
+    // migration having run.
     const run = step("preflight").run ?? "";
-    expect(run).toContain(`${APP_ROLE}:*|${APP_ROLE}.*|${APP_ROLE}@*`);
-    expect(run).toContain(`SUPABASE_POOLER_URL must log in as ${APP_ROLE}`);
-    // A parameter sent to Postgres at login can replace the user the check above just read.
-    expect(run).toContain(
-      "SUPABASE_POOLER_URL may carry no query parameter but sslmode",
-    );
+    expect(run).not.toContain(`${APP_ROLE}:*|${APP_ROLE}.*|${APP_ROLE}@*`);
+    expect(run).not.toContain(`SUPABASE_POOLER_URL must log in as ${APP_ROLE}`);
     // And the migration credential must not be narrowed to it: applying DDL needs rights the
     // app's role deliberately lacks, which is why ADR 0014 keeps the two apart.
     expect(run).toContain(
@@ -239,6 +238,25 @@ describe("the production deploy workflow", () => {
     );
     // Before anything that writes to production, which the step order above already fixes.
     expect(indexOf("preflight")).toBeLessThan(indexOf("environment"));
+  });
+
+  it("verifies the app's role only after migrations have applied, and before the deploy ships", () => {
+    // Ticket #203: the deadlock was the preflight demanding a role that migration 0012 creates,
+    // before that migration had run. This check runs after `migrate` instead, so a first
+    // bootstrap's migration gets to run, and still fails before `deploy` so a wrong role is
+    // never shippable. Built from the constant the app reads, so renaming the role without
+    // revisiting this file fails here.
+    const run = step("verify_app_role").run ?? "";
+    expect(run).toContain(`${APP_ROLE}:*|${APP_ROLE}.*|${APP_ROLE}@*`);
+    expect(run).toContain(`SUPABASE_POOLER_URL must log in as ${APP_ROLE}`);
+    // The reader needs to know which half of the deploy already happened.
+    expect(run).toContain("Migrations have already been applied");
+    // A parameter sent to Postgres at login can replace the user the check above just read.
+    expect(run).toContain(
+      "SUPABASE_POOLER_URL may carry no query parameter but sslmode",
+    );
+    expect(indexOf("migrate")).toBeLessThan(indexOf("verify_app_role"));
+    expect(indexOf("verify_app_role")).toBeLessThan(indexOf("deploy"));
   });
 
   it("migrates with the migration credential and never applies the test shim", () => {
