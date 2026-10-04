@@ -23,10 +23,6 @@ type ProfileCardProps = {
   founders?: readonly Founder[] | null;
   /** The company's own links beyond `website`. Null or absent when the Source stated none. */
   links?: CompanyLinks | null;
-  /** The year the company was founded. No Source stores one yet, so it reads "Not stated". */
-  founded?: number | null;
-  /** Headcount beyond the founders. No Source stores one yet, so it reads "Not stated". */
-  staff?: number | null;
   /** The Deck's card is the page's only subject and carries its `h1`; the Watchlist's cards
    * sit under a heading of their own, so theirs are one level down. */
   headingLevel: 1 | 2;
@@ -126,8 +122,6 @@ function FullCard({
   website,
   founders,
   links,
-  founded,
-  staff,
   headingLevel,
 }: ProfileCardProps) {
   const Heading = headingLevel === 1 ? "h1" : "h2";
@@ -187,9 +181,6 @@ function FullCard({
           </ul>
           <p className={styles.headcount}>
             {countOf(stated.length, "founder")}
-            {staff === null || staff === undefined
-              ? null
-              : ` · ${countOf(staff, "staff", "staff")}`}
           </p>
         </div>
       )}
@@ -228,12 +219,6 @@ function FullCard({
               sector={sector}
               stage={stage}
               location={location}
-              founded={founded}
-              teamSize={
-                staff === null || staff === undefined
-                  ? null
-                  : stated.length + staff
-              }
             />
           ) : tab === "team" ? (
             <TeamPanel founders={stated} />
@@ -251,15 +236,11 @@ function CompanyPanel({
   sector,
   stage,
   location,
-  founded,
-  teamSize,
 }: {
   description: string | undefined;
   sector: string;
   stage: string;
   location: string | null | undefined;
-  founded: number | null | undefined;
-  teamSize: number | null;
 }) {
   return (
     <>
@@ -268,8 +249,6 @@ function CompanyPanel({
           <dt className={styles.fieldLabel}>Stage</dt>
           <StageValue stage={stage} className={styles.figureValue} />
         </div>
-        <Figure label="Founded" value={founded} />
-        <Figure label="Team" value={teamSize} />
         {location === null || location === undefined ? null : (
           <div className={styles.figure}>
             <dt className={styles.fieldLabel}>Location</dt>
@@ -303,27 +282,6 @@ export function firstSentence(description: string): string {
   const trimmed = description.trim();
   const end = /[.!?](?=\s)/.exec(trimmed);
   return end === null ? trimmed : trimmed.slice(0, end.index + 1);
-}
-
-function Figure({
-  label,
-  value,
-}: {
-  label: string;
-  value: number | null | undefined;
-}) {
-  return (
-    <div className={styles.figure}>
-      <dt className={styles.fieldLabel}>{label}</dt>
-      {value === null || value === undefined ? (
-        <dd className={`${styles.figureValue} ${styles.notStated}`}>
-          Not stated
-        </dd>
-      ) : (
-        <dd className={styles.figureValue}>{value}</dd>
-      )}
-    </div>
-  );
 }
 
 function TeamPanel({ founders }: { founders: readonly Founder[] }) {
