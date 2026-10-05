@@ -299,25 +299,26 @@ describe("the full card", () => {
     expect(screen.getByText("2 founders")).toBeInTheDocument();
   });
 
-  it("counts staff beside the founders when a headcount is given", () => {
-    renderFull({ staff: 3 });
-
-    expect(screen.getByText("2 founders · 3 staff")).toBeInTheDocument();
-    expect(
-      screen.getByText("Team", { selector: "dt" }).nextElementSibling,
-    ).toHaveTextContent(/^5$/);
-  });
-
-  it("shows Stage, Founded and Team as figures on the Company panel, then the sector", () => {
-    renderFull({ founded: 2014 });
+  it("shows Stage as the only figure on the Company panel, then the sector", () => {
+    renderFull();
 
     const panel = screen.getByRole("tabpanel", { name: "Company" });
-    const valueOf = (label: string) =>
-      within(panel).getByText(label, { selector: "dt" }).nextElementSibling;
 
-    expect(valueOf("Stage")).toHaveTextContent("seed");
-    expect(valueOf("Founded")).toHaveTextContent("2014");
-    expect(valueOf("Team")).toHaveTextContent("Not stated");
+    expect(
+      within(panel).getByText("Stage", { selector: "dt" }).nextElementSibling,
+    ).toHaveTextContent("seed");
+
+    // Founded and Team used to sit here and could only ever read "Not stated": no Source
+    // stores either, so no caller passed either, and the card asserted its own emptiness
+    // twice on every Profile. The founders themselves are the Team *tab*, which is a
+    // different thing and still there.
+    expect(
+      within(panel).queryByText("Founded", { selector: "dt" }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(panel).queryByText("Team", { selector: "dt" }),
+    ).not.toBeInTheDocument();
+
     expect(
       within(within(panel).getByRole("list", { name: "Sectors" })).getByText(
         "B2B",
