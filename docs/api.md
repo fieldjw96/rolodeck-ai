@@ -31,6 +31,9 @@ inline script runs unless Next put it there), plus `X-Content-Type-Options: nosn
 `lib/http/security-headers.ts` and applied by the gate. See `docs/adr/0006`, which also explains
 why the rate limit is where it is and what it does not cover.
 
-CI runs `npm audit --audit-level=high` on every pull request, and `npm run check:bundle-secrets`
-after the build, which greps the client output for the names and values of anything that must
-stay on the server. Run that one yourself after `npm run build`.
+CI runs two audits on every pull request. `npm audit --omit=dev --audit-level=high` blocks a
+merge and covers everything that ships; a second, non-blocking step audits the whole tree
+including dev tooling and marks the job rather than failing it. See `docs/adr/0022` for why they
+are split and what that gives up. CI also runs `npm run check:bundle-secrets` after the build,
+which greps the client output for the names and values of anything that must stay on the server.
+Run that one yourself after `npm run build`.

@@ -37,6 +37,10 @@ dev server a remote `vercel deploy` never runs locally, and `package.json`'s `ov
 each to a patched release so `npm audit` stays clean. Every one stays within its major except
 undici, 5 to 6, which the CLI itself loads only when an HTTP proxy is configured.
 
+That mechanism only works where a patched release exists to point at, which is not always. See
+`docs/adr/0022`: the CI gate now covers what ships and reports the rest, because an advisory
+with no fix anywhere in the dev tree had otherwise frozen the whole repository.
+
 A failed migration means no deploy. Any failure, or a cancelled run such as one that hits the
 job's 30-minute timeout, opens an issue titled
 `Deploy to production failed: <step>` linking the run; while that issue is open, a repeat
