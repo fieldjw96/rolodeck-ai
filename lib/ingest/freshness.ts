@@ -202,7 +202,7 @@ export function describeLateSource(report: LateSourceReport): string {
   const { source, freshness } = report;
 
   const lastSuccess =
-    freshness.lastSuccessAt === null
+    freshness.verdict === "never-succeeded"
       ? "It has never completed successfully"
       : `It last completed successfully at ${moment(freshness.lastSuccessAt)}`;
 
