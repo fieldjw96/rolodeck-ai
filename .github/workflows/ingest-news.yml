@@ -1,9 +1,9 @@
 # Daily: News goes stale by definition. See docs/ingest.md's "Scheduled runs" for the full list.
 #
 # A zero-article run is not a failure here, unlike every other Source: lib/news/run.ts's
-# `newsRunFailed` only trips when not one feed in `NEWS_FEEDS` could be fetched and parsed.
-# Until something is Kept there is nothing to match a feed's articles against, and after that a
-# quiet month for a two-person startup is a legitimate answer. A feed that has changed shape does
+# `newsRunFailures` only trips when not one feed in `NEWS_FEEDS` could be fetched and parsed, or
+# when every history search it tried failed. A quiet month for a two-person startup is a
+# legitimate answer, whoever is watching it. A feed that has changed shape does
 # not quietly return nothing: it fails to parse, by name. When every feed fails that fails the
 # run; when others were read it is named in the job summary. See that file's own comment.
 
@@ -29,6 +29,6 @@ jobs:
       source-name: news
       npm-script: ingest:news
     secrets:
+      # The only credential News needs. Gathering is for the whole Catalogue, so there is no
+      # User to name: ADR 0022 removed ROLODECK_NEWS_KEEPS_USER_ID.
       ROLODECK_INGEST_DATABASE_URL: ${{ secrets.ROLODECK_INGEST_DATABASE_URL }}
-      # News alone needs this: gathering is driven by one User's Keeps, per ADR 0019.
-      ROLODECK_NEWS_KEEPS_USER_ID: ${{ secrets.ROLODECK_NEWS_KEEPS_USER_ID }}

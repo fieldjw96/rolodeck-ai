@@ -1,11 +1,10 @@
 import { closeIngestDb, getIngestDb } from "../db/ingest-connection";
 import { describeFailure } from "../lib/ingest/driver-error";
-import { readNewsKeepsUserId } from "../lib/news/env";
 import { createNewsFeedClient } from "../lib/news/feed-fetch";
 import { NEWS_FEEDS } from "../lib/news/feeds";
 import { createHistorySearchClient } from "../lib/news/history-search-fetch";
 import {
-  fetchNewsForKeptProfiles,
+  fetchNewsForTheCatalogue,
   newsRunFailures,
   summariseNewsRun,
 } from "../lib/news/run";
@@ -20,19 +19,18 @@ import {
  * `lib/news/feeds.ts`; the search, and why its queries are what they are, is
  * `lib/news/history-search.ts`.
  *
- *     ROLODECK_INGEST_DATABASE_URL=... ROLODECK_NEWS_KEEPS_USER_ID=... npm run ingest:news
+ *     ROLODECK_INGEST_DATABASE_URL=... npm run ingest:news
  *
- * Exits non-zero when not one feed could be read, or when there was a company to search for and
- * not one search succeeded, saying which. A feed or a search that failed beside one that did not
- * is named in the output, and a run that matched nothing is not a failure. See
+ * One credential and no other environment: News gathers for the whole Catalogue, so there is no
+ * User to name. `ROLODECK_NEWS_KEEPS_USER_ID` was that User and is gone — see docs/adr/0022.
+ *
+ * Exits non-zero when not one feed could be read, or when there was a Company Profile to search
+ * for and not one search succeeded, saying which. A feed or a search that failed beside one that
+ * did not is named in the output, and a run that matched nothing is not a failure. See
  * `newsRunFailures`.
  */
 async function main(): Promise<void> {
-  // Read before anything is fetched, so a missing or malformed id fails on the first line.
-  const keepsUserId = readNewsKeepsUserId();
-
-  const report = await fetchNewsForKeptProfiles(await getIngestDb(), {
-    keepsUserId,
+  const report = await fetchNewsForTheCatalogue(await getIngestDb(), {
     feeds: NEWS_FEEDS,
     client: createNewsFeedClient(),
     search: createHistorySearchClient(),

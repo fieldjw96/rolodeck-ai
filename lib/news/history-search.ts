@@ -6,10 +6,12 @@ import { issueField } from "../zod/issues";
 import type { NewsArticle } from "./feeds";
 
 /**
- * News's second path: a search over a year of Hacker News, run once per Kept Company Profile,
- * beside the feeds `feeds.ts` reads. A feed carries what published today; this is what lets News
- * answer "what has been said about this company" rather than only "was it in today's headlines".
- * See docs/adr/0018, which amends docs/adr/0015 on exactly this point.
+ * News's second path: a search over two years of Hacker News, run once for each Company Profile
+ * in the Catalogue, beside the feeds `feeds.ts` reads. A feed carries what published today; this
+ * is what lets News answer "what has been said about this company" rather than only "was it in
+ * today's headlines". See docs/adr/0018, which amends docs/adr/0015 on exactly this point, and
+ * docs/adr/0022, which widened the window to two years and the subject from one account's Keeps
+ * to the whole Catalogue, once each.
  *
  * Parsing only, like `feeds.ts`: this builds the query urls and validates what comes back, and
  * nothing here fetches. Fetching is `history-search-fetch.ts`; scoring and storing is `run.ts`,
@@ -70,8 +72,21 @@ import type { NewsArticle } from "./feeds";
 
 export const HN_SEARCH_ENDPOINT = "https://hn.algolia.com/api/v1/search";
 
-/** The window searched: the last twelve months. */
-export const HISTORY_WINDOW_DAYS = 365;
+/** The window searched: the last two years. */
+export const HISTORY_WINDOW_DAYS = 730;
+
+/**
+ * How many Company Profiles one run searches for. The rest wait for the next run, oldest-created
+ * first, and the run summary says how many are waiting. See docs/adr/0022.
+ *
+ * The arithmetic: at most two requests per Profile (`historyQueries`), at one request a second
+ * (`history-search-fetch.ts`), so 200 Profiles is at most 400 seconds — under seven minutes of a
+ * job whose timeout is GitHub's six-hour default, leaving the rest of it to the feeds, the
+ * scoring and the writes. The cap exists to bound one run, not to ration the searching: a
+ * thousand-company Catalogue is covered in five days of daily runs, and every Company Profile
+ * after that is searched for on the first run that sees it.
+ */
+export const HISTORY_SEARCHES_PER_RUN = 200;
 
 /**
  * The most relevant hits one query stores. Relevance-ranked, so the cap keeps the best of a
@@ -81,9 +96,13 @@ export const HISTORY_WINDOW_DAYS = 365;
 export const HITS_PER_QUERY = 50;
 
 /**
- * More titles than this in a year carrying the name is a name too common to search by. Twice the
- * most any Kept company measured had (Blacksmith, 5), and under the fewest any common-word name
- * had (Juno, 13). See the header.
+ * More titles than this carrying the name is a name too common to search by. Twice the most any
+ * company measured had (Blacksmith, 5 in a year), and under the fewest any common-word name had
+ * (Juno, 13). See the header.
+ *
+ * Unchanged by the window doubling to two years (docs/adr/0022), which makes it a stricter test
+ * than it was rather than a looser one: the same ten titles now cover twice as long. Retuning it
+ * is a measurement, not a guess, and belongs with the next one taken against the real API.
  */
 export const MAX_TITLE_HITS = 10;
 
@@ -92,7 +111,7 @@ const DAY_MS = 24 * 60 * 60 * 1_000;
 /** `news_items.source_name` for a text post, which has no link of its own. */
 const HACKER_NEWS = "Hacker News";
 
-/** A Kept Company Profile, as much of it as the search needs. */
+/** A Company Profile, as much of it as the search needs. */
 export type SearchSubject = {
   readonly name: string;
   readonly website: string | null;
