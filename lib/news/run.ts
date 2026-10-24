@@ -102,8 +102,10 @@ export type NewsRunReport = {
   /** Each search's articles against the Company Profile it searched for. */
   readonly fromSearches: NewsPathScores;
   /**
-   * Feed articles that cleared `NEWS_DISPLAY_THRESHOLD` against more than one Company Profile.
-   * A matcher misfiring at Catalogue scale shows up here rather than only on somebody's page.
+   * Feed articles that cleared `NEWS_DISPLAY_THRESHOLD` against more than one Company Profile in
+   * this run's scoring. A matcher misfiring at Catalogue scale shows up here rather than only on
+   * somebody's page. Per run, not per article's lifetime: an article scored against one company
+   * today and another next month is one each time, which is what makes a run's own log readable.
    */
   readonly onSeveralCompanies: number;
   readonly inserted: number;

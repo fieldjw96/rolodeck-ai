@@ -49,8 +49,9 @@ DROP FUNCTION ingest.kept_profile_ids(uuid);--> statement-breakpoint
 DROP SCHEMA ingest;--> statement-breakpoint
 -- The role must be exactly what the migrations say, on whatever database this runs against,
 -- including the real Supabase project where the tests never run. The same shape of check
--- `0008_ingest_role` ends with, over the six tables ingest now writes, plus the one thing this
--- migration is meant to have taken away: the right to execute anything at all.
+-- `0008_ingest_role` ends with, over the six tables ingest now writes rather than the four it
+-- did. What this migration takes away — the right to execute anything at all — is checked by
+-- `db/testing/ingest-role-check.sql` instead, for the reason the end of this block gives.
 DO $$
 DECLARE
   ingest_role oid := (SELECT oid FROM pg_roles WHERE rolname = 'rolodeck_ingest');

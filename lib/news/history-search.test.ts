@@ -14,14 +14,35 @@ import {
 
 /**
  * `db/fixtures/news-search-blacksmith-{site,title}.json` are real responses, taken with `curl`
- * on 2026-09-20 from exactly the urls `historyQueries` builds for Blacksmith as of that day,
- * which each `.meta.json` records. Blacksmith is a Kept company with a site of its own and a name
+ * on 2026-09-20 from exactly the urls `historyQueries` built for Blacksmith as of that day,
+ * which each `.meta.json` records. Blacksmith is a company with a site of its own and a name
  * that is also a word, so its two captures carry both what the queries are for and the noise
  * they have to live with.
  */
 
 const CAPTURED = new Date("2026-09-20T00:00:00Z");
 const BLACKSMITH = { name: "Blacksmith", website: "https://blacksmith.sh/" };
+
+/**
+ * The search window in force when the captures were taken. docs/adr/0022 widened
+ * `HISTORY_WINDOW_DAYS` to 730 afterwards, and a capture cannot be re-taken for a day that has
+ * gone: `curl` against this API answers with today's Hacker News, not 2026-09-20's. So the url
+ * each capture records is compared against the query this code builds with the window of the day
+ * it was taken. What the captures are the authority on — the shape of a response, and the noise
+ * a name like this one attracts — the window does not touch.
+ */
+const CAPTURED_WINDOW_DAYS = 365;
+
+/** `url` with its window moved back to the one the captures were taken under. */
+function asCaptured(url: string): string {
+  const moved = new URL(url);
+  const since =
+    Math.floor(CAPTURED.getTime() / 1_000) - CAPTURED_WINDOW_DAYS * 86_400;
+
+  moved.searchParams.set("numericFilters", `created_at_i>=${since}`);
+
+  return moved.toString();
+}
 
 const queryOf = (kind: HistoryQuery["kind"]): HistoryQuery =>
   historyQueries(BLACKSMITH, CAPTURED).find((query) => query.kind === kind)!;
@@ -80,7 +101,7 @@ describe("historyQueries", () => {
     });
   });
 
-  it("constrains every query to stories, no typos, the last twelve months and a capped page", () => {
+  it("constrains every query to stories, no typos, the last two years and a capped page", () => {
     const since = CAPTURED.getTime() / 1_000 - HISTORY_WINDOW_DAYS * 86_400;
 
     for (const query of historyQueries(BLACKSMITH, CAPTURED)) {
@@ -96,7 +117,7 @@ describe("historyQueries", () => {
         hitsPerPage: String(HITS_PER_QUERY),
       });
     }
-    expect(HISTORY_WINDOW_DAYS).toBe(365);
+    expect(HISTORY_WINDOW_DAYS).toBe(730);
   });
 
   it("searches by name alone when there is no site of the company's own", () => {
@@ -123,7 +144,7 @@ describe("parseHistorySearch, against the real captures", () => {
     for (const kind of ["site", "title"] as const) {
       const fixture = await readNewsSearchFixture(`blacksmith-${kind}`);
       expect(fixture.capture).toEqual({
-        sourceUrl: queryOf(kind).url,
+        sourceUrl: asCaptured(queryOf(kind).url),
         capturedAt: "2026-09-20",
       });
     }

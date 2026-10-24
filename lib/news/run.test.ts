@@ -224,6 +224,37 @@ describe("fetchNewsForTheCatalogue", () => {
     });
   });
 
+  it("attributes one article to the one Company Profile of three that it is about", async () => {
+    const ramp = await companyProfile("Ramp", "fintech");
+    await companyProfile("Mercury", "fintech");
+    await companyProfile("Quiet Co", "other");
+
+    const { client } = fakeClient({
+      [WIRE.url]: rss(
+        item(
+          "Ramp raises $150 million to expand its corporate card and expense platform",
+          "https://wire.example/ramp-raises",
+        ),
+      ),
+    });
+
+    const report = await run({ client });
+
+    // Three pairs scored, one stored: the two the matcher placed at zero are counted and
+    // dropped, per docs/adr/0022, and the article itself is kept whoever it was about.
+    expect(report).toMatchObject({
+      fromFeeds: { candidates: 3, shown: 1 },
+      inserted: 1,
+      unattributed: 2,
+      articles: { stored: 1, fresh: 1 },
+    });
+
+    const stored = await scratch.db.select().from(newsItems);
+    expect(stored).toHaveLength(1);
+    expect(stored[0]?.profileId).toBe(ramp);
+    expect(await scratch.db.select().from(newsArticles)).toHaveLength(1);
+  });
+
   it("proves the Ticket's outcome: a User Keeps a company nobody else has, and finds its News", async () => {
     const ramp = await companyProfile("Ramp", "fintech");
     // Kept by the second User and by nobody else. Under docs/adr/0019 this gathered nothing.
