@@ -2,11 +2,17 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { persistEvents } from "./events";
-import { persistNewsItems } from "./news";
+import {
+  persistNewsArticles,
+  persistNewsItems,
+  recordNewsCoverage,
+} from "./news";
 import {
   eventAttendances,
   events,
+  newsArticles,
   newsItems,
+  newsProfileCoverage,
   profiles,
   swipes,
   userProfiles,
@@ -33,6 +39,8 @@ const TABLES = {
   swipes,
   user_profiles: userProfiles,
   news_items: newsItems,
+  news_articles: newsArticles,
+  news_profile_coverage: newsProfileCoverage,
   events,
   event_attendances: eventAttendances,
 };
@@ -49,6 +57,17 @@ beforeAll(async () => {
     .insert(swipes)
     .values({ userId: JACK, profileId: profileId!, decision: "keep" });
   await scratch.db.insert(userProfiles).values({ userId: JACK });
+  await persistNewsArticles(scratch.db, {
+    articles: [
+      {
+        title: "Startup 0 raises a round",
+        description: null,
+        url: "https://news.example/startup-0",
+        publishedAt: new Date("2026-09-01T12:00:00Z"),
+        sourceName: "The Example Times",
+      },
+    ],
+  });
   await persistNewsItems(scratch.db, {
     candidates: [
       {
@@ -62,6 +81,7 @@ beforeAll(async () => {
       },
     ],
   });
+  await recordNewsCoverage(scratch.db, [profileId!]);
   await persistEvents(scratch.db, {
     source: "luma",
     events: [

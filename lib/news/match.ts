@@ -1,16 +1,18 @@
 import { sectorSchema, type Sector } from "../../db/profile-input";
 
 /**
- * How sure News has to be that an article is about a Kept Company Profile before the owner is
- * shown it. The one place this number lives: the read path in `db/news.ts` imports it, and
- * nothing else compares a `confidence` against a literal.
+ * How sure News has to be that an article is about a Company Profile before a User who Keeps it
+ * is shown the article. The one place this number lives: the read path in `db/news.ts` imports
+ * it, and nothing else compares a `confidence` against a literal.
  *
  * 0.6 is the score of the weakest article this rule can be said to have *placed*: the name
  * mentioned in the headline plus one term from the company's own Sector. The article just
  * below it — the name in the headline plus generic business words ("raises", "CEO"), with no
  * Sector evidence — is exactly what a bigger company sharing the name also produces, so it is
- * stored and not shown. See docs/adr/0010, and expect this to be retuned: every candidate is
- * stored with its score so that retuning is a change to this constant rather than a re-fetch.
+ * stored and not shown. See docs/adr/0010, and expect this to be retuned: every article is
+ * stored, and every pair the rule placed at all is stored with its score, so that retuning is a
+ * change to this constant rather than a re-fetch. See docs/adr/0022 for why the pairs scoring
+ * exactly zero are counted in the run log rather than stored.
  */
 export const NEWS_DISPLAY_THRESHOLD = 0.6;
 

@@ -15,8 +15,8 @@ The codebase is written by AI agents, working from GitHub issues through
 - **Deck**: company profiles, ranked and dealt one at a time. Every field records its source
   and the date it was captured.
 - **Watchlist**: the companies you've Kept.
-- **News**: articles from publisher RSS feeds and a year of Hacker News, matched to Kept
-  companies and scored for confidence.
+- **News**: articles from publisher RSS feeds and two years of Hacker News, gathered for every
+  company in the Catalogue, scored for confidence, and shown for the ones you've Kept.
 - **Diary**: upcoming Bay Area events from Luma calendars and Techmeme, linked to the
   companies hosting them.
 

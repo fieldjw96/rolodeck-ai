@@ -2,9 +2,26 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import { NEWS_DISPLAY_THRESHOLD } from "../lib/news/match";
-import { persistNewsItems, readNews, type NewsCandidate } from "./news";
+import {
+  persistNewsArticles,
+  persistNewsItems,
+  readCatalogueCompaniesForNews,
+  readNews,
+  readNewsCoveredProfileIds,
+  readStoredNewsArticles,
+  recordNewsCoverage,
+  type NewsArticleInput,
+  type NewsCandidate,
+} from "./news";
 import { asUser } from "./rls";
-import { newsItems, profiles, swipes, type SwipeDecision } from "./schema";
+import {
+  newsArticles,
+  newsItems,
+  newsProfileCoverage,
+  profiles,
+  swipes,
+  type SwipeDecision,
+} from "./schema";
 import { createScratchDb, type ScratchDb } from "./testing/scratch-db";
 import { seedProfiles } from "./testing/seed-profiles";
 
@@ -41,6 +58,21 @@ const swipe = (
   userId = JACK,
 ) => scratch.db.insert(swipes).values({ userId, profileId, decision });
 
+/** The `day`-th article as `news_articles` stores it: no company and no score. */
+function article(
+  day: number,
+  overrides: Partial<NewsArticleInput> = {},
+): NewsArticleInput {
+  return {
+    title: `Headline ${day}`,
+    description: "A standfirst.",
+    url: `https://news.example/articles/${day}`,
+    publishedAt: new Date(FIRST_PUBLISHED + day * A_DAY),
+    sourceName: "The Example Times",
+    ...overrides,
+  };
+}
+
 const storedRows = () => scratch.db.select().from(newsItems);
 
 const titles = (groups: Awaited<ReturnType<typeof readNews>>) =>
@@ -62,12 +94,133 @@ afterAll(async () => {
 beforeEach(async () => {
   await scratch.reset();
   await scratch.db.delete(newsItems);
+  await scratch.db.delete(newsArticles);
+  await scratch.db.delete(newsProfileCoverage);
   await scratch.db.delete(swipes);
   await scratch.db.delete(profiles);
 });
 
+describe("persistNewsArticles", () => {
+  it("stores an article whether or not it matches anything, and the same feed twice stores each once", async () => {
+    const batch = [article(1), article(2)];
+
+    const first = await persistNewsArticles(scratch.db, { articles: batch });
+    const second = await persistNewsArticles(scratch.db, { articles: batch });
+
+    expect(first).toMatchObject({ inserted: 2, updated: 0, rejected: 0 });
+    expect(first.fresh.map((row) => row.url)).toEqual([
+      "https://news.example/articles/1",
+      "https://news.example/articles/2",
+    ]);
+    // Nothing was attributed to any company, and the articles are stored all the same.
+    expect(await storedRows()).toEqual([]);
+    expect(await scratch.db.select().from(newsArticles)).toHaveLength(2);
+
+    expect(second).toMatchObject({ inserted: 0, updated: 2 });
+    expect(second.fresh).toEqual([]);
+    expect(await scratch.db.select().from(newsArticles)).toHaveLength(2);
+  });
+
+  it("treats a url repeated within one batch as one article, and counts it fresh once", async () => {
+    const report = await persistNewsArticles(scratch.db, {
+      articles: [article(1), article(1)],
+    });
+
+    expect(report).toMatchObject({ inserted: 1, updated: 1 });
+    expect(report.fresh).toHaveLength(1);
+  });
+
+  it("updates a corrected headline but not when the article was first read", async () => {
+    await persistNewsArticles(scratch.db, { articles: [article(1)] });
+    const [before] = await scratch.db.select().from(newsArticles);
+
+    await persistNewsArticles(scratch.db, {
+      articles: [article(1, { title: "A corrected headline" })],
+    });
+    const rows = await scratch.db.select().from(newsArticles);
+
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      title: "A corrected headline",
+      fetchedAt: before!.fetchedAt,
+    });
+  });
+
+  it("rejects an article by field name and writes the rest of the batch", async () => {
+    const report = await persistNewsArticles(scratch.db, {
+      articles: [
+        article(1, { url: "javascript:alert(1)" }),
+        article(2, { sourceName: " " }),
+        article(3),
+      ],
+    });
+
+    expect(report.rejections.map((rejection) => rejection.field)).toEqual([
+      "url",
+      "sourceName",
+    ]);
+    expect(report).toMatchObject({ inserted: 1, rejected: 2 });
+  });
+
+  it("reads back every stored article, newest first", async () => {
+    await persistNewsArticles(scratch.db, {
+      articles: [article(1), article(5), article(3)],
+    });
+
+    expect(
+      (await readStoredNewsArticles(scratch.db)).map((row) => row.title),
+    ).toEqual(["Headline 5", "Headline 3", "Headline 1"]);
+  });
+});
+
+describe("news coverage", () => {
+  it("records a Company Profile once and reads it back", async () => {
+    const [first, second] = await seedProfiles(scratch.db, { count: 2 });
+
+    expect(await readNewsCoveredProfileIds(scratch.db)).toEqual(new Set());
+
+    expect(await recordNewsCoverage(scratch.db, [first!, second!])).toBe(2);
+    // Already recorded: a second run says the same thing and adds nothing.
+    expect(await recordNewsCoverage(scratch.db, [first!])).toBe(0);
+    expect(await recordNewsCoverage(scratch.db, [])).toBe(0);
+
+    expect(await readNewsCoveredProfileIds(scratch.db)).toEqual(
+      new Set([first, second]),
+    );
+  });
+
+  it("is not inferred from whether the Profile has any News", async () => {
+    const [quiet] = await seedProfiles(scratch.db, { count: 1 });
+    await recordNewsCoverage(scratch.db, [quiet!]);
+
+    // Nothing was ever found about it, which is the ordinary outcome and not a reason to
+    // search again: docs/adr/0022.
+    expect(await storedRows()).toEqual([]);
+    expect(await readNewsCoveredProfileIds(scratch.db)).toEqual(
+      new Set([quiet]),
+    );
+  });
+});
+
+describe("readCatalogueCompaniesForNews", () => {
+  it("answers with every Company Profile, swiped or not, oldest created first", async () => {
+    const ids = await seedProfiles(scratch.db, { count: 3 });
+    await swipe(ids[1]!, "pass");
+    await swipe(ids[2]!, "keep", SOMEONE_ELSE);
+
+    const catalogue = await readCatalogueCompaniesForNews(scratch.db);
+
+    expect(catalogue.map((company) => company.name)).toEqual([
+      "Startup 0",
+      "Startup 1",
+      "Startup 2",
+    ]);
+    expect(catalogue.map((company) => company.id)).toEqual(ids);
+  });
+});
+
 describe("persistNewsItems", () => {
-  it("stores every candidate however low its confidence", async () => {
+  it("stores a candidate the matcher placed at all, and counts the ones it scored zero", async () => {
     const [id] = await seedProfiles(scratch.db, { count: 1 });
 
     const report = await persistNewsItems(scratch.db, {
@@ -79,14 +232,33 @@ describe("persistNewsItems", () => {
     });
 
     expect(report).toEqual({
-      inserted: 3,
+      inserted: 2,
       updated: 0,
+      unattributed: 1,
       rejected: 0,
       rejections: [],
     });
 
     const rows = await storedRows();
-    expect(rows.map((row) => row.confidence).sort()).toEqual([0, 0.1, 0.9]);
+    expect(rows.map((row) => row.confidence).sort()).toEqual([0.1, 0.9]);
+  });
+
+  it("attributes one article to the one Company Profile of three it is about", async () => {
+    const [match, other, third] = await seedProfiles(scratch.db, { count: 3 });
+
+    const report = await persistNewsItems(scratch.db, {
+      candidates: [
+        candidate(match!, 1, { confidence: 0.75 }),
+        candidate(other!, 1, { confidence: 0 }),
+        candidate(third!, 1, { confidence: 0 }),
+      ],
+    });
+
+    expect(report).toMatchObject({ inserted: 1, unattributed: 2 });
+
+    const rows = await storedRows();
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.profileId).toBe(match);
   });
 
   it("is idempotent on the article url per Company Profile: a second run leaves the row count unchanged", async () => {

@@ -7,10 +7,11 @@ import { createThrottle, type Throttle } from "../ingest/throttle";
  * comes back is `history-search.ts` and is offline, the split `feed-fetch.ts` makes for feeds.
  *
  * The same honest `User-Agent` as the feeds, the accelerator batch pages and Y Combinator, and
- * the same limit of one request a second per host. A run makes up to two requests per Kept
- * Company Profile, all to one host, so this is the limit that actually paces a run: sixteen Kept
- * companies is about half a minute. Algolia publishes a far higher ceiling for this API; this
- * stays well under it rather than near it.
+ * the same limit of one request a second per host. A run makes up to two requests per Company
+ * Profile it has not searched for before, all to one host, so this is the limit that actually
+ * paces a run: sixteen companies is about half a minute, and `HISTORY_SEARCHES_PER_RUN` is set
+ * against it. Algolia publishes a far higher ceiling for this API; this stays well under it
+ * rather than near it.
  *
  * This host is already fetched by the Show HN Source (`scripts/fetch-show-hn.ts`), so its terms
  * were cleared when that Source was built.

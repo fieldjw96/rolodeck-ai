@@ -82,9 +82,16 @@ what kind of value each of its fields is.
 _Avoid_: feed, provider, site
 
 **News**:
-Articles about a Kept Company Profile. Part of the Catalogue: an article is gathered because
-Jack Kept the company, and once gathered every User sees it. See `docs/adr/0019`.
+Articles about a Company Profile. Part of the Catalogue: gathered for every Company Profile the
+Catalogue holds, whoever has Kept it, and read by the Users who Keep that company. See
+`docs/adr/0022`, which amends `docs/adr/0019` on who gathering is for.
 _Avoid_: dispatch, feed, updates
+
+**Attribution**:
+One article tied to one Company Profile, with the Confidence that it is about that company. An
+article is stored once whoever it is about; an Attribution is what says it is about somebody,
+and exists only where the matcher scored the pair above zero. See `docs/adr/0022`.
+_Avoid_: news item, match, link
 
 **Feed**:
 A syndication document a publisher offers for software to read, such as Techmeme's RSS, which
@@ -92,14 +99,15 @@ News reads articles from. Never a synonym for News or for a Source. See `docs/ad
 _Avoid_: provider, river, stream
 
 **History search**:
-News's other path: a search of the last twelve months of Hacker News for one Kept Company
-Profile, whose results are scored against that Profile alone. See `docs/adr/0018`.
+News's other path: a search of the last two years of Hacker News for one Company Profile, run
+once ever, the first News run that sees it, and capped per run. Its results are scored against
+that Profile alone. See `docs/adr/0018` and `docs/adr/0022`.
 _Avoid_: backfill, lookup
 
 **Confidence**:
-How sure News is that an article is about the Kept Company Profile it is attributed to, from 0
-to 1. Stored for every candidate article; only those at or above the display threshold are
-shown. See `docs/adr/0010`.
+How sure News is that an article is about the Company Profile it is attributed to, from 0 to 1.
+Every pair is scored and every score is counted in the run log; a pair above zero is stored, and
+only those at or above the display threshold are shown. See `docs/adr/0010` and `docs/adr/0022`.
 _Avoid_: relevance, score, match quality
 
 **Diary**:

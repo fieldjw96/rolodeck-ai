@@ -1,8 +1,15 @@
 ---
 status: accepted
+amended-by: 0022
 ---
 
 # Company Profiles, News and Events are a shared catalogue that nothing owns
+
+Amended by docs/adr/0022 on one point: who News gathers for. The narrowing below — one User's
+Keeps, named by `ROLODECK_NEWS_KEEPS_USER_ID` — is gone, and News now gathers for every Company
+Profile in the Catalogue. ADR 0022 explains why that does not reopen the cost argument this ADR
+makes against gathering for every User's Keeps. Everything else here stands, including the line
+this draws between the shared Catalogue and the personal half.
 
 Every table in this repo carried an `owner_id` referencing `auth.users`, with an RLS policy
 restricting reads to `(select auth.uid()) = owner_id`. That was correct while there was exactly

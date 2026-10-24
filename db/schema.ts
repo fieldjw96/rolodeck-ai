@@ -364,13 +364,121 @@ export type UserProfileRow = typeof userProfiles.$inferSelect;
 export type NewUserProfileRow = typeof userProfiles.$inferInsert;
 
 /**
- * News: articles about a Kept Company Profile, one row per article per Company Profile.
+ * Every feed article News has read, stored once whoever it turns out to be about.
  *
- * Every candidate the provider returned is a row, however unlikely it is to be about the right
- * company, with the matcher's `confidence` beside it. Which of them the owner sees is decided
- * when reading, against `NEWS_DISPLAY_THRESHOLD`, never when writing: the first threshold will
- * be wrong, and a candidate dropped at fetch time is one that retuning cannot bring back
- * without fetching it again. See docs/adr/0010.
+ * The articles and the attributions are apart, per docs/adr/0022. This table is the article: one
+ * row per `url`, written whether or not it matches a single Company Profile. `news_items` below
+ * is the attribution, written only for a pair the matcher scored above zero.
+ *
+ * Keeping the ones that match nothing is what lets a Company Profile entering the Catalogue next
+ * month be scored, on its first run, against everything already read — so it arrives with its
+ * News instead of waiting for the next thing published about it. It is also the half of
+ * docs/adr/0010's reasoning that survives: the articles are all still here for a retuned rule to
+ * re-score, without fetching anything again.
+ *
+ * Feed articles only. A history search's results are scored against the one Company Profile they
+ * were searched for and no other (docs/adr/0018), so storing them here — where every future
+ * Profile is scored against every row — would quietly undo that.
+ */
+export const newsArticles = pgTable(
+  "news_articles",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    title: text("title").notNull(),
+    /** Half of what the matcher reads, as on `news_items`. */
+    description: text("description"),
+    url: text("url").notNull(),
+    publishedAt: timestamp("published_at", { withTimezone: true }).notNull(),
+    /** The publication, as the feed it came from names it: "Techmeme", not a hostname. */
+    sourceName: text("source_name").notNull(),
+    /** When this article was first read. Not touched when a later run reads it again. */
+    fetchedAt: timestamp("fetched_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    /** As on `news_items`: the ingest role bypasses RLS here but not a check constraint. */
+    check("news_articles_url_is_http", sql.raw("url ~ '^https?://'")),
+    /**
+     * The natural key: one row per article, however many runs or feeds carry it. Globally and
+     * not per Company Profile, which is the whole point of the table.
+     */
+    uniqueIndex("news_articles_url_idx").on(table.url),
+    /** Scoring a new Company Profile against the stored articles reads them newest first. */
+    index("news_articles_published_at_idx").on(table.publishedAt.desc()),
+    /**
+     * Catalogue, readable by any signed-in User, as `news_items` is — although nothing in the
+     * app reads this table yet: the page reads attributions. There is no insert or update
+     * policy for `authenticated`; ingest is the only writer, per docs/adr/0013.
+     */
+    pgPolicy("news_articles_select_catalogue", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`true`,
+    }),
+    ...ingestPolicies("news_articles"),
+  ],
+);
+
+export type NewsArticleRow = typeof newsArticles.$inferSelect;
+export type NewNewsArticleRow = typeof newsArticles.$inferInsert;
+
+/**
+ * Which Company Profiles a News run has already taken care of: scored against every stored
+ * `news_articles` row, and searched for over `HISTORY_WINDOW_DAYS` of Hacker News.
+ *
+ * Recorded rather than inferred from whether the Profile has `news_items` rows, because finding
+ * nothing is the ordinary outcome for a two-person company, and inferring it would mean
+ * searching for that company again every day forever. A row means both halves happened and the
+ * write that followed them succeeded; a search that failed, or a Profile the run's cap never
+ * reached, leaves no row and is tried again. See docs/adr/0022.
+ */
+export const newsProfileCoverage = pgTable(
+  "news_profile_coverage",
+  {
+    profileId: uuid("profile_id")
+      .primaryKey()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    coveredAt: timestamp("covered_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  () => [
+    /** Catalogue: a statement about a Company Profile, which is Catalogue. See docs/adr/0019. */
+    pgPolicy("news_profile_coverage_select_catalogue", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`true`,
+    }),
+    /**
+     * Select and insert only, and no update policy or grant: a Profile is covered once and the
+     * row never changes. `ingestPolicies` is not used here for that reason — an update right
+     * nothing exercises is one nobody would notice being exercised.
+     */
+    pgPolicy("news_profile_coverage_ingest_select", {
+      for: "select",
+      to: ingestRole,
+      using: sql`true`,
+    }),
+    pgPolicy("news_profile_coverage_ingest_insert", {
+      for: "insert",
+      to: ingestRole,
+      withCheck: sql`true`,
+    }),
+  ],
+);
+
+export type NewsProfileCoverageRow = typeof newsProfileCoverage.$inferSelect;
+
+/**
+ * News: an article attributed to a Company Profile, one row per pair.
+ *
+ * A pair the matcher scored above zero, with that `confidence` beside it. Which of them a User
+ * sees is decided when reading, against `NEWS_DISPLAY_THRESHOLD`, never when writing: the first
+ * threshold will be wrong, and an article dropped at fetch time is one that retuning cannot
+ * bring back without fetching it again. See docs/adr/0010, and docs/adr/0022 for why the pairs
+ * scoring exactly zero stopped being rows while the articles themselves are all kept, in
+ * `news_articles` above.
  */
 export const newsItems = pgTable(
   "news_items",
@@ -407,18 +515,18 @@ export const newsItems = pgTable(
      */
     check("news_items_url_is_http", sql.raw("url ~ '^https?://'")),
     /**
-     * The natural key News ingest is idempotent on: an article is stored once per Company
+     * The natural key News ingest is idempotent on: an attribution is stored once per Company
      * Profile, however many runs return it. Per Company Profile rather than globally, because
-     * one article about two Kept companies is news about each. See docs/adr/0010.
+     * one article about two companies is news about each. See docs/adr/0010.
      */
     uniqueIndex("news_items_profile_id_url_idx").on(table.profileId, table.url),
     /** The News page reads items newest first. */
     index("news_items_published_at_idx").on(table.publishedAt.desc()),
     /**
-     * Read-only to the app, and readable by any signed-in User: an article is gathered
-     * because a company is Kept, and once gathered it is Catalogue — docs/adr/0019. There is
-     * no insert or update policy for `authenticated`: nothing in the app writes News, only
-     * the ingest script, as the ingest role — docs/adr/0013.
+     * Read-only to the app, and readable by any signed-in User: an attribution is Catalogue,
+     * like the article it is about — docs/adr/0019. There is no insert or update policy for
+     * `authenticated`: nothing in the app writes News, only the ingest script, as the ingest
+     * role — docs/adr/0013.
      */
     pgPolicy("news_items_select_catalogue", {
       for: "select",

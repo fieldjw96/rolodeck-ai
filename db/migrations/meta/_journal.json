@@ -113,6 +113,13 @@
       "when": 1790961000000,
       "tag": "0015_backfill_user_profiles",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1792828805244,
+      "tag": "0016_news_for_the_catalogue",
+      "breakpoints": true
     }
   ]
 }

@@ -1,15 +1,22 @@
 import type { Database } from "../../db/connection";
 import {
+  persistNewsArticles,
   persistNewsItems,
-  readKeptCompaniesForNews,
-  type KeptCompany,
+  readCatalogueCompaniesForNews,
+  readNewsCoveredProfileIds,
+  readStoredNewsArticles,
+  recordNewsCoverage,
+  type NewsArticleInput,
   type NewsCandidate,
+  type NewsCompany,
 } from "../../db/news";
 import type { IngestRejection } from "../../db/profile-input";
 import type { NewsFeedClient } from "./feed-fetch";
 import { parseNewsFeed, type NewsArticle, type NewsFeed } from "./feeds";
 import {
   historyQueries,
+  HISTORY_SEARCHES_PER_RUN,
+  HISTORY_WINDOW_DAYS,
   parseHistorySearch,
   type HistoryQuery,
 } from "./history-search";
@@ -17,9 +24,14 @@ import type { HistorySearchClient } from "./history-search-fetch";
 import { NEWS_DISPLAY_THRESHOLD, scoreNewsMatch } from "./match";
 
 /**
- * One News run, down two paths. The feeds: read every feed, score every article in them against
- * every Kept Company Profile. The searches: search a year of Hacker News for each Kept Company
- * Profile, and score what comes back against that Profile alone. Then store all of it.
+ * One News run, down three paths, for the whole Catalogue. The feeds: read every feed, store each
+ * article once, and score the ones this run had never read against every Company Profile. The
+ * first runs: for each Company Profile News has not seen before, score it against every article
+ * already stored, and search two years of Hacker News for it. Then store all of it.
+ *
+ * Nobody's Keeps are consulted. Who reads what is decided by `readNews` on the way out; what is
+ * gathered is decided by what ingest has put in the Catalogue. See docs/adr/0022.
+ *
  * Everything `scripts/ingest-news.ts` does that is worth testing, with the database, the feeds
  * and the clients that fetch them all passed in.
  */
@@ -34,7 +46,7 @@ export type NewsFeedOutcome =
     }
   | { readonly feed: string; readonly failure: string };
 
-/** What became of one Kept Company Profile's search: how many articles it found, or why none. */
+/** What became of one Company Profile's history search: what it found, or why nothing. */
 export type NewsSearchOutcome =
   | {
       readonly company: string;
@@ -50,13 +62,13 @@ export type NewsSearchOutcome =
     }
   | { readonly company: string; readonly failure: string };
 
-/** How many candidates scored each confidence, highest first: every score, not only a count. */
+/** How many pairs scored each confidence, highest first: every score, not only a count. */
 export type ConfidenceDistribution = readonly {
   readonly confidence: number;
   readonly count: number;
 }[];
 
-/** One path's candidates, as scored. */
+/** One path's pairs, as scored. */
 export type NewsPathScores = {
   /** Each article-and-Profile pair is one scored candidate. */
   readonly candidates: number;
@@ -66,18 +78,40 @@ export type NewsPathScores = {
 };
 
 export type NewsRunReport = {
-  /** How many Kept Company Profiles this run scored against. */
+  /** How many Company Profiles are in the Catalogue, which is what this run scored against. */
   readonly companies: number;
   /** One per feed, in the order they were read. */
   readonly feeds: readonly NewsFeedOutcome[];
-  /** One per Kept Company Profile, in the order they were searched. */
+  /** The feed articles this run stored, and how many of them it had never read before. */
+  readonly articles: {
+    readonly stored: number;
+    readonly fresh: number;
+    /** Articles skipped on the way into `news_articles` for a field that did not validate. */
+    readonly rejections: readonly IngestRejection[];
+  };
+  /** One per Company Profile searched for this run, in the order they were searched. */
   readonly searches: readonly NewsSearchOutcome[];
-  /** Every feed article against every Kept Company Profile. */
+  /** Company Profiles still waiting for a first search, past this run's cap. */
+  readonly waiting: number;
+  /** How many Company Profiles this run recorded as covered. */
+  readonly covered: number;
+  /** This run's new feed articles against every Company Profile in the Catalogue. */
   readonly fromFeeds: NewsPathScores;
+  /** Articles read on earlier runs, against each Company Profile News had not seen before. */
+  readonly fromStored: NewsPathScores;
   /** Each search's articles against the Company Profile it searched for. */
   readonly fromSearches: NewsPathScores;
+  /**
+   * Feed articles that cleared `NEWS_DISPLAY_THRESHOLD` against more than one Company Profile in
+   * this run's scoring. A matcher misfiring at Catalogue scale shows up here rather than only on
+   * somebody's page. Per run, not per article's lifetime: an article scored against one company
+   * today and another next month is one each time, which is what makes a run's own log readable.
+   */
+  readonly onSeveralCompanies: number;
   readonly inserted: number;
   readonly updated: number;
+  /** Pairs that scored zero, so were counted and not stored. See docs/adr/0022. */
+  readonly unattributed: number;
   /** Candidates skipped on the way into `news_items` for a field that did not validate. */
   readonly rejections: readonly IngestRejection[];
 };
@@ -89,13 +123,13 @@ const failed = <Outcome extends object>(
 const messageOf = (error: unknown): string =>
   error instanceof Error ? error.message : String(error);
 
-/** Every score the candidates carry, with how many carry it, highest first. */
+/** Every score given, with how many pairs carry it, highest first. */
 export function confidenceDistribution(
-  candidates: readonly Pick<NewsCandidate, "confidence">[],
+  scores: Iterable<number>,
 ): ConfidenceDistribution {
   const counts = new Map<number, number>();
 
-  for (const { confidence } of candidates) {
+  for (const confidence of scores) {
     counts.set(confidence, (counts.get(confidence) ?? 0) + 1);
   }
 
@@ -104,17 +138,26 @@ export function confidenceDistribution(
     .sort((a, b) => b.confidence - a.confidence);
 }
 
-function pathScores(candidates: readonly NewsCandidate[]): NewsPathScores {
+function pathScores(scores: readonly number[]): NewsPathScores {
   return {
-    candidates: candidates.length,
-    shown: candidates.filter(
-      (candidate) => candidate.confidence >= NEWS_DISPLAY_THRESHOLD,
-    ).length,
-    distribution: confidenceDistribution(candidates),
+    candidates: scores.length,
+    shown: scores.filter((score) => score >= NEWS_DISPLAY_THRESHOLD).length,
+    distribution: confidenceDistribution(scores),
   };
 }
 
-function candidate(profile: KeptCompany, article: NewsArticle): NewsCandidate {
+/**
+ * How many of a path's pairs the matcher scored zero, and so were counted and not stored. Read
+ * off the distribution rather than counted again: the scoring already knows, and the pairs
+ * themselves are let go as they are scored, so nothing downstream could count them.
+ */
+const unattributedIn = (scores: NewsPathScores): number =>
+  scores.distribution.find(({ confidence }) => confidence === 0)?.count ?? 0;
+
+function candidate(
+  profile: NewsCompany,
+  article: NewsArticleInput,
+): NewsCandidate {
   return {
     profileId: profile.id,
     title: article.title,
@@ -126,7 +169,52 @@ function candidate(profile: KeptCompany, article: NewsArticle): NewsCandidate {
   };
 }
 
-/** Reads every feed, in order. Never throws for a feed problem; see `fetchNewsForKeptProfiles`. */
+/**
+ * Scores every article against every company, keeping the pairs worth storing and the scores of
+ * all of them.
+ *
+ * The scores rather than the pairs, because at Catalogue scale this is the one place in the run
+ * whose size is the product of two growing numbers: a thousand Company Profiles against a year of
+ * articles is a million pairs, and nearly every one of them is a zero nothing will store. A
+ * number costs eight bytes; a candidate object costs a hundred.
+ *
+ * `shownByUrl` counts, per article, how many companies it cleared the display threshold against,
+ * which is what the run summary reports as an article on several companies.
+ */
+function scoreEvery(
+  companies: readonly NewsCompany[],
+  articles: readonly NewsArticleInput[],
+  into: {
+    readonly attributed: NewsCandidate[];
+    readonly shownByUrl?: Map<string, number>;
+  },
+): NewsPathScores {
+  const scores: number[] = [];
+
+  for (const article of articles) {
+    for (const company of companies) {
+      const scored = candidate(company, article);
+      scores.push(scored.confidence);
+
+      if (scored.confidence >= NEWS_DISPLAY_THRESHOLD && into.shownByUrl) {
+        into.shownByUrl.set(
+          article.url,
+          (into.shownByUrl.get(article.url) ?? 0) + 1,
+        );
+      }
+
+      // Zero is counted above and dropped here, so a million-pair run is a handful of rows.
+      // `persistNewsItems` refuses a zero as well; this is what keeps it from reaching it.
+      if (scored.confidence > 0) {
+        into.attributed.push(scored);
+      }
+    }
+  }
+
+  return pathScores(scores);
+}
+
+/** Reads every feed, in order. Never throws for a feed problem; see `fetchNewsForTheCatalogue`. */
 async function readFeeds(
   feeds: readonly NewsFeed[],
   client: NewsFeedClient,
@@ -181,7 +269,7 @@ async function readFeeds(
 /**
  * Runs one company's queries and returns the distinct articles they found, or why they found
  * none. Any query failing fails the company: half a search reported as a whole one would read as
- * a company with less news than it has.
+ * a company with less news than it has, and would then be recorded as searched.
  */
 async function searchCompany(
   queries: readonly HistoryQuery[],
@@ -247,23 +335,32 @@ async function searchCompany(
 }
 
 /**
- * Fetches every feed and searches for every Company Profile `keepsUserId` has Kept, then scores
- * and stores what they carry. What it stores is Catalogue: every User reads it, whoever's Keep
- * caused it to be gathered. See docs/adr/0019, and `lib/news/env.ts` for why gathering is one
- * User's Keeps rather than everybody's.
+ * Reads every feed and gathers News for the whole Catalogue, then scores and stores what it
+ * carries. What it stores is Catalogue: every User reads it, and nobody's swipes decided any of
+ * it was gathered. See docs/adr/0022, which amends docs/adr/0019 on who gathering is for and
+ * docs/adr/0010 on which pairs are stored.
  *
- * Kept comes from `readKeptCompaniesForNews`, which asks the one function the ingest role may
- * call about `swipes` rather than reading the table, since this runs as that role — see
- * docs/adr/0013. A Company Profile that is unswiped or Passed is never scored against or searched
- * for.
+ * Three paths, in order:
  *
- * Every feed article is scored against every Kept Company Profile, per docs/adr/0015. Every
- * search result is scored against the Company Profile it was searched for and no other, per
- * docs/adr/0018. Every pair is stored, including the ones scoring zero, per docs/adr/0010, and
- * re-running stores nothing twice: `news_items`' unique index on `(profile_id, url)` is the key.
+ * 1. **The feeds.** Every feed is read and every article stored once in `news_articles`, matched
+ *    or not, per docs/adr/0022. The articles this run had never read are scored against every
+ *    Company Profile in the Catalogue.
+ * 2. **The Company Profiles News has not seen.** Each is scored against the articles read on
+ *    earlier runs — today's are left out, because the path above has already scored them against
+ *    the whole Catalogue, and a pair scored twice is only a pair counted twice — so a company
+ *    that entered the Catalogue after an article was published still gets it.
+ * 3. **The history search.** Two years of Hacker News for each of those same Profiles, capped at
+ *    `HISTORY_SEARCHES_PER_RUN` a run, oldest-created first. Every result is scored against the
+ *    Company Profile it was searched for and no other, per docs/adr/0018.
  *
- * Every feed is read even when nothing is Kept, so a run proves its feeds still parse on the days
- * it has nobody to match them against. With nothing Kept there is nothing to search for.
+ * A Profile is recorded in `news_profile_coverage` only when its search succeeded and the write
+ * that followed did too, so a failed search or a spent cap means it is tried again next run.
+ *
+ * Only a pair scoring above zero becomes a `news_items` row, and re-running stores nothing twice:
+ * that table's unique index on `(profile_id, url)` is the key, as `news_articles`' on `url` is.
+ *
+ * Every feed is read even when the Catalogue is empty, so a run proves its feeds still parse on
+ * a day it has nothing to match them against.
  *
  * Never throws for a feed or a search problem. A feed that cannot be fetched, no longer parses,
  * or has every one of its items rejected is a failure naming the feed; a search that cannot be
@@ -271,17 +368,14 @@ async function searchCompany(
  * company. Either way the next one is still tried. A database error does throw, since nothing
  * after it could be written either.
  */
-export async function fetchNewsForKeptProfiles(
+export async function fetchNewsForTheCatalogue(
   db: Database,
   {
-    keepsUserId,
     feeds,
     client,
     search,
     now = new Date(),
   }: {
-    /** The User whose Keeps this run gathers for; see `readNewsKeepsUserId`. */
-    keepsUserId: string;
     feeds: readonly NewsFeed[];
     client: NewsFeedClient;
     search: HistorySearchClient;
@@ -289,17 +383,49 @@ export async function fetchNewsForKeptProfiles(
     now?: Date;
   },
 ): Promise<NewsRunReport> {
-  const kept = await readKeptCompaniesForNews(db, keepsUserId);
+  const catalogue = await readCatalogueCompaniesForNews(db);
 
   const read = await readFeeds(feeds, client);
-  const feedCandidates = kept.flatMap((profile) =>
-    read.articles.map((article) => candidate(profile, article)),
-  );
+  const articles = await persistNewsArticles(db, { articles: read.articles });
+
+  // Oldest-created first, the order `readCatalogueCompaniesForNews` answers in, so the Company
+  // Profile that has waited longest for its first search is the one a spent cap does not strand.
+  const covered = await readNewsCoveredProfileIds(db);
+  const unseen = catalogue.filter((company) => !covered.has(company.id));
+  const firstRuns = unseen.slice(0, HISTORY_SEARCHES_PER_RUN);
+
+  /** The stored articles this run did not read itself, or nothing when nobody needs them. */
+  const articlesReadBefore = async (): Promise<NewsArticleInput[]> => {
+    if (firstRuns.length === 0) {
+      return [];
+    }
+
+    const fresh = new Set(articles.fresh.map((article) => article.url));
+
+    return (await readStoredNewsArticles(db)).filter(
+      (article) => !fresh.has(article.url),
+    );
+  };
+
+  const attributed: NewsCandidate[] = [];
+  const shownByUrl = new Map<string, number>();
+
+  const fromFeeds = scoreEvery(catalogue, articles.fresh, {
+    attributed,
+    shownByUrl,
+  });
+  // Everything read before today, since the path above has already scored today's against the
+  // whole Catalogue. Scoring a pair twice would double it in the counts and tell nobody anything.
+  const fromStored = scoreEvery(firstRuns, await articlesReadBefore(), {
+    attributed,
+    shownByUrl,
+  });
 
   const searches: NewsSearchOutcome[] = [];
-  const searchCandidates: NewsCandidate[] = [];
+  const searchScores: number[] = [];
+  const searched: string[] = [];
 
-  for (const profile of kept) {
+  for (const profile of firstRuns) {
     const found = await searchCompany(
       historyQueries(profile, now),
       search,
@@ -317,23 +443,53 @@ export async function fetchNewsForKeptProfiles(
       tooCommonTitles: found.tooCommonTitles,
       rejections: found.rejections,
     });
-    searchCandidates.push(
-      ...found.articles.map((article) => candidate(profile, article)),
-    );
+    searched.push(profile.id);
+
+    // Against this Company Profile alone, so not through `scoreEvery`'s cross product.
+    for (const article of found.articles) {
+      const scored = candidate(profile, article);
+      searchScores.push(scored.confidence);
+
+      if (scored.confidence > 0) {
+        attributed.push(scored);
+      }
+    }
   }
 
-  const stored = await persistNewsItems(db, {
-    candidates: [...feedCandidates, ...searchCandidates],
-  });
+  const fromSearches = pathScores(searchScores);
+  const stored = await persistNewsItems(db, { candidates: attributed });
+
+  // Last, and only for the Profiles whose search succeeded: a row here says both halves of a
+  // first run happened and were written. A throw above leaves every Profile uncovered.
+  const covering = await recordNewsCoverage(db, searched);
 
   return {
-    companies: kept.length,
+    companies: catalogue.length,
     feeds: read.outcomes,
+    articles: {
+      stored: articles.inserted + articles.updated,
+      fresh: articles.inserted,
+      rejections: articles.rejections,
+    },
     searches,
-    fromFeeds: pathScores(feedCandidates),
-    fromSearches: pathScores(searchCandidates),
+    waiting: unseen.length - firstRuns.length,
+    covered: covering,
+    fromFeeds,
+    fromStored,
+    fromSearches,
+    onSeveralCompanies: [...shownByUrl.values()].filter(
+      (companies) => companies > 1,
+    ).length,
     inserted: stored.inserted,
     updated: stored.updated,
+    // `stored.unattributed` is a backstop and must be zero: a zero never reaches the write,
+    // because keeping a million of them in memory to drop them there is what the paths above
+    // avoid. It is added rather than ignored so a zero that did reach it is still counted.
+    unattributed:
+      unattributedIn(fromFeeds) +
+      unattributedIn(fromStored) +
+      unattributedIn(fromSearches) +
+      stored.unattributed,
     rejections: stored.rejections,
   };
 }
@@ -343,14 +499,13 @@ export async function fetchNewsForKeptProfiles(
  * not. The two paths are judged apart so a run says which half failed.
  *
  * The feeds fail when not one feed was read. A run that read its feeds and matched nothing is not
- * a failure — until Jack Keeps a Company Profile there is nothing to match against, and a
- * two-person startup can go a month unreported after that — but a run that read no feed at all
+ * a failure — a two-person startup can go a month unreported — but a run that read no feed at all
  * has checked nothing.
  *
  * The searches fail when there was at least one to run and every one failed, even though the
- * feeds were read: the feeds succeeding says nothing about whether a year of history was
- * searched. A search that found nothing is a quiet company, not a failure. A feed or a search
- * that failed beside one that did not is named in the summary rather than failing the run.
+ * feeds were read: the feeds succeeding says nothing about whether the history was searched. A
+ * search that found nothing is a quiet company, not a failure. A feed or a search that failed
+ * beside one that did not is named in the summary rather than failing the run.
  */
 export function newsRunFailures(report: NewsRunReport): string[] {
   const failures: string[] = [];
@@ -363,7 +518,7 @@ export function newsRunFailures(report: NewsRunReport): string[] {
 
   if (report.searches.length > 0 && report.searches.every(failed)) {
     failures.push(
-      `News could not search for any of its ${report.searches.length} Kept ${report.searches.length === 1 ? "company" : "companies"}.`,
+      `News could not search for any of the ${report.searches.length} Company ${report.searches.length === 1 ? "Profile" : "Profiles"} it tried.`,
     );
   }
 
@@ -387,10 +542,14 @@ function describePath(label: string, scores: NewsPathScores): string {
   );
 }
 
+const plural = (count: number, one: string, many: string) =>
+  count === 1 ? one : many;
+
 /**
  * What the run did, feed by feed, company by company, and then each path's scores, in the form
  * every ingest script prints. Every score is listed with its count, so "nothing cleared the
- * threshold" can be told apart from "there was nothing to clear it".
+ * threshold" can be told apart from "there was nothing to clear it" — which matters more now
+ * that a score of zero is no longer a row to go and look at.
  */
 export function summariseNewsRun(report: NewsRunReport): string {
   const lines: string[] = ["Feeds:"];
@@ -402,7 +561,7 @@ export function summariseNewsRun(report: NewsRunReport): string {
     }
 
     lines.push(
-      `  ${outcome.feed}: read ${outcome.articles} ${outcome.articles === 1 ? "article" : "articles"}.`,
+      `  ${outcome.feed}: read ${outcome.articles} ${plural(outcome.articles, "article", "articles")}.`,
     );
 
     // Named, not counted, for the reason `summariseRun` gives in `lib/ingest/form-d-run.ts`.
@@ -412,7 +571,17 @@ export function summariseNewsRun(report: NewsRunReport): string {
   }
 
   lines.push(
-    `Searches, a year of Hacker News for each of ${report.companies} Kept Company ${report.companies === 1 ? "Profile" : "Profiles"}:`,
+    `Stored ${report.articles.stored} feed ${plural(report.articles.stored, "article", "articles")}, ` +
+      `${report.articles.fresh} new to the Catalogue.`,
+  );
+
+  for (const rejection of report.articles.rejections) {
+    lines.push(`  rejected on ${rejection.field}: ${rejection.reason}`);
+  }
+
+  lines.push(
+    `Searches, ${HISTORY_WINDOW_DAYS} days of Hacker News for each of ${report.searches.length} Company ` +
+      `${plural(report.searches.length, "Profile", "Profiles")} new to News, with ${report.waiting} still waiting:`,
   );
 
   for (const outcome of report.searches) {
@@ -422,7 +591,7 @@ export function summariseNewsRun(report: NewsRunReport): string {
     }
 
     lines.push(
-      `  ${outcome.company}: found ${outcome.articles} ${outcome.articles === 1 ? "article" : "articles"}` +
+      `  ${outcome.company}: found ${outcome.articles} ${plural(outcome.articles, "article", "articles")}` +
         (outcome.tooCommonTitles === null
           ? "."
           : `, by its site alone: its name is in ${outcome.tooCommonTitles} titles, too common to search by.`),
@@ -435,8 +604,13 @@ export function summariseNewsRun(report: NewsRunReport): string {
 
   lines.push(
     describePath("From feeds", report.fromFeeds),
+    describePath("From stored articles", report.fromStored),
     describePath("From searches", report.fromSearches),
-    `Stored ${report.inserted} new and updated ${report.updated}.`,
+    `${report.onSeveralCompanies} feed ${plural(report.onSeveralCompanies, "article", "articles")} ` +
+      `cleared the threshold against more than one Company Profile.`,
+    `Stored ${report.inserted} new and updated ${report.updated}; ` +
+      `${report.unattributed} ${plural(report.unattributed, "pair", "pairs")} scored zero and were not stored.`,
+    `Covered ${report.covered} Company ${plural(report.covered, "Profile", "Profiles")} of ${report.companies} in the Catalogue.`,
   );
 
   for (const rejection of report.rejections) {

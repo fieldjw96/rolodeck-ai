@@ -4,8 +4,14 @@ status: accepted
 
 # News stores every candidate article with a confidence, and filters on read
 
-Amended by docs/adr/0015: News now reads publisher feeds rather than the GNews API. The decision
-to store every candidate with a confidence and filter on read stands.
+Amended by docs/adr/0015: News now reads publisher feeds rather than the GNews API.
+
+Amended again by docs/adr/0022, which changes which pairs are stored. Every candidate is still
+scored, and every score is still counted in the run log, but a pair scoring zero is no longer a
+row: feed articles are stored once each in `news_articles` whoever they are about, and
+`news_items` holds the attributions above zero. The decision to filter on read against
+`NEWS_DISPLAY_THRESHOLD`, rather than at fetch time, stands unchanged — see ADR 0022 for how
+keeping every article is what the zero rows were really for.
 
 News is articles about a Kept Company Profile. Finding them means searching a news provider by
 company name, and a company name is a poor search key: "Mercury" is a bank, a planet, an

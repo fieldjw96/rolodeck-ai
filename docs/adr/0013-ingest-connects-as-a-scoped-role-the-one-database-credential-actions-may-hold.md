@@ -1,6 +1,6 @@
 ---
 status: accepted
-amended-by: 0019
+amended-by: 0019, 0022
 ---
 
 # Ingest connects as a scoped Postgres role, and that is the one database credential GitHub Actions may hold
@@ -11,6 +11,12 @@ ADR deferred "only while V1 has one account". `INSERT` accepting any `owner_id` 
 there is no `owner_id` on the tables ingest writes. The other is not resolved: Keeps are still
 owned, so `ingest.kept_profile_ids(for_owner)` still answers for whichever owner it is asked
 about, and still needs the care given to it here.
+
+**Amended again by ADR 0022**, which resolves that second risk by removing the function. News
+gathers for the whole Catalogue, so nothing asks about anyone's Keeps; migration
+`0016_news_for_the_catalogue` drops `ingest.kept_profile_ids` and the `ingest` schema, and the
+role now holds `EXECUTE` on nothing at all. It writes two more tables, `news_articles` and
+`news_profile_coverage`, on the same terms as the four below. The credential rule is untouched.
 
 Scheduled ingest is moving to GitHub Actions. Whatever credential it runs under will then live in
 a third place, alongside the server laptop and `C:\agent-secrets`, and Actions secrets are the

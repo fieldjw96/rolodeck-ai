@@ -6,7 +6,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import { INGEST_ROLE } from "../lib/ingest/env";
 import type { NewsFeedClient } from "../lib/news/feed-fetch";
-import { fetchNewsForKeptProfiles } from "../lib/news/run";
+import { fetchNewsForTheCatalogue } from "../lib/news/run";
 import type { EventInput } from "./event-input";
 import { persistEvents } from "./events";
 import { persistProfiles, type ProfileCandidate } from "./ingest";
@@ -14,7 +14,9 @@ import {
   eventAttendances,
   events,
   ingestRole,
+  newsArticles,
   newsItems,
+  newsProfileCoverage,
   profiles,
   swipes,
   userProfiles,
@@ -88,6 +90,8 @@ beforeEach(async () => {
   await scratch.db.delete(eventAttendances);
   await scratch.db.delete(events);
   await scratch.db.delete(newsItems);
+  await scratch.db.delete(newsArticles);
+  await scratch.db.delete(newsProfileCoverage);
   await scratch.db.delete(swipes);
   await scratch.db.delete(userProfiles);
   await scratch.db.delete(profiles);
@@ -143,8 +147,12 @@ describe("the ingest role itself", () => {
       { table: "public.event_attendances", privilege: "SELECT" },
       { table: "public.events", privilege: "INSERT" },
       { table: "public.events", privilege: "SELECT" },
+      { table: "public.news_articles", privilege: "INSERT" },
+      { table: "public.news_articles", privilege: "SELECT" },
       { table: "public.news_items", privilege: "INSERT" },
       { table: "public.news_items", privilege: "SELECT" },
+      { table: "public.news_profile_coverage", privilege: "INSERT" },
+      { table: "public.news_profile_coverage", privilege: "SELECT" },
       { table: "public.profiles", privilege: "INSERT" },
       { table: "public.profiles", privilege: "SELECT" },
     ]);
@@ -184,6 +192,13 @@ describe("the ingest role itself", () => {
           "start_date",
           "url",
         ],
+      },
+      {
+        table: "public.news_articles",
+        privilege: "UPDATE",
+        // Not `url`, which is this table's key, and not `fetched_at`, which records when the
+        // article was first read. See migration 0016.
+        columns: ["description", "published_at", "source_name", "title"],
       },
       {
         table: "public.news_items",
@@ -281,11 +296,28 @@ describe("logged in as the ingest role", () => {
     ]);
 
     expect(await refusal("select id from profiles")).toBeNull();
-    const kept = await session.client.query(
-      "select * from ingest.kept_profile_ids($1)",
-      [JACK],
-    );
-    expect(kept.rows).toEqual([{ kept_profile_ids: keptProfileId }]);
+    expect(await refusal("select url from news_articles")).toBeNull();
+    expect(
+      await refusal("select profile_id from news_profile_coverage"),
+    ).toBeNull();
+  });
+
+  // The function News asked which Company Profiles one User had Kept. Nothing asks now that
+  // News gathers for the whole Catalogue, so migration 0016 dropped it and the schema it lived
+  // in — which is ADR 0013's second deferred risk closed. See docs/adr/0022.
+  it("cannot call ingest.kept_profile_ids, because there is no such function to call", async () => {
+    expect(
+      await refusal("select * from ingest.kept_profile_ids($1)", [JACK]),
+      // Postgres resolves the schema before the function, so either half being gone is a
+      // "does not exist" rather than a permission denied.
+    ).toMatch(/does not exist/);
+    expect(
+      (
+        await session.client.query(
+          "select to_regprocedure('ingest.kept_profile_ids(uuid)') is null as gone",
+        )
+      ).rows,
+    ).toEqual([{ gone: true }]);
   });
 
   it("cannot write to swipes", async () => {
@@ -368,25 +400,40 @@ describe("logged in as the ingest role", () => {
     },
   );
 
-  it.each(["profiles", "news_items", "events"])(
-    "cannot delete from %s",
-    async (table) => {
-      expect(await refusal(`delete from ${table}`)).toMatch(
-        new RegExp(`permission denied for table ${table}`),
-      );
-    },
-  );
+  it.each([
+    "profiles",
+    "news_items",
+    "news_articles",
+    "news_profile_coverage",
+    "events",
+  ])("cannot delete from %s", async (table) => {
+    expect(await refusal(`delete from ${table}`)).toMatch(
+      new RegExp(`permission denied for table ${table}`),
+    );
+  });
+
+  // The one table ingest may not update at all: a Company Profile is covered once, and the row
+  // says that it happened. See migration 0016.
+  it("cannot update news_profile_coverage", async () => {
+    expect(
+      await refusal("update news_profile_coverage set covered_at = now()"),
+    ).toMatch(/permission denied for table news_profile_coverage/);
+  });
 
   // TRUNCATE does not consult RLS at all, so a grant of it would be a bypass with no policy
   // in the way. It is refused even where ingest may delete.
-  it.each(["profiles", "news_items", "events", "event_attendances"])(
-    "cannot truncate %s",
-    async (table) => {
-      expect(await refusal(`truncate ${table} cascade`)).toMatch(
-        /permission denied/,
-      );
-    },
-  );
+  it.each([
+    "profiles",
+    "news_items",
+    "news_articles",
+    "news_profile_coverage",
+    "events",
+    "event_attendances",
+  ])("cannot truncate %s", async (table) => {
+    expect(await refusal(`truncate ${table} cascade`)).toMatch(
+      /permission denied/,
+    );
+  });
 
   it.each(["authenticated", "anon", "postgres"])(
     "cannot become %s",
@@ -408,14 +455,20 @@ describe("logged in as the ingest role", () => {
   });
 });
 
-describe("the function that tells ingest what is Kept", () => {
-  it("cannot be called by anon or authenticated", async () => {
-    for (const role of ["anon", "authenticated"] as const) {
+describe("the function that told ingest what was Kept", () => {
+  it("is gone, with the schema it lived in, so no role can call it", async () => {
+    const { rows } = await scratch.client.query(
+      "select to_regprocedure('ingest.kept_profile_ids(uuid)') is null as gone, to_regnamespace('ingest') is null as schema_gone",
+    );
+
+    expect(rows).toEqual([{ gone: true, schema_gone: true }]);
+
+    for (const role of ["anon", "authenticated", "rolodeck_ingest"] as const) {
       await scratch.as(role, JACK);
 
       await expect(
         scratch.client.query("select ingest.kept_profile_ids($1)", [JACK]),
-      ).rejects.toThrow(/permission denied/);
+      ).rejects.toThrow(/does not exist/);
 
       await scratch.reset();
     }
@@ -479,18 +532,14 @@ describe("what ingest does, as the ingest role", () => {
     expect(await scratch.db.select().from(eventAttendances)).toHaveLength(1);
   });
 
-  it("stores News for Kept Company Profiles only, without being able to read swipes", async () => {
+  it("stores News for the whole Catalogue, and records coverage, without being able to read swipes", async () => {
     const ramp = await companyProfile("Ramp");
-    const mercury = await companyProfile("Mercury");
     await companyProfile("Quiet Co");
-    // Kept by the other User and not by the one this run gathers for: the company is in the
-    // same shared Catalogue, but the Keep that would have gathered it is not Jack's.
-    const theirs = await companyProfile("Theirs Inc");
-    await scratch.db.insert(swipes).values([
-      { userId: JACK, profileId: ramp, decision: "keep" },
-      { userId: JACK, profileId: mercury, decision: "pass" },
-      { userId: SOMEONE_ELSE, profileId: theirs, decision: "keep" },
-    ]);
+    // A Keep belonging to the other User. Gathering reads no swipe at all now (docs/adr/0022),
+    // so this changes nothing about what the run does — and ingest still cannot see it.
+    await scratch.db
+      .insert(swipes)
+      .values([{ userId: SOMEONE_ELSE, profileId: ramp, decision: "keep" }]);
 
     const client: NewsFeedClient = {
       get: async () =>
@@ -502,8 +551,7 @@ describe("what ingest does, as the ingest role", () => {
     };
 
     await scratch.as("rolodeck_ingest");
-    const report = await fetchNewsForKeptProfiles(scratch.db, {
-      keepsUserId: JACK,
+    const report = await fetchNewsForTheCatalogue(scratch.db, {
       feeds: [
         {
           name: "wire",
@@ -517,13 +565,19 @@ describe("what ingest does, as the ingest role", () => {
     await scratch.reset();
 
     expect(report).toMatchObject({
-      companies: 1,
+      companies: 2,
       inserted: 1,
+      unattributed: 1,
+      covered: 2,
+      articles: { stored: 1, fresh: 1 },
       feeds: [{ feed: "wire", articles: 1, rejections: [] }],
     });
 
-    const stored = await scratch.db.select().from(newsItems);
-    expect(stored.map((row) => row.profileId)).toEqual([ramp]);
+    expect(
+      (await scratch.db.select().from(newsItems)).map((row) => row.profileId),
+    ).toEqual([ramp]);
+    expect(await scratch.db.select().from(newsArticles)).toHaveLength(1);
+    expect(await scratch.db.select().from(newsProfileCoverage)).toHaveLength(2);
   });
 });
 

@@ -26,7 +26,7 @@ jobs:
       #
       # Two steps rather than one, and the split is the whole point. What blocks a merge is an
       # advisory in something that *ships*. What only reports is an advisory in the tooling.
-      # See docs/adr/0022 for why, and for what it gives up.
+      # See docs/adr/0022-the-audit-gate-... for why, and for what it gives up.
       - name: Audit what ships, and block on it
         run: npm audit --omit=dev --audit-level=high
 

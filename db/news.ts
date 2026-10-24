@@ -5,18 +5,26 @@ import { NEWS_DISPLAY_THRESHOLD } from "../lib/news/match";
 import { issueField } from "../lib/zod/issues";
 import type { Database } from "./connection";
 import type { IngestRejection } from "./profile-input";
-import { newsItems, profiles, swipes } from "./schema";
+import {
+  newsArticles,
+  newsItems,
+  newsProfileCoverage,
+  profiles,
+  swipes,
+} from "./schema";
 
 /**
- * The one write path into `news_items` and the one read path out of it.
+ * The write paths News ingest uses and the one read path the page uses.
  *
- * Nothing here fetches or matches. It takes articles that already carry a `confidence`, stores
- * every one of them, and on the way out shows only those at or above `NEWS_DISPLAY_THRESHOLD`.
- * That split — store everything, filter on read — is the decision docs/adr/0010 records.
+ * Nothing here fetches or matches. It takes feed articles and stores each once; it takes pairs
+ * that already carry a `confidence` and stores the ones above zero; and on the way out it shows
+ * only those at or above `NEWS_DISPLAY_THRESHOLD`. Filtering on read rather than at fetch time
+ * is docs/adr/0010; the split between the article and the attribution, and gathering for the
+ * whole Catalogue rather than one account's Keeps, is docs/adr/0022.
  */
 
-/** A Kept Company Profile, as much of it as News needs to search for it and score the results. */
-export type KeptCompany = {
+/** A Company Profile, as much of it as News needs to search for it and score the results. */
+export type NewsCompany = {
   readonly id: string;
   readonly name: string;
   readonly sector: string;
@@ -25,29 +33,16 @@ export type KeptCompany = {
 };
 
 /**
- * The Company Profiles `keepsUserId` has Kept, which are the ones a News run searches for, read
- * the way the ingest role can.
+ * Every Company Profile in the Catalogue, which is what a News run scores against and searches
+ * for. Not anybody's Keeps: docs/adr/0022 removed the gathering User, so there is no swipe in
+ * this query and nothing for the ingest role to be told about one.
  *
- * One User's Keeps and not every User's, deliberately: docs/adr/0019 keeps gathering narrow
- * while the Catalogue it writes into is shared. `lib/news/env.ts` is where that User is named
- * and why.
- *
- * `readKeptProfiles` in `db/deck.ts` answers the same question for the Watchlist by joining
- * `swipes`, which the ingest role holds no grant on. This asks `ingest.kept_profile_ids` — a
- * function migration `0008_ingest_role` defines and lets that role alone call — for the ids
- * instead, so ingest learns which companies are Kept without being able to read or write
- * anything else about a swipe. That function still takes the User to answer for, and so still
- * carries ADR 0013's second deferred risk: it is unchanged by docs/adr/0019.
- *
- * Ordered by name, not by when each was Kept: the function hands out ids and nothing more, and
- * the order a run searches in only decides which company a spent quota lands on.
+ * Oldest first, because that is the order the history search's per-run cap works through: a
+ * Company Profile that has waited longest for its first search is searched for first.
  */
-export async function readKeptCompaniesForNews(
+export async function readCatalogueCompaniesForNews(
   db: Database,
-  keepsUserId: string,
-): Promise<KeptCompany[]> {
-  const keeper = z.guid().parse(keepsUserId);
-
+): Promise<NewsCompany[]> {
   return db
     .select({
       id: profiles.id,
@@ -56,11 +51,17 @@ export async function readKeptCompaniesForNews(
       website: profiles.website,
     })
     .from(profiles)
-    .where(
-      sql`${profiles.id} in (select ingest.kept_profile_ids(${keeper}::uuid))`,
-    )
-    .orderBy(asc(profiles.name), asc(profiles.id));
+    .orderBy(asc(profiles.createdAt), asc(profiles.id));
 }
+
+/** One feed article as it is stored, before anything has been attributed to a company. */
+export type NewsArticleInput = {
+  readonly title: string;
+  readonly description: string | null;
+  readonly url: string;
+  readonly publishedAt: Date;
+  readonly sourceName: string;
+};
 
 /** One article on its way in, attributed to one Company Profile with a score for how sure. */
 export type NewsCandidate = {
@@ -103,10 +104,168 @@ export type NewsIngestReport = {
   readonly rejections: readonly IngestRejection[];
 };
 
+/** The same shape in Zod, for the reason `candidateSchema` gives, without the score. */
+const articleSchema = z.strictObject({
+  title: nonBlank,
+  description: z.string().nullable(),
+  url: z.url({ protocol: /^https?$/ }),
+  publishedAt: z.date(),
+  sourceName: nonBlank,
+});
+
+export type NewsArticleIngestReport = NewsIngestReport & {
+  /**
+   * The articles this run had never read before, which are the ones worth scoring against the
+   * whole Catalogue. An article already stored has already been scored against every Company
+   * Profile that existed then, and against each newer one on the run that first saw it.
+   */
+  readonly fresh: readonly NewsArticleInput[];
+};
+
+/**
+ * Stores feed articles idempotently on `url`, one row each whoever they turn out to be about.
+ * See docs/adr/0022.
+ *
+ * Follows `persistNewsItems` below point for point — Postgres's unique index as the key, one
+ * statement per article since a batch can carry the same url twice, inserted and updated counted
+ * apart with `xmax = 0`, one transaction, `fetched_at` left alone on update — and adds `fresh`,
+ * the articles that were new to this database. An update re-writes the fields a publisher may
+ * have corrected.
+ */
+export async function persistNewsArticles(
+  db: Database,
+  { articles }: { articles: Iterable<NewsArticleInput> },
+): Promise<NewsArticleIngestReport> {
+  const accepted: z.infer<typeof articleSchema>[] = [];
+  const rejections: IngestRejection[] = [];
+
+  for (const article of articles) {
+    const parsed = articleSchema.safeParse(article);
+
+    if (parsed.success) {
+      accepted.push(parsed.data);
+    } else {
+      // A failed safeParse always carries at least one issue.
+      const issue = parsed.error.issues[0]!;
+      rejections.push({
+        field: issueField(issue),
+        reason: issue.message,
+        raw: article,
+      });
+    }
+  }
+
+  const { inserted, updated, fresh } = await db.transaction(async (tx) => {
+    let inserted = 0;
+    let updated = 0;
+    const fresh: NewsArticleInput[] = [];
+
+    for (const article of accepted) {
+      const [written] = await tx
+        .insert(newsArticles)
+        .values(article)
+        .onConflictDoUpdate({
+          target: newsArticles.url,
+          set: {
+            title: sql`excluded.title`,
+            description: sql`excluded.description`,
+            publishedAt: sql`excluded.published_at`,
+            sourceName: sql`excluded.source_name`,
+          },
+        })
+        .returning({ inserted: sql<boolean>`(xmax = 0)` });
+
+      if (written?.inserted === true) {
+        inserted += 1;
+        fresh.push(article);
+      } else {
+        updated += 1;
+      }
+    }
+
+    return { inserted, updated, fresh };
+  });
+
+  return { inserted, updated, fresh, rejected: rejections.length, rejections };
+}
+
+/**
+ * Every feed article stored, newest first. What a Company Profile new to News is scored against
+ * on its first run, so it arrives with its News rather than waiting for the next thing published
+ * about it. See docs/adr/0022.
+ */
+export async function readStoredNewsArticles(
+  db: Database,
+): Promise<NewsArticleInput[]> {
+  return db
+    .select({
+      title: newsArticles.title,
+      description: newsArticles.description,
+      url: newsArticles.url,
+      publishedAt: newsArticles.publishedAt,
+      sourceName: newsArticles.sourceName,
+    })
+    .from(newsArticles)
+    .orderBy(desc(newsArticles.publishedAt), desc(newsArticles.url));
+}
+
+/**
+ * The ids of the Company Profiles a News run has already scored against the stored articles and
+ * searched Hacker News for. Read rather than inferred from `news_items`, because a company
+ * nobody has written about is a company with no attributions and nothing left to do.
+ */
+export async function readNewsCoveredProfileIds(
+  db: Database,
+): Promise<Set<string>> {
+  const rows = await db
+    .select({ profileId: newsProfileCoverage.profileId })
+    .from(newsProfileCoverage);
+
+  return new Set(rows.map((row) => row.profileId));
+}
+
+/**
+ * Records that these Company Profiles have had both halves of their first run: scored against
+ * every stored article, and searched for over Hacker News. Called after the attributions are
+ * written, so a failed write leaves the Profile uncovered and it is tried again.
+ *
+ * `onConflictDoNothing` because the row says a thing happened once, and a concurrent run that
+ * got there first has not made that less true. Returns how many rows it added.
+ */
+export async function recordNewsCoverage(
+  db: Database,
+  profileIds: readonly string[],
+): Promise<number> {
+  if (profileIds.length === 0) {
+    return 0;
+  }
+
+  const written = await db
+    .insert(newsProfileCoverage)
+    .values(profileIds.map((profileId) => ({ profileId })))
+    .onConflictDoNothing()
+    .returning({ profileId: newsProfileCoverage.profileId });
+
+  return written.length;
+}
+
+export type NewsItemIngestReport = NewsIngestReport & {
+  /**
+   * Scored pairs that were not stored because the matcher placed them at zero. Counted rather
+   * than written, per docs/adr/0022: at Catalogue scale nearly every pair is one of these, and
+   * the run log's confidence distribution is what they were for.
+   */
+  readonly unattributed: number;
+};
+
 /**
  * Stores a batch of candidates idempotently on `(profile_id, url)`. Nobody owns them: an
- * article is Catalogue, read by every User whatever Keep caused it to be fetched. See
- * docs/adr/0019.
+ * attribution is Catalogue, read by every User whatever gathered it. See docs/adr/0019.
+ *
+ * Only the pairs the matcher scored above zero become rows — docs/adr/0022, amending
+ * docs/adr/0010. The rest are counted as `unattributed` and dropped here rather than filtered by
+ * the caller, so there is one rule about what is in this table and it lives next to the table.
+ * Nothing is lost by it: the article itself is in `news_articles` whoever it was about.
  *
  * Follows `persistProfiles` (docs/adr/0008) point for point: Postgres's unique index is the key
  * rather than a read-then-insert; one statement per candidate, since a batch can carry the same
@@ -119,15 +278,20 @@ export type NewsIngestReport = {
 export async function persistNewsItems(
   db: Database,
   { candidates }: { candidates: Iterable<NewsCandidate> },
-): Promise<NewsIngestReport> {
+): Promise<NewsItemIngestReport> {
   const accepted: z.infer<typeof candidateSchema>[] = [];
   const rejections: IngestRejection[] = [];
+  let unattributed = 0;
 
   for (const candidate of candidates) {
     const parsed = candidateSchema.safeParse(candidate);
 
     if (parsed.success) {
-      accepted.push(parsed.data);
+      if (parsed.data.confidence > 0) {
+        accepted.push(parsed.data);
+      } else {
+        unattributed += 1;
+      }
     } else {
       // A failed safeParse always carries at least one issue.
       const issue = parsed.error.issues[0]!;
@@ -169,7 +333,13 @@ export async function persistNewsItems(
     return { inserted, updated };
   });
 
-  return { inserted, updated, rejected: rejections.length, rejections };
+  return {
+    inserted,
+    updated,
+    unattributed,
+    rejected: rejections.length,
+    rejections,
+  };
 }
 
 /** One article as the News page shows it. */
@@ -243,8 +413,11 @@ export function groupNewsByCompany(rows: readonly NewsRow[]): NewsGroup[] {
  *
  * The articles are Catalogue and shared; the Keeps that decide which of them this reader sees
  * are not. So the reader is written into the join on `swipes.user_id` and nowhere else,
- * matching `readKeptProfiles`. A User who has Kept a company Jack never did sees no News for
- * it, because nothing gathered any: docs/adr/0019 accepts that consequence by name.
+ * matching `readKeptProfiles`.
+ *
+ * Unchanged by docs/adr/0022, which is the point of it: gathering for the whole Catalogue means
+ * a User who Keeps a company nobody else has Kept now finds News for it here, and this query is
+ * the same query it always was.
  */
 export async function readNews(
   db: Database,

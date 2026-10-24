@@ -95,13 +95,14 @@ tables it writes, and nowhere else.
 `ROLODECK_INGEST_DATABASE_URL` logs in as `rolodeck_ingest`, a Postgres role created by
 migration `0008_ingest_role`. See `docs/adr/0013` for why it exists and how it is scoped.
 
-**What it may do:** select, insert and update `profiles`, `news_items`, `events` and
-`event_attendances`, bypassing RLS on those four tables; delete from `event_attendances`, which
-`persistEvents` replaces on every run; and call `ingest.kept_profile_ids`, which tells News which
-Company Profiles are Kept.
+**What it may do:** select, insert and update `profiles`, `news_items`, `news_articles`,
+`news_profile_coverage`, `events` and `event_attendances`, bypassing RLS on those six tables;
+and delete from `event_attendances`, which `persistEvents` replaces on every run. It may not
+update `news_profile_coverage` at all, nor an article's `url`, nor any row's `id`.
 
 **What it may not:** read or write `swipes`, `user_profiles`, or anything in the `auth` schema;
-change a row's `id`; delete or truncate a Company
+execute any function at all — `ingest.kept_profile_ids` was the one, and `docs/adr/0022` dropped
+it with the `ingest` schema; change a row's `id`; delete or truncate a Company
 Profile, an Event or News; create roles or databases; or become any other role.
 `db/ingest-role.test.ts` asserts each of those against a real Postgres, and runs
 `db/testing/ingest-role-check.sql` to refuse a role the migrations leave any broader. That check
@@ -246,32 +247,41 @@ team-pages" issue. It is not a Source, so `ingest-freshness.yml` does not watch 
 ## News
 
 News is articles about the Company Profiles you Kept, read from the RSS feeds publishers offer
-and shown on `/news`, grouped by company, newest first.
+and shown on `/news`, grouped by company, newest first. It is gathered for the whole Catalogue,
+so a company has its News waiting by the time anybody Keeps it.
 
 ```
-ROLODECK_INGEST_DATABASE_URL=... ROLODECK_NEWS_KEEPS_USER_ID=... npm run ingest:news
+ROLODECK_INGEST_DATABASE_URL=... npm run ingest:news
 ```
 
-fetches every feed in `NEWS_FEEDS` (`lib/news/feeds.ts`) once (today, Techmeme's `/feed.xml`),
-scores every article in them against every Company Profile `ROLODECK_NEWS_KEEPS_USER_ID` has
-Kept — never one that is unswiped or Passed, and never one only another User Kept, which
-`docs/adr/0019` narrows deliberately — and stores each pair in `news_items` with a `confidence` from `scoreNewsMatch` in
-`lib/news/match.ts` for how sure it is that the article is about that company and not a
-namesake. The page shows only items at or above `NEWS_DISPLAY_THRESHOLD` in the same file; the
+fetches every feed in `NEWS_FEEDS` (`lib/news/feeds.ts`) once (today, Techmeme's `/feed.xml`) and
+stores each article once in `news_articles`, matched or not. The articles it had never read
+before are scored against **every** Company Profile in the Catalogue — no swipe is consulted,
+per `docs/adr/0022` — with a `confidence` from `scoreNewsMatch` in `lib/news/match.ts` for how
+sure it is that the article is about that company and not a namesake. A pair scoring above zero
+becomes a `news_items` row; the ones scoring zero are counted in the run summary instead of
+stored. The page shows only items at or above `NEWS_DISPLAY_THRESHOLD` in the same file; the
 rest stay stored, so the threshold can be retuned without fetching anything again. Running it
-twice adds no rows: articles are keyed on `(profile_id, url)`.
+twice adds no rows: articles are keyed on `url`, attributions on `(profile_id, url)`.
 
-Beside the feeds, it searches a year of Hacker News for each Kept Company Profile through
-Algolia's search API (`lib/news/history-search.ts`), so News finds what has been said about a
-company and not only what published today. See `docs/adr/0018`.
+A Company Profile News has not seen before gets a first run of its own: it is scored against
+every article already stored, and searched over the last `HISTORY_WINDOW_DAYS` (730) of Hacker
+News through Algolia's search API (`lib/news/history-search.ts`), so News finds what has been
+said about a company and not only what published today. See `docs/adr/0018`. Both halves
+together are recorded in `news_profile_coverage`, so it is never searched for again — finding
+nothing is a legitimate answer, not a reason to look daily. The searching is capped at
+`HISTORY_SEARCHES_PER_RUN` Profiles a run, oldest-created first, and the summary says how many
+are still waiting.
 
 Each feed is parsed through a Zod schema keyed by RSS's own element names, offline and tested
 against its capture in `db/fixtures/`, so a feed that changes shape is rejected naming the feed
 and the element, and one bad item costs that item. Requests go through
 `lib/news/feed-fetch.ts` at one a second per host, with the same `User-Agent` as the other
-Sources. The run prints each feed's outcome by name and exits non-zero only if every feed
-failed. No key is needed. See `docs/adr/0010` and `docs/adr/0015`, which records what reading
-feeds rather than searching costs in coverage. Adding a feed is one entry in `NEWS_FEEDS`, with
+Sources. The run prints each feed's outcome by name, how many feed articles cleared the
+threshold against more than one Company Profile — a matcher misfiring at Catalogue scale shows
+up there — and exits non-zero only if every feed failed, or if it had searches to run and every
+one of them failed. No key is needed. See `docs/adr/0010`, `docs/adr/0022`, and `docs/adr/0015`,
+which records what reading feeds rather than searching costs in coverage. Adding a feed is one entry in `NEWS_FEEDS`, with
 its `robots.txt` position, and a capture. Like every Source's script, this is on demand and not
 part of `npm test` or CI.
 
