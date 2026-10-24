@@ -311,4 +311,34 @@ describe("what a reader is told", () => {
     expect(body).toContain("https://example.test/runs");
     expect(body).toContain("cannot detect its own absence");
   });
+
+  it('uses "never completed successfully" only for the never-succeeded verdict', () => {
+    const neverSucceededBody = lateSourceIssueBody({
+      source,
+      freshness: judge({
+        lastSuccessAt: null,
+        workflowCreatedAt: new Date("2026-09-01T00:00:00Z"),
+        now: new Date("2026-09-17T15:00:00Z"),
+      }),
+      workflowState: "active",
+      runsUrl: "https://example.test/runs",
+    });
+
+    expect(neverSucceededBody).toContain("has never completed successfully");
+  });
+
+  it("never contains 'never completed successfully' for a Source that has run before", () => {
+    const hasSucceededBody = lateSourceIssueBody({
+      source,
+      freshness: judge({
+        lastSuccessAt: new Date("2026-09-13T08:24:00Z"),
+        now: new Date("2026-09-17T15:00:00Z"),
+      }),
+      workflowState: "active",
+      runsUrl: "https://example.test/runs",
+    });
+
+    expect(hasSucceededBody).not.toContain("never completed successfully");
+    expect(hasSucceededBody).toContain("last completed successfully at");
+  });
 });

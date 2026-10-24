@@ -72,6 +72,8 @@ const runsSchema = z.object({
     z.object({
       /** When the run finished, which is when the Source last actually succeeded. */
       updated_at: z.iso.datetime({ offset: true }),
+      /** The conclusion of the run (only present in unfiltered requests). */
+      conclusion: z.string().nullable().optional(),
     }),
   ),
 });
@@ -87,7 +89,7 @@ const issuesSchema = z.array(
 
 type Environment = z.infer<typeof environmentSchema>;
 
-async function callGitHub(
+export async function callGitHub(
   environment: Environment,
   route: string,
   init: RequestInit = {},
@@ -132,7 +134,7 @@ async function readWorkflowFiles(): Promise<WorkflowFile[]> {
   );
 }
 
-type SourceHistory = {
+export type SourceHistory = {
   workflowState: string;
   workflowCreatedAt: Date;
   lastSuccessAt: Date | null;
@@ -149,8 +151,12 @@ type SourceHistory = {
  *
  * Any trigger counts as a success, not only `schedule`. A Source someone ran by hand this morning
  * has run, and the question asked here is whether it ran at all.
+ *
+ * GitHub's API can return an empty array for a filtered query even when unfiltered results exist,
+ * especially under load. When the filtered query returns no runs, a second unfiltered request is
+ * made to confirm. A Source is reported never-succeeded only when both requests agree.
  */
-async function fetchSourceHistory(
+export async function fetchSourceHistory(
   environment: Environment,
   source: IngestSource,
 ): Promise<SourceHistory> {
@@ -158,18 +164,46 @@ async function fetchSourceHistory(
   const base = `/repos/${environment.GITHUB_REPOSITORY}/actions/workflows/${file}`;
 
   const workflow = workflowSchema.parse(await callGitHub(environment, base));
-  const runs = runsSchema.parse(
+  const filteredRuns = runsSchema.parse(
     await callGitHub(environment, `${base}/runs?status=success&per_page=1`),
   );
 
-  const latest = runs.workflow_runs[0];
+  const filteredLatest = filteredRuns.workflow_runs[0];
+
+  // If the filtered query returned a success, use it immediately.
+  if (filteredLatest !== undefined) {
+    return {
+      workflowState: workflow.state,
+      workflowCreatedAt: new Date(workflow.created_at),
+      lastSuccessAt: new Date(filteredLatest.updated_at),
+      runsUrl: `${environment.GITHUB_SERVER_URL}/${environment.GITHUB_REPOSITORY}/actions/workflows/${file}`,
+    };
+  }
+
+  // If filtered returned empty, check unfiltered to confirm there truly are no successes.
+  const unfilteredRuns = runsSchema.parse(
+    await callGitHub(environment, `${base}/runs?per_page=50`),
+  );
+
+  const unfilteredSuccess = unfilteredRuns.workflow_runs.find(
+    (run) => run.conclusion === "success",
+  );
+
+  if (unfilteredSuccess !== undefined) {
+    // The unfiltered query found a success that the filtered query missed. This is a transient
+    // API issue on GitHub's side. Log it so the next false alarm has evidence in the logs.
+    console.log(
+      `  warning: filtered query returned empty but unfiltered found success for ${source.name}`,
+    );
+  }
 
   return {
     workflowState: workflow.state,
     workflowCreatedAt: new Date(workflow.created_at),
-    lastSuccessAt: latest === undefined ? null : new Date(latest.updated_at),
-    // Built rather than taken from the workflow's own `html_url`, which points at the YAML file
-    // on the default branch. A reader following this link wants the run history.
+    lastSuccessAt:
+      unfilteredSuccess === undefined
+        ? null
+        : new Date(unfilteredSuccess.updated_at),
     runsUrl: `${environment.GITHUB_SERVER_URL}/${environment.GITHUB_REPOSITORY}/actions/workflows/${file}`,
   };
 }
