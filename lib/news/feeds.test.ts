@@ -10,7 +10,16 @@ import { NEWS_FEEDS, parseNewsFeed, type NewsFeed } from "./feeds";
  * each feed's `robots.txt` position.
  */
 
-const TECHMEME = NEWS_FEEDS.find((feed) => feed.name === "techmeme")!;
+/**
+ * Techmeme is no longer in `NEWS_FEEDS` (Ticket #220, docs/adr/0023), but its capture under
+ * `db/fixtures/news-feed-techmeme.xml` is still a real RSS 2.0 document worth parsing against,
+ * so `parseNewsFeed` is still tested here with a `NewsFeed` built by hand rather than one.
+ */
+const TECHMEME: NewsFeed = {
+  name: "techmeme",
+  publication: "Techmeme",
+  url: "https://www.techmeme.com/feed.xml",
+};
 
 const FEED: NewsFeed = {
   name: "example",

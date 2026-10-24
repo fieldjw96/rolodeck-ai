@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, like, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { NEWS_DISPLAY_THRESHOLD } from "../lib/news/match";
@@ -52,6 +52,25 @@ export async function readCatalogueCompaniesForNews(
     })
     .from(profiles)
     .orderBy(asc(profiles.createdAt), asc(profiles.id));
+}
+
+/**
+ * The newest Launch HN post already stored, or null when there is none. Read rather than kept
+ * as its own state: every Launch HN post is stored with a title beginning `Launch HN:` by
+ * construction (`lib/news/launch-hn.ts`), and `news_articles` is already unique on `url`, so
+ * this is the fact a new table would otherwise exist to repeat. See docs/adr/0023.
+ */
+export async function readLatestLaunchHnPublishedAt(
+  db: Database,
+): Promise<Date | null> {
+  const [row] = await db
+    .select({ publishedAt: newsArticles.publishedAt })
+    .from(newsArticles)
+    .where(like(newsArticles.title, "Launch HN:%"))
+    .orderBy(desc(newsArticles.publishedAt))
+    .limit(1);
+
+  return row?.publishedAt ?? null;
 }
 
 /** One feed article as it is stored, before anything has been attributed to a company. */

@@ -14,9 +14,10 @@ import {
  * is environment in, stdout out, and an exit code.
  *
  * On demand only, like every Source's script: it makes real requests to the feeds in
- * `NEWS_FEEDS` and to Hacker News's search, and writes real rows as the ingest role, none of
- * which belongs in `npm test` or CI. The feeds, and each one's `robots.txt` position, are in
- * `lib/news/feeds.ts`; the search, and why its queries are what they are, is
+ * `NEWS_FEEDS` (empty since Ticket #220; see docs/adr/0023), to Launch HN, and to Hacker News's
+ * history search, and writes real rows as the ingest role, none of which belongs in `npm test`
+ * or CI. The feeds, and each one's `robots.txt` position, are in `lib/news/feeds.ts`; Launch HN
+ * is `lib/news/launch-hn.ts`; the history search, and why its queries are what they are, is
  * `lib/news/history-search.ts`.
  *
  *     ROLODECK_INGEST_DATABASE_URL=... npm run ingest:news
@@ -24,10 +25,10 @@ import {
  * One credential and no other environment: News gathers for the whole Catalogue, so there is no
  * User for it to be told about. The variable that named one is gone — see docs/adr/0022.
  *
- * Exits non-zero when not one feed could be read, or when there was a Company Profile to search
- * for and not one search succeeded, saying which. A feed or a search that failed beside one that
- * did not is named in the output, and a run that matched nothing is not a failure. See
- * `newsRunFailures`.
+ * Exits non-zero when there was a feed configured and not one could be read, or when there was a
+ * Company Profile to search for and not one search succeeded, saying which. A feed, Launch HN, or
+ * a search that failed beside one that did not is named in the output, and a run that matched
+ * nothing is not a failure. See `newsRunFailures`.
  */
 async function main(): Promise<void> {
   const report = await fetchNewsForTheCatalogue(await getIngestDb(), {
