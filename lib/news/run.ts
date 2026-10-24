@@ -95,9 +95,9 @@ export type NewsRunReport = {
   readonly waiting: number;
   /** How many Company Profiles this run recorded as covered. */
   readonly covered: number;
-  /** This run's new feed articles against the Company Profiles News had already seen. */
+  /** This run's new feed articles against every Company Profile in the Catalogue. */
   readonly fromFeeds: NewsPathScores;
-  /** Every stored article against each Company Profile News had not seen before. */
+  /** Articles read on earlier runs, against each Company Profile News had not seen before. */
   readonly fromStored: NewsPathScores;
   /** Each search's articles against the Company Profile it searched for. */
   readonly fromSearches: NewsPathScores;
@@ -143,6 +143,14 @@ function pathScores(scores: readonly number[]): NewsPathScores {
     distribution: confidenceDistribution(scores),
   };
 }
+
+/**
+ * How many of a path's pairs the matcher scored zero, and so were counted and not stored. Read
+ * off the distribution rather than counted again: the scoring already knows, and the pairs
+ * themselves are let go as they are scored, so nothing downstream could count them.
+ */
+const unattributedIn = (scores: NewsPathScores): number =>
+  scores.distribution.find(({ confidence }) => confidence === 0)?.count ?? 0;
 
 function candidate(
   profile: NewsCompany,
@@ -334,11 +342,11 @@ async function searchCompany(
  *
  * 1. **The feeds.** Every feed is read and every article stored once in `news_articles`, matched
  *    or not, per docs/adr/0022. The articles this run had never read are scored against every
- *    Company Profile News has already seen.
- * 2. **The Company Profiles News has not seen.** Each is scored against every article stored,
- *    including the ones just read — which is why they are left out of the path above, so no pair
- *    is scored twice — so a company that entered the Catalogue after an article was published
- *    still gets it.
+ *    Company Profile in the Catalogue.
+ * 2. **The Company Profiles News has not seen.** Each is scored against the articles read on
+ *    earlier runs — today's are left out, because the path above has already scored them against
+ *    the whole Catalogue, and a pair scored twice is only a pair counted twice — so a company
+ *    that entered the Catalogue after an article was published still gets it.
  * 3. **The history search.** Two years of Hacker News for each of those same Profiles, capped at
  *    `HISTORY_SEARCHES_PER_RUN` a run, oldest-created first. Every result is scored against the
  *    Company Profile it was searched for and no other, per docs/adr/0018.
@@ -383,21 +391,33 @@ export async function fetchNewsForTheCatalogue(
   const covered = await readNewsCoveredProfileIds(db);
   const unseen = catalogue.filter((company) => !covered.has(company.id));
   const firstRuns = unseen.slice(0, HISTORY_SEARCHES_PER_RUN);
-  const firstRunIds = new Set(firstRuns.map((company) => company.id));
+
+  /** The stored articles this run did not read itself, or nothing when nobody needs them. */
+  const articlesReadBefore = async (): Promise<NewsArticleInput[]> => {
+    if (firstRuns.length === 0) {
+      return [];
+    }
+
+    const fresh = new Set(articles.fresh.map((article) => article.url));
+
+    return (await readStoredNewsArticles(db)).filter(
+      (article) => !fresh.has(article.url),
+    );
+  };
 
   const attributed: NewsCandidate[] = [];
   const shownByUrl = new Map<string, number>();
 
-  const fromFeeds = scoreEvery(
-    catalogue.filter((company) => !firstRunIds.has(company.id)),
-    articles.fresh,
-    { attributed, shownByUrl },
-  );
-  const fromStored = scoreEvery(
-    firstRuns,
-    firstRuns.length === 0 ? [] : await readStoredNewsArticles(db),
-    { attributed, shownByUrl },
-  );
+  const fromFeeds = scoreEvery(catalogue, articles.fresh, {
+    attributed,
+    shownByUrl,
+  });
+  // Everything read before today, since the path above has already scored today's against the
+  // whole Catalogue. Scoring a pair twice would double it in the counts and tell nobody anything.
+  const fromStored = scoreEvery(firstRuns, await articlesReadBefore(), {
+    attributed,
+    shownByUrl,
+  });
 
   const searches: NewsSearchOutcome[] = [];
   const searchScores: number[] = [];
@@ -434,6 +454,7 @@ export async function fetchNewsForTheCatalogue(
     }
   }
 
+  const fromSearches = pathScores(searchScores);
   const stored = await persistNewsItems(db, { candidates: attributed });
 
   // Last, and only for the Profiles whose search succeeded: a row here says both halves of a
@@ -453,12 +474,20 @@ export async function fetchNewsForTheCatalogue(
     covered: covering,
     fromFeeds,
     fromStored,
-    fromSearches: pathScores(searchScores),
-    onSeveralCompanies: [...shownByUrl.values()].filter((companies) => companies > 1)
-      .length,
+    fromSearches,
+    onSeveralCompanies: [...shownByUrl.values()].filter(
+      (companies) => companies > 1,
+    ).length,
     inserted: stored.inserted,
     updated: stored.updated,
-    unattributed: stored.unattributed,
+    // `stored.unattributed` is a backstop and must be zero: a zero never reaches the write,
+    // because keeping a million of them in memory to drop them there is what the paths above
+    // avoid. It is added rather than ignored so a zero that did reach it is still counted.
+    unattributed:
+      unattributedIn(fromFeeds) +
+      unattributedIn(fromStored) +
+      unattributedIn(fromSearches) +
+      stored.unattributed,
     rejections: stored.rejections,
   };
 }

@@ -4,7 +4,9 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { readNews } from "../../db/news";
 import type { Sector } from "../../db/profile-input";
 import {
+  newsArticles,
   newsItems,
+  newsProfileCoverage,
   profiles,
   swipes,
   type SwipeDecision,
@@ -13,10 +15,11 @@ import { createScratchDb, type ScratchDb } from "../../db/testing/scratch-db";
 import { SEEDED_PROVENANCE } from "../../db/testing/seed-profiles";
 import type { NewsFeedClient } from "./feed-fetch";
 import type { NewsFeed } from "./feeds";
+import { HISTORY_SEARCHES_PER_RUN } from "./history-search";
 import type { HistorySearchClient } from "./history-search-fetch";
 import {
   confidenceDistribution,
-  fetchNewsForKeptProfiles,
+  fetchNewsForTheCatalogue,
   newsRunFailures,
   summariseNewsRun,
   type NewsRunReport,
@@ -25,7 +28,12 @@ import {
 const JACK = "11111111-1111-1111-1111-111111111111";
 const SOMEONE_ELSE = "22222222-2222-2222-2222-222222222222";
 
+const FIRST_CREATED_AT = Date.UTC(2026, 0, 1, 9, 0, 0);
+const A_MINUTE = 60_000;
+
 let scratch: ScratchDb;
+/** Company Profiles are created a minute apart, so "oldest first" is a fact about the data. */
+let created = 0;
 
 async function companyProfile(
   name: string,
@@ -45,6 +53,7 @@ async function companyProfile(
         ...SEEDED_PROVENANCE,
         website: website === null ? null : "scraped",
       },
+      createdAt: new Date(FIRST_CREATED_AT + created++ * A_MINUTE),
     })
     .returning({ id: profiles.id });
 
@@ -144,12 +153,28 @@ const WIRE_FEED = rss(
     "https://wire.example/ramp-raises",
     "<p>The fintech startup's valuation climbs.</p>",
   ),
-  // A namesake: stored, scored low, never shown.
+  // A namesake: scored, counted, and attributed to nobody.
   item(
     "Highway ramp closures planned for the weekend",
     "https://wire.example/ramp-closures",
   ),
 );
+
+/** One run, with whatever the test wants to vary. */
+const run = (
+  options: {
+    feeds?: readonly NewsFeed[];
+    client?: NewsFeedClient;
+    search?: HistorySearchClient;
+    now?: Date;
+  } = {},
+) =>
+  fetchNewsForTheCatalogue(scratch.db, {
+    feeds: options.feeds ?? [WIRE],
+    client: options.client ?? fakeClient({ [WIRE.url]: WIRE_FEED }).client,
+    search: options.search ?? NO_HISTORY,
+    now: options.now ?? NOW,
+  });
 
 beforeAll(async () => {
   scratch = await createScratchDb();
@@ -164,91 +189,152 @@ afterAll(async () => {
 beforeEach(async () => {
   await scratch.reset();
   await scratch.db.delete(newsItems);
+  await scratch.db.delete(newsArticles);
+  await scratch.db.delete(newsProfileCoverage);
   await scratch.db.delete(swipes);
   await scratch.db.delete(profiles);
+  created = 0;
 });
 
-describe("fetchNewsForKeptProfiles", () => {
-  it("scores against the gathering User's Kept Company Profiles only — never an unswiped one, a Passed one, or one only somebody else Kept", async () => {
+describe("fetchNewsForTheCatalogue", () => {
+  it("scores every new feed article against every Company Profile in the Catalogue, whoever swiped what", async () => {
     const ramp = await companyProfile("Ramp", "fintech");
-    const mercury = await companyProfile("Mercury", "fintech");
+    await companyProfile("Mercury", "fintech");
     await companyProfile("Quiet Co", "other");
-    // In the same shared Catalogue, but Kept by the other User: docs/adr/0019 narrows
-    // gathering to one User's Keeps even though every User reads the result.
-    const theirs = await companyProfile("Theirs Inc", "security");
+    // Passed, unswiped, and Kept by the other User: gathering does not read a swipe at all.
+    await swipe(ramp, "pass");
 
-    await swipe(ramp, "keep");
-    await swipe(mercury, "pass");
-    await swipe(theirs, "keep", SOMEONE_ELSE);
+    const report = await run();
 
-    const { client } = fakeClient({ [WIRE.url]: WIRE_FEED });
-    const report = await fetchNewsForKeptProfiles(scratch.db, {
-      keepsUserId: JACK,
-      feeds: [WIRE],
-      client,
-      search: NO_HISTORY,
+    // Two articles against three Company Profiles.
+    expect(report).toMatchObject({
+      companies: 3,
+      fromFeeds: { candidates: 6 },
+      fromStored: { candidates: 0 },
     });
 
+    // Only the pairs the matcher placed at all became rows, and both are about Ramp: the one
+    // that clears the threshold and the namesake that is stored and hidden.
+    const stored = await scratch.db.select().from(newsItems);
+    expect(stored.map((row) => row.profileId)).toEqual([ramp, ramp]);
     expect(report).toMatchObject({
-      companies: 1,
-      fromFeeds: { candidates: 2 },
+      inserted: 2,
+      unattributed: 4,
+      fromFeeds: { shown: 1 },
+    });
+  });
+
+  it("proves the Ticket's outcome: a User Keeps a company nobody else has, and finds its News", async () => {
+    const ramp = await companyProfile("Ramp", "fintech");
+    // Kept by the second User and by nobody else. Under docs/adr/0019 this gathered nothing.
+    await swipe(ramp, "keep", SOMEONE_ELSE);
+
+    await run();
+
+    const news = await readNews(scratch.db, SOMEONE_ELSE);
+    expect(
+      news.map((group) => [
+        group.profile.name,
+        group.items.map((entry) => entry.url),
+      ]),
+    ).toEqual([["Ramp", ["https://wire.example/ramp-raises"]]]);
+    // And still nothing for the User who Kept nothing.
+    expect(await readNews(scratch.db, JACK)).toEqual([]);
+  });
+
+  it("stores each feed article once, however many times the feed is read", async () => {
+    await companyProfile("Ramp", "fintech");
+
+    const first = await run();
+    const second = await run();
+
+    expect(first.articles).toMatchObject({ stored: 2, fresh: 2 });
+    expect(second.articles).toMatchObject({ stored: 2, fresh: 0 });
+    expect(
+      (await scratch.db.select().from(newsArticles)).map((row) => row.url),
+    ).toEqual([
+      "https://wire.example/ramp-raises",
+      "https://wire.example/ramp-closures",
+    ]);
+  });
+
+  it("stores an article the whole Catalogue scored zero against, so a later company can be scored against it", async () => {
+    await companyProfile("Quiet Co", "other");
+
+    const report = await run();
+
+    expect(report).toMatchObject({
+      fromFeeds: { candidates: 2, shown: 0 },
+      inserted: 0,
+      unattributed: 2,
+    });
+    expect(await scratch.db.select().from(newsItems)).toEqual([]);
+    expect(await scratch.db.select().from(newsArticles)).toHaveLength(2);
+    expect(newsRunFailures(report)).toEqual([]);
+  });
+
+  it("scores a Company Profile new to News against the articles earlier runs read", async () => {
+    await companyProfile("Quiet Co", "other");
+    await run();
+
+    // Ramp arrives the day after the article about it was read.
+    const ramp = await companyProfile("Ramp", "fintech");
+    const second = await run();
+
+    expect(second).toMatchObject({
+      companies: 2,
+      fromFeeds: { candidates: 0 },
+      fromStored: { candidates: 2, shown: 1 },
     });
 
     const stored = await scratch.db.select().from(newsItems);
-    expect(new Set(stored.map((row) => row.profileId))).toEqual(
-      new Set([ramp]),
-    );
+    expect(stored.map((row) => [row.profileId, row.url])).toEqual([
+      [ramp, "https://wire.example/ramp-raises"],
+      [ramp, "https://wire.example/ramp-closures"],
+    ]);
   });
 
-  // The two halves of docs/adr/0019 for News: the article it stores is readable by the User
-  // who did not Keep anything, and that User's own swipes stay theirs.
-  it("stores an article every signed-in User can read, whoever's Keep gathered it", async () => {
+  it("scores no pair twice: an article read today is not also scored as a stored one", async () => {
     const ramp = await companyProfile("Ramp", "fintech");
-    await swipe(ramp, "keep");
 
-    const { client } = fakeClient({ [WIRE.url]: WIRE_FEED });
-    await fetchNewsForKeptProfiles(scratch.db, {
-      keepsUserId: JACK,
-      feeds: [WIRE],
-      client,
-      search: NO_HISTORY,
+    const report = await run();
+
+    expect(report).toMatchObject({
+      fromFeeds: { candidates: 2 },
+      fromStored: { candidates: 0 },
     });
-
-    await scratch.as("authenticated", SOMEONE_ELSE);
-    const seen = await scratch.db.select().from(newsItems);
-    await scratch.reset();
-
-    expect(seen).toHaveLength(2);
+    expect(report.inserted).toBe(2);
+    expect(await scratch.db.select().from(newsItems)).toHaveLength(2);
+    expect(
+      (await scratch.db.select().from(newsProfileCoverage)).map(
+        (row) => row.profileId,
+      ),
+    ).toEqual([ramp]);
   });
 
-  it("does not show that User the Keep the gathering was driven by", async () => {
-    const ramp = await companyProfile("Ramp", "fintech");
-    await swipe(ramp, "keep");
-
-    await scratch.as("authenticated", SOMEONE_ELSE);
-    const seen = await scratch.db.select().from(swipes);
-    await scratch.reset();
-
-    expect(seen).toEqual([]);
-  });
-
-  it("reads every feed once, even when nothing is Kept, and does not call matching nothing a failure", async () => {
+  it("adds no rows when run a second time over unchanged feeds", async () => {
     await companyProfile("Ramp", "fintech");
 
+    const first = await run();
+    const second = await run();
+
+    expect(first).toMatchObject({ inserted: 2, updated: 0 });
+    expect(second).toMatchObject({ inserted: 0, updated: 0 });
+    expect(await scratch.db.select().from(newsItems)).toHaveLength(2);
+  });
+
+  it("reads every feed once, even when the Catalogue is empty, and does not call matching nothing a failure", async () => {
     const { client, requested } = fakeClient({ [WIRE.url]: WIRE_FEED });
-    const report = await fetchNewsForKeptProfiles(scratch.db, {
-      keepsUserId: JACK,
-      feeds: [WIRE, DAILY],
-      client,
-      search: NO_HISTORY,
-    });
+    const report = await run({ feeds: [WIRE, DAILY], client });
 
     expect(requested).toEqual([WIRE.url, DAILY.url]);
     expect(report).toMatchObject({
       companies: 0,
       searches: [],
+      waiting: 0,
       fromFeeds: { candidates: 0 },
       inserted: 0,
+      articles: { stored: 2, fresh: 2 },
       feeds: [
         { feed: "wire", articles: 2, rejections: [] },
         // An empty channel is a rejection of that feed, not zero articles.
@@ -262,45 +348,24 @@ describe("fetchNewsForKeptProfiles", () => {
     expect(newsRunFailures(report)).toEqual([]);
   });
 
-  it("stores every article with its score, including the namesake below the threshold, and shows only the match", async () => {
-    const ramp = await companyProfile("Ramp", "fintech");
-    await swipe(ramp, "keep");
+  it("stores an attribution every signed-in User can read, whoever is watching the company", async () => {
+    await companyProfile("Ramp", "fintech");
+    await run();
 
-    const { client } = fakeClient({ [WIRE.url]: WIRE_FEED });
-    const report = await fetchNewsForKeptProfiles(scratch.db, {
-      keepsUserId: JACK,
-      feeds: [WIRE],
-      client,
-      search: NO_HISTORY,
-    });
+    await scratch.as("authenticated", SOMEONE_ELSE);
+    const items = await scratch.db.select().from(newsItems);
+    const articles = await scratch.db.select().from(newsArticles);
+    const seenSwipes = await scratch.db.select().from(swipes);
+    await scratch.reset();
 
-    expect(report).toMatchObject({
-      fromFeeds: { candidates: 2, shown: 1 },
-      inserted: 2,
-    });
-
-    const stored = await scratch.db.select().from(newsItems);
-    expect(stored).toHaveLength(2);
-    expect(
-      stored.find((row) => row.url === "https://wire.example/ramp-closures")
-        ?.confidence,
-    ).toBeLessThan(0.6);
-    expect(stored.map((row) => row.sourceName)).toEqual([
-      "The Wire",
-      "The Wire",
-    ]);
-
-    const news = await readNews(scratch.db, JACK);
-    expect(
-      news.flatMap((group) => group.items.map((item) => item.url)),
-    ).toEqual(["https://wire.example/ramp-raises"]);
+    expect(items).toHaveLength(2);
+    expect(articles).toHaveLength(2);
+    expect(seenSwipes).toEqual([]);
   });
 
-  it("scores every article from every feed against every Kept Company Profile, and stores each pair once", async () => {
+  it("scores every article from every feed against every company, and stores each pair once", async () => {
     const ramp = await companyProfile("Ramp", "fintech");
     const mercury = await companyProfile("Mercury", "fintech");
-    await swipe(ramp, "keep");
-    await swipe(mercury, "keep");
 
     const { client } = fakeClient({
       [WIRE.url]: WIRE_FEED,
@@ -312,15 +377,13 @@ describe("fetchNewsForKeptProfiles", () => {
       ),
     });
 
-    const report = await fetchNewsForKeptProfiles(scratch.db, {
-      keepsUserId: JACK,
-      feeds: [WIRE, DAILY],
-      client,
-      search: NO_HISTORY,
-    });
+    const report = await run({ feeds: [WIRE, DAILY], client });
 
     // Three articles, two companies.
-    expect(report).toMatchObject({ fromFeeds: { candidates: 6 }, inserted: 6 });
+    expect(report).toMatchObject({
+      fromFeeds: { candidates: 6 },
+      onSeveralCompanies: 1,
+    });
 
     const cards = (await scratch.db.select().from(newsItems)).filter(
       (row) => row.url === "https://daily.example/cards",
@@ -329,36 +392,13 @@ describe("fetchNewsForKeptProfiles", () => {
       new Set([ramp, mercury]),
     );
     expect(cards.every((row) => row.confidence >= 0.6)).toBe(true);
-  });
-
-  it("adds no rows when run a second time over unchanged feeds", async () => {
-    const ramp = await companyProfile("Ramp", "fintech");
-    await swipe(ramp, "keep");
-    const { client } = fakeClient({ [WIRE.url]: WIRE_FEED });
-
-    await fetchNewsForKeptProfiles(scratch.db, {
-      keepsUserId: JACK,
-      feeds: [WIRE],
-      client,
-      search: NO_HISTORY,
-    });
-    const afterFirst = (await scratch.db.select().from(newsItems)).length;
-
-    const second = await fetchNewsForKeptProfiles(scratch.db, {
-      keepsUserId: JACK,
-      feeds: [WIRE],
-      client,
-      search: NO_HISTORY,
-    });
-
-    expect(afterFirst).toBe(2);
-    expect((await scratch.db.select().from(newsItems)).length).toBe(afterFirst);
-    expect(second).toMatchObject({ inserted: 0, updated: afterFirst });
+    expect(summariseNewsRun(report)).toContain(
+      "1 feed article cleared the threshold against more than one Company Profile.",
+    );
   });
 
   it("carries on past a feed that cannot be fetched and one that no longer parses, naming each, and still stores the rest", async () => {
-    const ramp = await companyProfile("Ramp", "fintech");
-    await swipe(ramp, "keep");
+    await companyProfile("Ramp", "fintech");
 
     const broken: NewsFeed = {
       name: "broken",
@@ -372,12 +412,7 @@ describe("fetchNewsForKeptProfiles", () => {
       [WIRE.url]: WIRE_FEED,
     });
 
-    const report = await fetchNewsForKeptProfiles(scratch.db, {
-      keepsUserId: JACK,
-      feeds: [DAILY, broken, WIRE],
-      client,
-      search: NO_HISTORY,
-    });
+    const report = await run({ feeds: [DAILY, broken, WIRE], client });
 
     expect(requested).toEqual([DAILY.url, broken.url, WIRE.url]);
     expect(report.feeds).toEqual([
@@ -389,6 +424,7 @@ describe("fetchNewsForKeptProfiles", () => {
       },
       { feed: "wire", articles: 2, rejections: [] },
     ]);
+    expect(report.articles).toMatchObject({ stored: 2, fresh: 2 });
     expect(report.inserted).toBe(2);
     expect(newsRunFailures(report)).toEqual([]);
   });
@@ -399,12 +435,7 @@ describe("fetchNewsForKeptProfiles", () => {
       [DAILY.url]: "not xml at all <",
     });
 
-    const report = await fetchNewsForKeptProfiles(scratch.db, {
-      keepsUserId: JACK,
-      feeds: [WIRE, DAILY],
-      client,
-      search: NO_HISTORY,
-    });
+    const report = await run({ feeds: [WIRE, DAILY], client });
 
     expect(report.feeds.map((outcome) => "failure" in outcome)).toEqual([
       true,
@@ -423,12 +454,7 @@ describe("fetchNewsForKeptProfiles", () => {
       ),
     });
 
-    const report = await fetchNewsForKeptProfiles(scratch.db, {
-      keepsUserId: JACK,
-      feeds: [WIRE],
-      client,
-      search: NO_HISTORY,
-    });
+    const report = await run({ client });
 
     expect(report.feeds).toEqual([
       {
@@ -444,8 +470,7 @@ describe("fetchNewsForKeptProfiles", () => {
   });
 
   it("rejects a bad item by element and stores the others", async () => {
-    const ramp = await companyProfile("Ramp", "fintech");
-    await swipe(ramp, "keep");
+    await companyProfile("Ramp", "fintech");
 
     const { client } = fakeClient({
       [WIRE.url]: rss(
@@ -454,12 +479,7 @@ describe("fetchNewsForKeptProfiles", () => {
       ),
     });
 
-    const report = await fetchNewsForKeptProfiles(scratch.db, {
-      keepsUserId: JACK,
-      feeds: [WIRE],
-      client,
-      search: NO_HISTORY,
-    });
+    const report = await run({ client });
 
     expect(report.feeds).toMatchObject([
       {
@@ -468,47 +488,38 @@ describe("fetchNewsForKeptProfiles", () => {
         rejections: [{ field: "rss.channel.item.0.link" }],
       },
     ]);
+    expect(report.articles).toMatchObject({ stored: 1, fresh: 1 });
     expect(report.inserted).toBe(1);
   });
 
-  it("searches each Kept Company Profile by its own site and its name, over the last twelve months", async () => {
-    await swipe(
-      await companyProfile(
-        "Blacksmith",
-        "developer-tools",
-        "https://blacksmith.sh/",
-      ),
-      "keep",
+  it("searches each Company Profile new to News by its own site and its name, over two years", async () => {
+    await companyProfile(
+      "Blacksmith",
+      "developer-tools",
+      "https://blacksmith.sh/",
     );
-    await swipe(await companyProfile("Quiet Co", "other"), "keep");
-    // Unswiped, so never searched for.
-    await companyProfile("Ramp", "fintech", "https://ramp.com");
+    await companyProfile("Quiet Co", "other");
 
-    const { client } = fakeClient({ [WIRE.url]: WIRE_FEED });
     const { search, requested } = fakeSearch(() => undefined);
     const urls: string[] = [];
 
-    await fetchNewsForKeptProfiles(scratch.db, {
-      keepsUserId: JACK,
-      feeds: [WIRE],
-      client,
+    await run({
       search: {
         search: (url) => {
           urls.push(url);
           return search.search(url);
         },
       },
-      now: NOW,
     });
 
-    // In name order. Quiet Co has no website, so it has no site query.
+    // Oldest Company Profile first. Quiet Co has no website, so it has no site query.
     expect(requested).toEqual([
       "url:blacksmith.sh",
       'title:"Blacksmith"',
       'title:"Quiet Co"',
     ]);
 
-    const since = new Date("2025-09-20T00:00:00Z").getTime() / 1_000;
+    const since = new Date("2024-09-20T00:00:00Z").getTime() / 1_000;
     expect(
       urls.map((url) => new URL(url).searchParams.get("numericFilters")),
     ).toEqual(Array(3).fill(`created_at_i>=${since}`));
@@ -520,9 +531,7 @@ describe("fetchNewsForKeptProfiles", () => {
       "developer-tools",
       "https://blacksmith.sh/",
     );
-    const ramp = await companyProfile("Ramp", "fintech");
-    await swipe(blacksmith, "keep");
-    await swipe(ramp, "keep");
+    await companyProfile("Ramp", "fintech");
 
     const seed = hit(
       "1",
@@ -554,13 +563,7 @@ describe("fetchNewsForKeptProfiles", () => {
         : undefined;
     });
 
-    const report = await fetchNewsForKeptProfiles(scratch.db, {
-      keepsUserId: JACK,
-      feeds: [WIRE],
-      client,
-      search,
-      now: NOW,
-    });
+    const report = await run({ client, search });
 
     expect(report.searches).toEqual([
       {
@@ -573,6 +576,8 @@ describe("fetchNewsForKeptProfiles", () => {
     ]);
     expect(report.fromSearches).toMatchObject({ candidates: 2, shown: 1 });
 
+    // Searched for Blacksmith, so never attributed to Ramp, and never stored as an article
+    // every future Company Profile would be scored against.
     const stored = await scratch.db.select().from(newsItems);
     expect(new Set(stored.map((row) => row.profileId))).toEqual(
       new Set([blacksmith]),
@@ -581,19 +586,93 @@ describe("fetchNewsForKeptProfiles", () => {
       ["https://news.ycombinator.com/item?id=3", "Hacker News"],
       ["https://www.blacksmith.sh/blog/seed", "blacksmith.sh"],
     ]);
-
-    const news = await readNews(scratch.db, JACK);
-    expect(
-      news.flatMap((group) => group.items.map((item) => item.url)),
-    ).toEqual(["https://www.blacksmith.sh/blog/seed"]);
+    expect(await scratch.db.select().from(newsArticles)).toEqual([]);
   });
 
-  it("drops a name's title results when it is in too many titles to search by, and says so", async () => {
-    await swipe(await companyProfile("Journey", "saas-enterprise"), "keep");
+  it("does not search a Company Profile again once it has been searched, even one nothing was found for", async () => {
+    await companyProfile("Quiet Co", "other");
 
-    const { client } = fakeClient({ [WIRE.url]: WIRE_FEED });
+    const { search, requested } = fakeSearch(() => ({ hits: [] }));
+    const first = await run({ search });
+    const second = await run({ search });
+
+    expect(requested).toEqual(['title:"Quiet Co"']);
+    expect(first).toMatchObject({ covered: 1, waiting: 0 });
+    expect(first.searches).toEqual([
+      {
+        company: "Quiet Co",
+        articles: 0,
+        tooCommonTitles: null,
+        rejections: [],
+      },
+    ]);
+    // Nothing found is a quiet company, recorded all the same: docs/adr/0022.
+    expect(await scratch.db.select().from(newsItems)).toEqual([]);
+    expect(second.searches).toEqual([]);
+    expect(second).toMatchObject({ covered: 0, fromStored: { candidates: 0 } });
+  });
+
+  it("does not record a Company Profile whose search failed, and searches it again next run", async () => {
+    await companyProfile("Blacksmith", "developer-tools");
+
+    const outage = "https://hn.algolia.com/api/v1/search answered 503";
+    let failing = true;
+    const { search, requested } = fakeSearch(() =>
+      failing ? new Error(outage) : { hits: [] },
+    );
+
+    const first = await run({ search });
+
+    expect(first.searches).toEqual([
+      { company: "Blacksmith", failure: `the title query: ${outage}` },
+    ]);
+    expect(first.covered).toBe(0);
+    expect(await scratch.db.select().from(newsProfileCoverage)).toEqual([]);
+
+    failing = false;
+    const second = await run({ search });
+
+    expect(requested).toEqual(['title:"Blacksmith"', 'title:"Blacksmith"']);
+    expect(second).toMatchObject({ covered: 1 });
+    expect(second.searches).toMatchObject([{ company: "Blacksmith" }]);
+  });
+
+  it("caps the searches per run, taking the oldest Company Profiles first and saying how many wait", async () => {
+    // One more than the cap would be hundreds of Profiles; the cap is asserted against itself.
+    const names = Array.from(
+      { length: HISTORY_SEARCHES_PER_RUN + 2 },
+      (_unused, index) => `Company ${String(index).padStart(4, "0")}`,
+    );
+    for (const name of names) {
+      await companyProfile(name, "other");
+    }
+
+    const { search } = fakeSearch(() => ({ hits: [] }));
+    const first = await run({ search });
+
+    expect(first.searches).toHaveLength(HISTORY_SEARCHES_PER_RUN);
+    expect(first.searches.map((outcome) => outcome.company)).toEqual(
+      names.slice(0, HISTORY_SEARCHES_PER_RUN),
+    );
+    expect(first).toMatchObject({
+      waiting: 2,
+      covered: HISTORY_SEARCHES_PER_RUN,
+    });
+    expect(summariseNewsRun(first)).toContain("with 2 still waiting:");
+
+    const second = await run({ search });
+
+    expect(second.searches.map((outcome) => outcome.company)).toEqual(
+      names.slice(HISTORY_SEARCHES_PER_RUN),
+    );
+    expect(second).toMatchObject({ waiting: 0 });
+  }, 60_000);
+
+  it("drops a name's title results when it is in too many titles to search by, and says so", async () => {
+    await companyProfile("Journey", "saas-enterprise");
+
     const { search } = fakeSearch(() => ({
-      hits: Array.from({ length: 11 }, (_, index) =>
+      hits: Array.from({ length: 11 }, (_unused, index) =>
         hit(
           String(index),
           `My AI adoption Journey, part ${index}`,
@@ -602,13 +681,7 @@ describe("fetchNewsForKeptProfiles", () => {
       ),
     }));
 
-    const report = await fetchNewsForKeptProfiles(scratch.db, {
-      keepsUserId: JACK,
-      feeds: [WIRE],
-      client,
-      search,
-      now: NOW,
-    });
+    const report = await run({ search });
 
     expect(report.searches).toEqual([
       { company: "Journey", articles: 0, tooCommonTitles: 11, rejections: [] },
@@ -619,38 +692,10 @@ describe("fetchNewsForKeptProfiles", () => {
     );
   });
 
-  it("adds no rows when a search is run a second time", async () => {
-    await swipe(await companyProfile("Blacksmith", "developer-tools"), "keep");
-
-    const { client } = fakeClient({ [WIRE.url]: rss() });
-    const { search } = fakeSearch(() => ({
-      hits: [
-        hit(
-          "1",
-          "Blacksmith launches",
-          "https://www.blacksmith.sh/blog/launch",
-        ),
-      ],
-    }));
-    const run = () =>
-      fetchNewsForKeptProfiles(scratch.db, {
-        keepsUserId: JACK,
-        feeds: [WIRE],
-        client,
-        search,
-        now: NOW,
-      });
-
-    expect(await run()).toMatchObject({ inserted: 1, updated: 0 });
-    expect(await run()).toMatchObject({ inserted: 0, updated: 1 });
-    expect(await scratch.db.select().from(newsItems)).toHaveLength(1);
-  });
-
   it("costs one company, naming the field, when its response has changed shape, and carries on", async () => {
-    await swipe(await companyProfile("Blacksmith", "developer-tools"), "keep");
-    await swipe(await companyProfile("Ramp", "fintech"), "keep");
+    await companyProfile("Blacksmith", "developer-tools");
+    await companyProfile("Ramp", "fintech");
 
-    const { client } = fakeClient({ [WIRE.url]: WIRE_FEED });
     const { search } = fakeSearch((query) =>
       query === '"Blacksmith"'
         ? { results: [] }
@@ -665,13 +710,7 @@ describe("fetchNewsForKeptProfiles", () => {
           },
     );
 
-    const report = await fetchNewsForKeptProfiles(scratch.db, {
-      keepsUserId: JACK,
-      feeds: [WIRE],
-      client,
-      search,
-      now: NOW,
-    });
+    const report = await run({ search });
 
     expect(report.searches).toEqual([
       {
@@ -682,24 +721,18 @@ describe("fetchNewsForKeptProfiles", () => {
       },
       { company: "Ramp", articles: 1, tooCommonTitles: null, rejections: [] },
     ]);
+    expect(report.covered).toBe(1);
     expect(newsRunFailures(report)).toEqual([]);
   });
 
   it("fails, naming the searches, when the feeds were read and every search failed", async () => {
-    await swipe(await companyProfile("Blacksmith", "developer-tools"), "keep");
-    await swipe(await companyProfile("Ramp", "fintech"), "keep");
+    await companyProfile("Blacksmith", "developer-tools");
+    await companyProfile("Ramp", "fintech");
 
     const outage = "https://hn.algolia.com/api/v1/search answered 503";
-    const { client } = fakeClient({ [WIRE.url]: WIRE_FEED });
     const { search } = fakeSearch(() => new Error(outage));
 
-    const report = await fetchNewsForKeptProfiles(scratch.db, {
-      keepsUserId: JACK,
-      feeds: [WIRE],
-      client,
-      search,
-      now: NOW,
-    });
+    const report = await run({ search });
 
     expect(report.feeds).toEqual([
       { feed: "wire", articles: 2, rejections: [] },
@@ -709,29 +742,23 @@ describe("fetchNewsForKeptProfiles", () => {
       { company: "Ramp", failure: `the title query: ${outage}` },
     ]);
     expect(newsRunFailures(report)).toEqual([
-      "News could not search for any of its 2 Kept companies.",
+      "News could not search for any of the 2 Company Profiles it tried.",
     ]);
     // The feeds' half still stored what it found.
-    expect(report.inserted).toBe(4);
+    expect(report.articles).toMatchObject({ stored: 2, fresh: 2 });
+    expect(report.inserted).toBe(2);
   });
 
   it("fails a search whose every hit is rejected, since that is a changed shape and not a quiet company", async () => {
-    await swipe(await companyProfile("Blacksmith", "developer-tools"), "keep");
+    await companyProfile("Blacksmith", "developer-tools");
 
-    const { client } = fakeClient({ [WIRE.url]: WIRE_FEED });
     const { search } = fakeSearch(() => ({
       hits: [
         { objectID: "1", title: "Blacksmith", url: "https://blacksmith.sh" },
       ],
     }));
 
-    const report = await fetchNewsForKeptProfiles(scratch.db, {
-      keepsUserId: JACK,
-      feeds: [WIRE],
-      client,
-      search,
-      now: NOW,
-    });
+    const report = await run({ search });
 
     expect(report.searches).toEqual([
       {
@@ -741,19 +768,13 @@ describe("fetchNewsForKeptProfiles", () => {
         ) as string,
       },
     ]);
+    expect(report.covered).toBe(0);
   });
 });
 
 describe("confidenceDistribution", () => {
   it("counts every score, highest first", () => {
-    expect(
-      confidenceDistribution([
-        { confidence: 0 },
-        { confidence: 0.4 },
-        { confidence: 0 },
-        { confidence: 0.65 },
-      ]),
-    ).toEqual([
+    expect(confidenceDistribution([0, 0.4, 0, 0.65])).toEqual([
       { confidence: 0.65, count: 1 },
       { confidence: 0.4, count: 1 },
       { confidence: 0, count: 2 },
@@ -764,7 +785,7 @@ describe("confidenceDistribution", () => {
 
 describe("summariseNewsRun", () => {
   const report: NewsRunReport = {
-    companies: 2,
+    companies: 400,
     feeds: [
       {
         feed: "techmeme",
@@ -775,6 +796,7 @@ describe("summariseNewsRun", () => {
       },
       { feed: "daily", failure: "https://daily.example/rss answered 503" },
     ],
+    articles: { stored: 15, fresh: 4, rejections: [] },
     searches: [
       {
         company: "Blacksmith",
@@ -784,7 +806,18 @@ describe("summariseNewsRun", () => {
       },
       { company: "Ramp", failure: "the site query: answered 503" },
     ],
+    waiting: 198,
+    covered: 1,
     fromFeeds: {
+      candidates: 1_600,
+      shown: 2,
+      distribution: [
+        { confidence: 0.6, count: 2 },
+        { confidence: 0.4, count: 2 },
+        { confidence: 0, count: 1_596 },
+      ],
+    },
+    fromStored: {
       candidates: 30,
       shown: 0,
       distribution: [
@@ -801,8 +834,10 @@ describe("summariseNewsRun", () => {
         { confidence: 0, count: 5 },
       ],
     },
-    inserted: 35,
-    updated: 5,
+    onSeveralCompanies: 1,
+    inserted: 9,
+    updated: 2,
+    unattributed: 1_629,
     rejections: [{ field: "url", reason: "Invalid URL", raw: {} }],
   };
 
@@ -812,13 +847,17 @@ describe("summariseNewsRun", () => {
       "  techmeme: read 15 articles.",
       "    rejected on rss.channel.item.3.link: Invalid URL",
       "  daily: failed, https://daily.example/rss answered 503",
-      "Searches, a year of Hacker News for each of 2 Kept Company Profiles:",
+      "Stored 15 feed articles, 4 new to the Catalogue.",
+      "Searches, 730 days of Hacker News for each of 2 Company Profiles new to News, with 198 still waiting:",
       "  Blacksmith: found 10 articles.",
       "    rejected on hits.4.url: Invalid URL",
       "  Ramp: failed, the site query: answered 503",
-      "From feeds: 30 candidates, 0 at or above the display threshold of 0.6. Confidence: 0.4 ×2, 0 ×28.",
+      "From feeds: 1600 candidates, 2 at or above the display threshold of 0.6. Confidence: 0.6 ×2, 0.4 ×2, 0 ×1596.",
+      "From stored articles: 30 candidates, 0 at or above the display threshold of 0.6. Confidence: 0.4 ×2, 0 ×28.",
       "From searches: 10 candidates, 1 at or above the display threshold of 0.6. Confidence: 0.6 ×1, 0.4 ×4, 0 ×5.",
-      "Stored 35 new and updated 5.",
+      "1 feed article cleared the threshold against more than one Company Profile.",
+      "Stored 9 new and updated 2; 1629 pairs scored zero and were not stored.",
+      "Covered 1 Company Profile of 400 in the Catalogue.",
       "  rejected on url: Invalid URL",
     ]);
   });
@@ -834,10 +873,8 @@ describe("summariseNewsRun", () => {
     ];
 
     expect(newsRunFailures(report)).toEqual([]);
-    // Nothing Kept is nothing to search for, not a failed search.
-    expect(newsRunFailures({ ...report, companies: 0, searches: [] })).toEqual(
-      [],
-    );
+    // Nothing new to News is nothing to search for, not a failed search.
+    expect(newsRunFailures({ ...report, searches: [] })).toEqual([]);
     expect(newsRunFailures({ ...report, feeds: allFeedsFailed })).toEqual([
       "News could not read any of its 2 feeds.",
     ]);
@@ -845,7 +882,7 @@ describe("summariseNewsRun", () => {
       "News could not read any of its 0 feeds.",
     ]);
     expect(newsRunFailures({ ...report, searches: allSearchesFailed })).toEqual(
-      ["News could not search for any of its 2 Kept companies."],
+      ["News could not search for any of the 2 Company Profiles it tried."],
     );
     expect(
       newsRunFailures({
