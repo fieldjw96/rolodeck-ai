@@ -47,9 +47,8 @@ export type NewsFeed = {
  * proves it reads what is here rather than assuming an empty list is fine by never exercising
  * the read path.
  *
- * `robots.txt`, checked with `curl` on 2026-09-16, when a capture was still taken from here:
- *
- * Considered and not added: TechCrunch's `/feed/`. `User-agent: *` disallows only `/wp-admin/`,
+ * Considered and not added: TechCrunch's `/feed/`. `robots.txt` checked with `curl` on
+ * 2026-09-16: `User-agent: *` disallows only `/wp-admin/`,
  * `/wp-json/`, `/search/`, `/?s=` and customizer previews, so `/feed/` is open to the
  * `User-Agent` this project sends. But the same file gives `anthropic-ai`, `ClaudeBot` and
  * `Claude-Web` `Disallow: /`, and every capture in this repo is taken by a Claude Run. A

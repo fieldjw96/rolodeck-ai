@@ -6,8 +6,8 @@ import { issueField } from "../zod/issues";
 import type { NewsArticle } from "./feeds";
 
 /**
- * News's third path: Launch HN, where Y Combinator companies announce themselves on Hacker
- * News. Read through `hn.algolia.com/api/v1/search_by_date`, the same keyless Algolia Hacker
+ * News's path for Launch HN, where Y Combinator companies announce themselves on Hacker News.
+ * Read through `hn.algolia.com/api/v1/search_by_date`, the same keyless Algolia Hacker
  * News Search API `history-search.ts` and the Show HN Source already depend on — fetching is
  * `history-search-fetch.ts`, unmodified, so this adds no new entry to
  * `lib/ingest/boundaries.test.ts`. See docs/adr/0023 for why this is a search and not a feed,
@@ -33,8 +33,8 @@ const LAUNCH_HN_QUERY = '"Launch HN"';
 /**
  * The floor of the window searched, when there is no previous successful run to measure from,
  * or when there is one further back than this. See docs/adr/0023: the window is the later of
- * "since the previous successful run" and this many days, so a run run shortly after the last
- * one asks a short question and a run after an outage still catches everything.
+ * "since the previous successful run" and this many days, so a run shortly after the last one
+ * asks a short question and a run after an outage still catches everything.
  */
 export const LAUNCH_HN_MIN_WINDOW_DAYS = 7;
 

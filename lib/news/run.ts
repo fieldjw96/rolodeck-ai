@@ -587,7 +587,8 @@ export async function fetchNewsForTheCatalogue(
 
 /**
  * Why the run should exit non-zero, one line per path that failed, or nothing when it should
- * not. The two paths are judged apart so a run says which half failed.
+ * not. The feeds and the searches are judged apart so a run says which half failed; Launch HN
+ * is judged by neither rule, for the reason given below.
  *
  * The feeds fail when there was at least one to read and not one of them was. `NEWS_FEEDS` is
  * empty since Ticket #220 (docs/adr/0023), so a run with none configured has nothing to have
