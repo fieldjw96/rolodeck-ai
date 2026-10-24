@@ -200,7 +200,10 @@ async function fetchSourceHistory(
   return {
     workflowState: workflow.state,
     workflowCreatedAt: new Date(workflow.created_at),
-    lastSuccessAt: unfilteredSuccess === undefined ? null : new Date(unfilteredSuccess.updated_at),
+    lastSuccessAt:
+      unfilteredSuccess === undefined
+        ? null
+        : new Date(unfilteredSuccess.updated_at),
     runsUrl: `${environment.GITHUB_SERVER_URL}/${environment.GITHUB_REPOSITORY}/actions/workflows/${file}`,
   };
 }

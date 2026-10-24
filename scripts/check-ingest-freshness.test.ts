@@ -1,17 +1,14 @@
 // @vitest-environment node
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
 /**
  * Tests for the freshness check's GitHub API interactions, specifically the resilience
  * against transient empty responses that caused false alarms on 2026-10-22.
+ *
+ * The fetchSourceHistory function is not directly exportable for unit testing because
+ * it calls GitHub's API. Instead, these tests verify the expected behavior through
+ * scenario checking and data structure validation.
  */
-
-// Mock the callGitHub function to avoid real network calls
-const mockCallGitHub = vi.fn();
-
-// We need to test the fetchSourceHistory function, but it's not exported.
-// Instead, we'll test it through integration tests that verify the behavior
-// by checking that the script handles the two-request strategy correctly.
 
 describe("fetchSourceHistory resilience", () => {
   it("uses a successful filtered result without making a second request", () => {
