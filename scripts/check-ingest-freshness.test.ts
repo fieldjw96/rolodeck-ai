@@ -167,7 +167,7 @@ describe("fetchSourceHistory resilience", () => {
       ],
     ]);
 
-    const fetchMock = mockFetch(responses);
+    void mockFetch(responses);
 
     const result = await freshness.fetchSourceHistory(
       mockEnvironment as Parameters<typeof freshness.fetchSourceHistory>[0],
@@ -212,7 +212,7 @@ describe("fetchSourceHistory resilience", () => {
       ],
     ]);
 
-    const fetchMock = mockFetch(responses);
+    void mockFetch(responses);
 
     const result = await freshness.fetchSourceHistory(
       mockEnvironment as Parameters<typeof freshness.fetchSourceHistory>[0],
@@ -252,7 +252,7 @@ describe("fetchSourceHistory resilience", () => {
       ],
     ]);
 
-    const fetchMock = mockFetch(responses);
+    void mockFetch(responses);
     const logSpy = vi.spyOn(console, "log");
 
     await freshness.fetchSourceHistory(
