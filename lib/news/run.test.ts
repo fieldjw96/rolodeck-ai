@@ -462,7 +462,7 @@ describe("fetchNewsForTheCatalogue", () => {
     );
     expect(cards.every((row) => row.confidence >= 0.6)).toBe(true);
     expect(summariseNewsRun(report)).toContain(
-      "1 feed article cleared the threshold against more than one Company Profile.",
+      "1 article from feeds or Launch HN cleared the threshold against more than one Company Profile.",
     );
   });
 
