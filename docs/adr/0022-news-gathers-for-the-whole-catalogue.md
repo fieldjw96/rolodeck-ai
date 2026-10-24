@@ -4,6 +4,10 @@ status: accepted
 
 # News gathers for the whole Catalogue, and stores an article once
 
+This is the second ADR numbered 0022; the other is the audit gate, as 0015 is both the
+not-stated stage and reading publisher feeds. A reference to "ADR 0022" in the News code and
+docs means this one, and the file name is the unambiguous way to say which.
+
 News stops asking whose Keeps to gather for. Every Company Profile in the Catalogue is scored
 against every feed article, and every Company Profile is searched for once, over two years of
 Hacker News, the first time a News run sees it. A feed article is stored once in its own table
