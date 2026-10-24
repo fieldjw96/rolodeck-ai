@@ -1,11 +1,18 @@
 ---
 status: accepted
 amends: 0015
+amended-by: 0022
 ---
 
 # News also searches a year of Hacker News for each Kept company
 
 This amends docs/adr/0015. It does not supersede it.
+
+Amended by docs/adr/0022 on the window and the subject: the search covers two years
+(`HISTORY_WINDOW_DAYS` is 730) and runs once for every Company Profile in the Catalogue rather
+than once a run for each Kept one. Everything below about how the queries are built, why they
+are constrained, and that a result is scored against the Company Profile it was searched for and
+no other, stands.
 
 ADR 0015 decided that News reads publisher feeds, and it gave a reason that turned out to be
 wrong: "searching by company name needs a search provider, and the keyless ones are closed."
