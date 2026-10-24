@@ -27,27 +27,51 @@ describe("fetchSourceHistory resilience", () => {
     vi.clearAllMocks();
   });
 
+  function mockFetch(responses: Map<string, unknown>) {
+    const fetchMock = vi.fn(async (url: string) => {
+      const response = responses.get(url);
+      if (!response) {
+        return new Response(
+          JSON.stringify({
+            message: "Not found",
+            documentation_url: "https://docs.github.com/rest",
+          }),
+          { status: 404 },
+        );
+      }
+      return new Response(JSON.stringify(response), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    });
+    global.fetch = fetchMock as unknown as typeof fetch;
+    return fetchMock;
+  }
+
   it("uses a successful filtered result without making a second request", async () => {
     // When the status=success query returns a run, it should be used immediately
     // and no second request should be made.
-    const callGitHubMock = vi.spyOn(freshness, "callGitHub");
-    callGitHubMock.mockImplementation(async (env: unknown, route: string) => {
-      if (route.endsWith("/actions/workflows/ingest-news.yml")) {
-        return {
+    const responses = new Map([
+      [
+        "https://api.github.com/repos/test/repo/actions/workflows/ingest-news.yml",
+        {
           state: "active",
           created_at: "2026-01-01T00:00:00Z",
-        };
-      }
-      if (route.includes("status=success")) {
-        return {
+        },
+      ],
+      [
+        "https://api.github.com/repos/test/repo/actions/workflows/ingest-news.yml/runs?status=success&per_page=1",
+        {
           workflow_runs: [
             {
               updated_at: "2026-10-22T12:00:00Z",
             },
           ],
-        };
-      }
-    });
+        },
+      ],
+    ]);
+
+    const fetchMock = mockFetch(responses);
 
     const result = await freshness.fetchSourceHistory(
       mockEnvironment as Parameters<typeof freshness.fetchSourceHistory>[0],
@@ -56,40 +80,42 @@ describe("fetchSourceHistory resilience", () => {
 
     expect(result.lastSuccessAt).toEqual(new Date("2026-10-22T12:00:00Z"));
     // Should only call for workflow info and filtered runs, not unfiltered
-    expect(callGitHubMock).toHaveBeenCalledTimes(2);
-    const callArgs = callGitHubMock.mock.calls.map((c) => c[1]);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const callArgs = fetchMock.mock.calls.map((c) => c[0]);
     expect(callArgs.some((arg) => arg.includes("per_page=50"))).toBe(false);
-
-    callGitHubMock.mockRestore();
   });
 
   it("makes a second request when the filtered query returns empty", async () => {
     // When status=success returns no runs, a second unfiltered request
     // should be made to confirm there are truly no successes.
-    const callGitHubMock = vi.spyOn(freshness, "callGitHub");
-    callGitHubMock.mockImplementation(async (env: unknown, route: string) => {
-      if (route.endsWith("/actions/workflows/ingest-news.yml")) {
-        return {
+    const responses = new Map([
+      [
+        "https://api.github.com/repos/test/repo/actions/workflows/ingest-news.yml",
+        {
           state: "active",
           created_at: "2026-01-01T00:00:00Z",
-        };
-      }
-      if (route.includes("status=success")) {
-        return {
+        },
+      ],
+      [
+        "https://api.github.com/repos/test/repo/actions/workflows/ingest-news.yml/runs?status=success&per_page=1",
+        {
           workflow_runs: [],
-        };
-      }
-      if (route.includes("per_page=50")) {
-        return {
+        },
+      ],
+      [
+        "https://api.github.com/repos/test/repo/actions/workflows/ingest-news.yml/runs?per_page=50",
+        {
           workflow_runs: [
             {
               updated_at: "2026-10-22T08:00:00Z",
               conclusion: "success",
             },
           ],
-        };
-      }
-    });
+        },
+      ],
+    ]);
+
+    const fetchMock = mockFetch(responses);
 
     const result = await freshness.fetchSourceHistory(
       mockEnvironment as Parameters<typeof freshness.fetchSourceHistory>[0],
@@ -98,31 +124,31 @@ describe("fetchSourceHistory resilience", () => {
 
     expect(result.lastSuccessAt).toEqual(new Date("2026-10-22T08:00:00Z"));
     // Should call workflow, filtered runs, and unfiltered runs
-    expect(callGitHubMock).toHaveBeenCalledTimes(3);
-    const callArgs = callGitHubMock.mock.calls.map((c) => c[1]);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    const callArgs = fetchMock.mock.calls.map((c) => c[0]);
     expect(callArgs.some((arg) => arg.includes("per_page=50"))).toBe(true);
-
-    callGitHubMock.mockRestore();
   });
 
   it("finds the most recent success in the unfiltered response", async () => {
     // When checking unfiltered results, the function should find the first
     // run with conclusion=success in the array (GitHub returns in reverse chronological order).
-    const callGitHubMock = vi.spyOn(freshness, "callGitHub");
-    callGitHubMock.mockImplementation(async (env: unknown, route: string) => {
-      if (route.endsWith("/actions/workflows/ingest-news.yml")) {
-        return {
+    const responses = new Map([
+      [
+        "https://api.github.com/repos/test/repo/actions/workflows/ingest-news.yml",
+        {
           state: "active",
           created_at: "2026-01-01T00:00:00Z",
-        };
-      }
-      if (route.includes("status=success")) {
-        return {
+        },
+      ],
+      [
+        "https://api.github.com/repos/test/repo/actions/workflows/ingest-news.yml/runs?status=success&per_page=1",
+        {
           workflow_runs: [],
-        };
-      }
-      if (route.includes("per_page=50")) {
-        return {
+        },
+      ],
+      [
+        "https://api.github.com/repos/test/repo/actions/workflows/ingest-news.yml/runs?per_page=50",
+        {
           workflow_runs: [
             {
               updated_at: "2026-10-22T10:00:00Z",
@@ -137,9 +163,11 @@ describe("fetchSourceHistory resilience", () => {
               conclusion: "success",
             },
           ],
-        };
-      }
-    });
+        },
+      ],
+    ]);
+
+    const fetchMock = mockFetch(responses);
 
     const result = await freshness.fetchSourceHistory(
       mockEnvironment as Parameters<typeof freshness.fetchSourceHistory>[0],
@@ -148,28 +176,28 @@ describe("fetchSourceHistory resilience", () => {
 
     // Should pick the 08:30 success which comes before 08:00 in the array (first match)
     expect(result.lastSuccessAt).toEqual(new Date("2026-10-22T08:30:00Z"));
-
-    callGitHubMock.mockRestore();
   });
 
   it("reports never-succeeded only when both requests return empty", async () => {
     // A Source is reported never-succeeded only when both the filtered and
     // unfiltered queries agree that there are no successful runs.
-    const callGitHubMock = vi.spyOn(freshness, "callGitHub");
-    callGitHubMock.mockImplementation(async (env: unknown, route: string) => {
-      if (route.endsWith("/actions/workflows/ingest-news.yml")) {
-        return {
+    const responses = new Map([
+      [
+        "https://api.github.com/repos/test/repo/actions/workflows/ingest-news.yml",
+        {
           state: "active",
           created_at: "2026-01-01T00:00:00Z",
-        };
-      }
-      if (route.includes("status=success")) {
-        return {
+        },
+      ],
+      [
+        "https://api.github.com/repos/test/repo/actions/workflows/ingest-news.yml/runs?status=success&per_page=1",
+        {
           workflow_runs: [],
-        };
-      }
-      if (route.includes("per_page=50")) {
-        return {
+        },
+      ],
+      [
+        "https://api.github.com/repos/test/repo/actions/workflows/ingest-news.yml/runs?per_page=50",
+        {
           workflow_runs: [
             {
               updated_at: "2026-10-22T15:00:00Z",
@@ -180,9 +208,11 @@ describe("fetchSourceHistory resilience", () => {
               conclusion: "failure",
             },
           ],
-        };
-      }
-    });
+        },
+      ],
+    ]);
+
+    const fetchMock = mockFetch(responses);
 
     const result = await freshness.fetchSourceHistory(
       mockEnvironment as Parameters<typeof freshness.fetchSourceHistory>[0],
@@ -190,38 +220,40 @@ describe("fetchSourceHistory resilience", () => {
     );
 
     expect(result.lastSuccessAt).toBeNull();
-
-    callGitHubMock.mockRestore();
   });
 
   it("logs when the two requests disagree", async () => {
     // When the filtered query returns empty but the unfiltered query finds a success,
     // this should be logged as a warning so the next false alarm has evidence.
-    const logSpy = vi.spyOn(console, "log");
-    const callGitHubMock = vi.spyOn(freshness, "callGitHub");
-    callGitHubMock.mockImplementation(async (env: unknown, route: string) => {
-      if (route.endsWith("/actions/workflows/ingest-news.yml")) {
-        return {
+    const responses = new Map([
+      [
+        "https://api.github.com/repos/test/repo/actions/workflows/ingest-news.yml",
+        {
           state: "active",
           created_at: "2026-01-01T00:00:00Z",
-        };
-      }
-      if (route.includes("status=success")) {
-        return {
+        },
+      ],
+      [
+        "https://api.github.com/repos/test/repo/actions/workflows/ingest-news.yml/runs?status=success&per_page=1",
+        {
           workflow_runs: [],
-        };
-      }
-      if (route.includes("per_page=50")) {
-        return {
+        },
+      ],
+      [
+        "https://api.github.com/repos/test/repo/actions/workflows/ingest-news.yml/runs?per_page=50",
+        {
           workflow_runs: [
             {
               updated_at: "2026-10-22T08:00:00Z",
               conclusion: "success",
             },
           ],
-        };
-      }
-    });
+        },
+      ],
+    ]);
+
+    const fetchMock = mockFetch(responses);
+    const logSpy = vi.spyOn(console, "log");
 
     await freshness.fetchSourceHistory(
       mockEnvironment as Parameters<typeof freshness.fetchSourceHistory>[0],
@@ -235,6 +267,5 @@ describe("fetchSourceHistory resilience", () => {
     );
 
     logSpy.mockRestore();
-    callGitHubMock.mockRestore();
   });
 });
