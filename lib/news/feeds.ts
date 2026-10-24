@@ -31,30 +31,31 @@ export type NewsFeed = {
  * Every feed a News run reads. Adding one is a line here and a capture in `db/fixtures/`, which
  * `feeds.test.ts` checks for every entry.
  *
- * `robots.txt`, checked with `curl` on 2026-09-16 before any capture was taken:
+ * Empty since Ticket #220, which removed Techmeme: on 2026-10-24 none of its 15 articles
+ * matched any of 8 Kept Company Profiles, because it carries about fifteen stories a day about
+ * the largest companies in technology, and a pre-seed Bay Area startup is never in it. Worse
+ * than merely useless — every one of those articles was still a chance to misattribute a large
+ * company's news to a small one with a similar name, once News started scoring every article
+ * against the whole Catalogue (docs/adr/0022). Techmeme's own iCalendar feed,
+ * `lib/ingest/techmeme-events.ts`, is a different Source entirely and was not touched. In its
+ * place, Ticket #220 added Launch HN, read in `lib/news/launch-hn.ts` and not here: it is read
+ * through a Hacker News search, not a publisher's RSS, and docs/adr/0023 says why that is not a
+ * difference worth papering over to keep this array non-empty.
  *
- * - Techmeme (`www.techmeme.com/robots.txt`): `User-agent: *` disallows `/r2/`, `/r/`,
- *   `/goto/`, `/gotos/`, `/igoto/`, `/igotos/`, `/do/`, `/search/`, `/timeline/`, `/track/` and
- *   `/*.jpg`. `/feed.xml` is none of them, and `Claude-User` is separately given `Allow: /`.
- *   It is a document meant for software: an RSS 2.0 channel Techmeme serves as `text/xml`,
- *   the same publisher and the same test as the iCalendar feed `lib/ingest/techmeme-events.ts`
- *   reads. Each item's `link` is a Techmeme permalink, never a `/r2/` redirect, and a run never
- *   requests it either way.
+ * An empty array is not a failure on its own; see `newsRunFailures` in `run.ts`. A run still
+ * reads every entry here, even zero of them, so a feed added back inherits a run that already
+ * proves it reads what is here rather than assuming an empty list is fine by never exercising
+ * the read path.
  *
- * Considered and not added: TechCrunch's `/feed/`. `User-agent: *` disallows only `/wp-admin/`,
+ * Considered and not added: TechCrunch's `/feed/`. `robots.txt` checked with `curl` on
+ * 2026-09-16: `User-agent: *` disallows only `/wp-admin/`,
  * `/wp-json/`, `/search/`, `/?s=` and customizer previews, so `/feed/` is open to the
  * `User-Agent` this project sends. But the same file gives `anthropic-ai`, `ClaudeBot` and
  * `Claude-Web` `Disallow: /`, and every capture in this repo is taken by a Claude Run. A
  * capture TechCrunch has asked Anthropic's agents not to take is not one a Run should take, so
  * it waits for one taken by hand; with that capture committed, adding it is one entry below.
  */
-export const NEWS_FEEDS: readonly NewsFeed[] = [
-  {
-    name: "techmeme",
-    publication: "Techmeme",
-    url: "https://www.techmeme.com/feed.xml",
-  },
-];
+export const NEWS_FEEDS: readonly NewsFeed[] = [];
 
 /** An article as News stores it, whichever feed it came from. */
 export type NewsArticle = {

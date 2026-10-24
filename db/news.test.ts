@@ -6,6 +6,7 @@ import {
   persistNewsArticles,
   persistNewsItems,
   readCatalogueCompaniesForNews,
+  readLatestLaunchHnPublishedAt,
   readNews,
   readNewsCoveredProfileIds,
   readStoredNewsArticles,
@@ -170,6 +171,27 @@ describe("persistNewsArticles", () => {
     expect(
       (await readStoredNewsArticles(scratch.db)).map((row) => row.title),
     ).toEqual(["Headline 5", "Headline 3", "Headline 1"]);
+  });
+});
+
+describe("readLatestLaunchHnPublishedAt", () => {
+  it("finds none when nothing is stored", async () => {
+    expect(await readLatestLaunchHnPublishedAt(scratch.db)).toBeNull();
+  });
+
+  it("reads the newest Launch HN post's date, ignoring an ordinary article beside it", async () => {
+    await persistNewsArticles(scratch.db, {
+      articles: [
+        article(1, { title: "Launch HN: Acme (YC S24) – A thing" }),
+        article(5, { title: "Launch HN: Zeta (YC S26) – Another thing" }),
+        // Published later than both, but not a Launch HN post.
+        article(9, { title: "Zeta raises a seed round" }),
+      ],
+    });
+
+    expect(await readLatestLaunchHnPublishedAt(scratch.db)).toEqual(
+      new Date(FIRST_PUBLISHED + 5 * A_DAY),
+    );
   });
 });
 

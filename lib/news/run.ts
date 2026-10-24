@@ -3,6 +3,7 @@ import {
   persistNewsArticles,
   persistNewsItems,
   readCatalogueCompaniesForNews,
+  readLatestLaunchHnPublishedAt,
   readNewsCoveredProfileIds,
   readStoredNewsArticles,
   recordNewsCoverage,
@@ -21,13 +22,20 @@ import {
   type HistoryQuery,
 } from "./history-search";
 import type { HistorySearchClient } from "./history-search-fetch";
+import {
+  launchHnSearchUrl,
+  launchHnSince,
+  parseLaunchHnSearch,
+} from "./launch-hn";
 import { NEWS_DISPLAY_THRESHOLD, scoreNewsMatch } from "./match";
 
 /**
- * One News run, down three paths, for the whole Catalogue. The feeds: read every feed, store each
- * article once, and score the ones this run had never read against every Company Profile. The
- * first runs: for each Company Profile News has not seen before, score it against every article
- * already stored, and search two years of Hacker News for it. Then store all of it.
+ * One News run, down four paths, for the whole Catalogue. The feeds: read every feed, store each
+ * article once, and score the ones this run had never read against every Company Profile.
+ * Launch HN: a widening Hacker News search read and scored the same way as the feeds, for the
+ * reason docs/adr/0023 gives. The first runs: for each Company Profile News has not seen before,
+ * score it against every article already stored, and search two years of Hacker News for it.
+ * Then store all of it.
  *
  * Nobody's Keeps are consulted. Who reads what is decided by `readNews` on the way out; what is
  * gathered is decided by what ingest has put in the Catalogue. See docs/adr/0022.
@@ -45,6 +53,15 @@ export type NewsFeedOutcome =
       readonly rejections: readonly IngestRejection[];
     }
   | { readonly feed: string; readonly failure: string };
+
+/** What became of this run's Launch HN search: how many posts it gave, or why it gave none. */
+export type NewsLaunchHnOutcome =
+  | {
+      readonly articles: number;
+      /** Hits skipped for a field that did not validate. */
+      readonly rejections: readonly IngestRejection[];
+    }
+  | { readonly failure: string };
 
 /** What became of one Company Profile's history search: what it found, or why nothing. */
 export type NewsSearchOutcome =
@@ -82,6 +99,8 @@ export type NewsRunReport = {
   readonly companies: number;
   /** One per feed, in the order they were read. */
   readonly feeds: readonly NewsFeedOutcome[];
+  /** This run's Launch HN search. See docs/adr/0023. */
+  readonly launchHn: NewsLaunchHnOutcome;
   /** The feed articles this run stored, and how many of them it had never read before. */
   readonly articles: {
     readonly stored: number;
@@ -267,6 +286,62 @@ async function readFeeds(
 }
 
 /**
+ * Reads this run's Launch HN search: the stories created since `since`, titled a Launch HN
+ * post. Never throws; a request that cannot be fetched or that changes shape is a failure
+ * naming why, and costs this run's Launch HN articles and nothing else. See docs/adr/0023 for
+ * why a Launch HN failure, alone, never fails the run.
+ */
+async function readLaunchHn(
+  client: HistorySearchClient,
+  since: Date,
+): Promise<{
+  outcome: NewsLaunchHnOutcome;
+  articles: readonly NewsArticle[];
+}> {
+  let body: unknown;
+
+  try {
+    body = await client.search(launchHnSearchUrl(since));
+  } catch (error) {
+    return { outcome: { failure: messageOf(error) }, articles: [] };
+  }
+
+  const parsed = parseLaunchHnSearch(body, { since });
+
+  if (!parsed.success) {
+    return {
+      outcome: {
+        failure: `rejected on ${parsed.rejection.field}: ${parsed.rejection.reason}`,
+      },
+      articles: [],
+    };
+  }
+
+  // Hits to read and not one that validated is a changed shape, not a quiet week: a quiet week
+  // is zero hits, or hits none titled a Launch HN post, neither of which rejects anything.
+  const firstRejection = parsed.rejections[0];
+
+  if (parsed.articles.length === 0 && firstRejection !== undefined) {
+    return {
+      outcome: {
+        failure:
+          `rejected all ${parsed.rejections.length} of its hits, the first on ` +
+          `${firstRejection.field}: ${firstRejection.reason}`,
+      },
+      articles: [],
+    };
+  }
+
+  return {
+    outcome: {
+      articles: parsed.articles.length,
+      rejections: parsed.rejections,
+    },
+    articles: parsed.articles,
+  };
+}
+
+/**
  * Runs one company's queries and returns the distinct articles they found, or why they found
  * none. Any query failing fails the company: half a search reported as a whole one would read as
  * a company with less news than it has, and would then be recorded as searched.
@@ -340,16 +415,20 @@ async function searchCompany(
  * it was gathered. See docs/adr/0022, which amends docs/adr/0019 on who gathering is for and
  * docs/adr/0010 on which pairs are stored.
  *
- * Three paths, in order:
+ * Four paths, in order:
  *
  * 1. **The feeds.** Every feed is read and every article stored once in `news_articles`, matched
  *    or not, per docs/adr/0022. The articles this run had never read are scored against every
  *    Company Profile in the Catalogue.
- * 2. **The Company Profiles News has not seen.** Each is scored against the articles read on
- *    earlier runs — today's are left out, because the path above has already scored them against
- *    the whole Catalogue, and a pair scored twice is only a pair counted twice — so a company
- *    that entered the Catalogue after an article was published still gets it.
- * 3. **The history search.** Two years of Hacker News for each of those same Profiles, capped at
+ * 2. **Launch HN.** A widening Hacker News search (docs/adr/0023), read and stored and scored
+ *    exactly as the feeds are, since it answers who Launch HN posts about no better than a feed
+ *    does: `since` is the later of the newest Launch HN post already stored and
+ *    `LAUNCH_HN_MIN_WINDOW_DAYS` ago.
+ * 3. **The Company Profiles News has not seen.** Each is scored against the articles read on
+ *    earlier runs — today's are left out, because the paths above have already scored them
+ *    against the whole Catalogue, and a pair scored twice is only a pair counted twice — so a
+ *    company that entered the Catalogue after an article was published still gets it.
+ * 4. **The history search.** Two years of Hacker News for each of those same Profiles, capped at
  *    `HISTORY_SEARCHES_PER_RUN` a run, oldest-created first. Every result is scored against the
  *    Company Profile it was searched for and no other, per docs/adr/0018.
  *
@@ -360,13 +439,14 @@ async function searchCompany(
  * that table's unique index on `(profile_id, url)` is the key, as `news_articles`' on `url` is.
  *
  * Every feed is read even when the Catalogue is empty, so a run proves its feeds still parse on
- * a day it has nothing to match them against.
+ * a day it has nothing to match them against. Launch HN is read the same way, feeds or none.
  *
- * Never throws for a feed or a search problem. A feed that cannot be fetched, no longer parses,
- * or has every one of its items rejected is a failure naming the feed; a search that cannot be
- * fetched, no longer parses, or has every one of its hits rejected is a failure naming the
- * company. Either way the next one is still tried. A database error does throw, since nothing
- * after it could be written either.
+ * Never throws for a feed, Launch HN, or a search problem. A feed that cannot be fetched, no
+ * longer parses, or has every one of its items rejected is a failure naming the feed; Launch HN
+ * failing the same way is named in the report and never fails the run on its own, per
+ * docs/adr/0023; a search that cannot be fetched, no longer parses, or has every one of its hits
+ * rejected is a failure naming the company. Either way the next one is still tried. A database
+ * error does throw, since nothing after it could be written either.
  */
 export async function fetchNewsForTheCatalogue(
   db: Database,
@@ -386,7 +466,17 @@ export async function fetchNewsForTheCatalogue(
   const catalogue = await readCatalogueCompaniesForNews(db);
 
   const read = await readFeeds(feeds, client);
-  const articles = await persistNewsArticles(db, { articles: read.articles });
+  const launchHnSinceDate = launchHnSince(
+    await readLatestLaunchHnPublishedAt(db),
+    now,
+  );
+  const { outcome: launchHn, articles: launchHnArticles } = await readLaunchHn(
+    search,
+    launchHnSinceDate,
+  );
+  const articles = await persistNewsArticles(db, {
+    articles: [...read.articles, ...launchHnArticles],
+  });
 
   // Oldest-created first, the order `readCatalogueCompaniesForNews` answers in, so the Company
   // Profile that has waited longest for its first search is the one a spent cap does not strand.
@@ -466,6 +556,7 @@ export async function fetchNewsForTheCatalogue(
   return {
     companies: catalogue.length,
     feeds: read.outcomes,
+    launchHn,
     articles: {
       stored: articles.inserted + articles.updated,
       fresh: articles.inserted,
@@ -496,21 +587,27 @@ export async function fetchNewsForTheCatalogue(
 
 /**
  * Why the run should exit non-zero, one line per path that failed, or nothing when it should
- * not. The two paths are judged apart so a run says which half failed.
+ * not. The feeds and the searches are judged apart so a run says which half failed; Launch HN
+ * is judged by neither rule, for the reason given below.
  *
- * The feeds fail when not one feed was read. A run that read its feeds and matched nothing is not
- * a failure — a two-person startup can go a month unreported — but a run that read no feed at all
- * has checked nothing.
+ * The feeds fail when there was at least one to read and not one of them was. `NEWS_FEEDS` is
+ * empty since Ticket #220 (docs/adr/0023), so a run with none configured has nothing to have
+ * failed at reading — the same reasoning the searches already had for a Catalogue with nothing
+ * new to search for. A run that read its feeds and matched nothing is not a failure either — a
+ * two-person startup can go a month unreported.
  *
  * The searches fail when there was at least one to run and every one failed, even though the
  * feeds were read: the feeds succeeding says nothing about whether the history was searched. A
  * search that found nothing is a quiet company, not a failure. A feed or a search that failed
  * beside one that did not is named in the summary rather than failing the run.
+ *
+ * Launch HN has no rule of its own, by design: see docs/adr/0023. A failed Launch HN search is
+ * always named in the summary, and never on its own reason enough to fail the run.
  */
 export function newsRunFailures(report: NewsRunReport): string[] {
   const failures: string[] = [];
 
-  if (report.feeds.every(failed)) {
+  if (report.feeds.length > 0 && report.feeds.every(failed)) {
     failures.push(
       `News could not read any of its ${report.feeds.length} ${report.feeds.length === 1 ? "feed" : "feeds"}.`,
     );
@@ -570,8 +667,20 @@ export function summariseNewsRun(report: NewsRunReport): string {
     }
   }
 
+  if (failed(report.launchHn)) {
+    lines.push(`Launch HN: failed, ${report.launchHn.failure}`);
+  } else {
+    lines.push(
+      `Launch HN: read ${report.launchHn.articles} ${plural(report.launchHn.articles, "post", "posts")}.`,
+    );
+
+    for (const rejection of report.launchHn.rejections) {
+      lines.push(`  rejected on ${rejection.field}: ${rejection.reason}`);
+    }
+  }
+
   lines.push(
-    `Stored ${report.articles.stored} feed ${plural(report.articles.stored, "article", "articles")}, ` +
+    `Stored ${report.articles.stored} ${plural(report.articles.stored, "article", "articles")} from feeds and Launch HN, ` +
       `${report.articles.fresh} new to the Catalogue.`,
   );
 
@@ -603,10 +712,10 @@ export function summariseNewsRun(report: NewsRunReport): string {
   }
 
   lines.push(
-    describePath("From feeds", report.fromFeeds),
+    describePath("From feeds and Launch HN", report.fromFeeds),
     describePath("From stored articles", report.fromStored),
     describePath("From searches", report.fromSearches),
-    `${report.onSeveralCompanies} feed ${plural(report.onSeveralCompanies, "article", "articles")} ` +
+    `${report.onSeveralCompanies} ${plural(report.onSeveralCompanies, "article", "articles")} from feeds or Launch HN ` +
       `cleared the threshold against more than one Company Profile.`,
     `Stored ${report.inserted} new and updated ${report.updated}; ` +
       `${report.unattributed} ${plural(report.unattributed, "pair", "pairs")} scored zero and were not stored.`,
