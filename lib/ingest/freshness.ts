@@ -204,7 +204,9 @@ export function describeLateSource(report: LateSourceReport): string {
   const lastSuccess =
     freshness.verdict === "never-succeeded"
       ? "It has never completed successfully"
-      : `It last completed successfully at ${moment(freshness.lastSuccessAt)}`;
+      : freshness.lastSuccessAt === null
+        ? "It has never completed successfully"
+        : `It last completed successfully at ${moment(freshness.lastSuccessAt)}`;
 
   return (
     `**${source.name}** should have run at ${moment(freshness.dueAt)} ` +
