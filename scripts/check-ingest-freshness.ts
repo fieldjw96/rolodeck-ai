@@ -89,7 +89,7 @@ const issuesSchema = z.array(
 
 type Environment = z.infer<typeof environmentSchema>;
 
-async function callGitHub(
+export async function callGitHub(
   environment: Environment,
   route: string,
   init: RequestInit = {},
@@ -134,7 +134,7 @@ async function readWorkflowFiles(): Promise<WorkflowFile[]> {
   );
 }
 
-type SourceHistory = {
+export type SourceHistory = {
   workflowState: string;
   workflowCreatedAt: Date;
   lastSuccessAt: Date | null;
@@ -156,7 +156,7 @@ type SourceHistory = {
  * especially under load. When the filtered query returns no runs, a second unfiltered request is
  * made to confirm. A Source is reported never-succeeded only when both requests agree.
  */
-async function fetchSourceHistory(
+export async function fetchSourceHistory(
   environment: Environment,
   source: IngestSource,
 ): Promise<SourceHistory> {
