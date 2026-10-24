@@ -30,5 +30,5 @@ jobs:
       npm-script: ingest:news
     secrets:
       # The only credential News needs. Gathering is for the whole Catalogue, so there is no
-      # User to name: ADR 0022 removed ROLODECK_NEWS_KEEPS_USER_ID.
+      # User for it to be told about: ADR 0022 removed the variable that named one.
       ROLODECK_INGEST_DATABASE_URL: ${{ secrets.ROLODECK_INGEST_DATABASE_URL }}

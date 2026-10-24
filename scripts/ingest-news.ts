@@ -22,7 +22,7 @@ import {
  *     ROLODECK_INGEST_DATABASE_URL=... npm run ingest:news
  *
  * One credential and no other environment: News gathers for the whole Catalogue, so there is no
- * User to name. `ROLODECK_NEWS_KEEPS_USER_ID` was that User and is gone — see docs/adr/0022.
+ * User for it to be told about. The variable that named one is gone — see docs/adr/0022.
  *
  * Exits non-zero when not one feed could be read, or when there was a Company Profile to search
  * for and not one search succeeded, saying which. A feed or a search that failed beside one that

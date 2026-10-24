@@ -141,9 +141,10 @@ for the same reason.
 `ROLODECK_INGEST_DATABASE_URL`: the running app reads neither, so neither belongs in Vercel
 either. The secret key is used only by `npm run account:provision`, which creates and rotates the
 smoke test's one password account; the database
-URL is ingest's. `ROLODECK_NEWS_KEEPS_USER_ID`, which only `npm run ingest:news` reads, is a
-user id from the Supabase dashboard; it names whose Keeps News gathers for, per ADR 0019, and
-owns nothing.
+URL is ingest's. `npm run ingest:news` needs nothing beyond that database URL: News gathers for
+the whole Catalogue, so there is no User for it to be told about (ADR 0022). If a user id for
+News is still set anywhere — a Vercel variable, a GitHub secret, a shell profile — it is read by
+nothing and can be deleted.
 
 Two of these are database credentials, and CLAUDE.md otherwise allows only ingest's in GitHub
 Actions. ADR 0014 is the ADR that widens that rule, and it widens it this far and no further:
