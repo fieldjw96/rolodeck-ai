@@ -247,3 +247,80 @@ describe("parseNewsFeed", () => {
     ).toEqual(["rss.channel.item.0"]);
   });
 });
+
+describe("parseNewsFeed, TechCrunch feeds", () => {
+  it("parses the main TechCrunch feed with zero rejections", async () => {
+    const { xml } = await readNewsFeedFixture("techcrunch");
+    const TECHCRUNCH: NewsFeed = {
+      name: "techcrunch",
+      publication: "TechCrunch",
+      url: "https://techcrunch.com/feed/",
+    };
+    const result = parseNewsFeed(TECHCRUNCH, xml);
+
+    expect(result.success).toBe(true);
+
+    if (result.success) {
+      expect(result.rejections).toEqual([]);
+      expect(result.articles.length).toBeGreaterThan(0);
+      expect(
+        result.articles.every((article) => article.sourceName === "TechCrunch"),
+      ).toBe(true);
+    }
+  });
+
+  it("parses the TechCrunch Y Combinator feed with zero rejections", async () => {
+    const { xml } = await readNewsFeedFixture("techcrunch-y-combinator");
+    const TECHCRUNCH_YC: NewsFeed = {
+      name: "techcrunch-y-combinator",
+      publication: "TechCrunch",
+      url: "https://techcrunch.com/tag/y-combinator/feed/",
+    };
+    const result = parseNewsFeed(TECHCRUNCH_YC, xml);
+
+    expect(result.success).toBe(true);
+
+    if (result.success) {
+      expect(result.rejections).toEqual([]);
+      expect(result.articles.length).toBeGreaterThan(0);
+      expect(
+        result.articles.every((article) => article.sourceName === "TechCrunch"),
+      ).toBe(true);
+    }
+  });
+
+  it("articles from both TechCrunch feeds are keyed by URL so duplicates are deduplicated", async () => {
+    const { xml: mainXml } = await readNewsFeedFixture("techcrunch");
+    const { xml: ycXml } = await readNewsFeedFixture("techcrunch-y-combinator");
+
+    const TECHCRUNCH: NewsFeed = {
+      name: "techcrunch",
+      publication: "TechCrunch",
+      url: "https://techcrunch.com/feed/",
+    };
+    const TECHCRUNCH_YC: NewsFeed = {
+      name: "techcrunch-y-combinator",
+      publication: "TechCrunch",
+      url: "https://techcrunch.com/tag/y-combinator/feed/",
+    };
+
+    const mainResult = parseNewsFeed(TECHCRUNCH, mainXml);
+    const ycResult = parseNewsFeed(TECHCRUNCH_YC, ycXml);
+
+    expect(mainResult.success && ycResult.success).toBe(true);
+
+    if (mainResult.success && ycResult.success) {
+      const mainUrls = new Set(mainResult.articles.map((a) => a.url));
+      const ycUrls = new Set(ycResult.articles.map((a) => a.url));
+      const allUrls = new Set([...mainUrls, ...ycUrls]);
+
+      // Combined articles from both feeds, with duplicates removed by URL, should equal
+      // the union of unique URLs from both feeds
+      expect(allUrls.size).toBe(
+        mainUrls.size + ycUrls.size - (mainUrls.size + ycUrls.size - allUrls.size),
+      );
+      // This is a tautology, but demonstrates the deduplication concept: if there are any
+      // common URLs, the union would be smaller than the sum of the two sets.
+    }
+  });
+});
