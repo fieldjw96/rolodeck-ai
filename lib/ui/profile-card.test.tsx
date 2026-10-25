@@ -103,6 +103,22 @@ describe("a Profile card", () => {
     expect(stated?.className).not.toBe("");
   });
 
+  it("shows the Sector and Stage as words, not as their stored slugs", () => {
+    render(
+      <ProfileCard
+        headingLevel={1}
+        name="Acme"
+        sector="saas-enterprise"
+        stage="series-b-plus"
+      />,
+    );
+
+    expect(screen.getByText("Enterprise SaaS")).toBeInTheDocument();
+    expect(screen.getByText("Series B+")).toBeInTheDocument();
+    expect(screen.queryByText("saas-enterprise")).not.toBeInTheDocument();
+    expect(screen.queryByText("series-b-plus")).not.toBeInTheDocument();
+  });
+
   it("renders no description when there is none to render", () => {
     render(
       <ProfileCard
@@ -306,7 +322,7 @@ describe("the full card", () => {
 
     expect(
       within(panel).getByText("Stage", { selector: "dt" }).nextElementSibling,
-    ).toHaveTextContent("seed");
+    ).toHaveTextContent("Seed");
 
     // Founded and Team used to sit here and could only ever read "Not stated": no Source
     // stores either, so no caller passed either, and the card asserted its own emptiness
@@ -324,6 +340,23 @@ describe("the full card", () => {
         "B2B",
       ),
     ).toBeInTheDocument();
+  });
+
+  it("shows the Sectors chip and Stage figure as words, not as their stored slugs", () => {
+    renderFull({ sector: "saas-enterprise", stage: "series-b-plus" });
+
+    const panel = screen.getByRole("tabpanel", { name: "Company" });
+
+    expect(
+      within(within(panel).getByRole("list", { name: "Sectors" })).getByText(
+        "Enterprise SaaS",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      within(panel).getByText("Stage", { selector: "dt" }).nextElementSibling,
+    ).toHaveTextContent("Series B+");
+    expect(screen.queryByText("saas-enterprise")).not.toBeInTheDocument();
+    expect(screen.queryByText("series-b-plus")).not.toBeInTheDocument();
   });
 
   it("lists each founder on the Team panel with their name, role and biography", () => {

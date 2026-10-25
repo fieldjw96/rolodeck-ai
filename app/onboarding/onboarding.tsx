@@ -3,7 +3,12 @@
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
-import { SECTOR_VALUES, STATED_STAGE_VALUES } from "../../db/profile-input";
+import {
+  SECTOR_LABELS,
+  SECTOR_VALUES,
+  STAGE_LABELS,
+  STATED_STAGE_VALUES,
+} from "../../db/profile-input";
 import { HOME_PATH } from "../../lib/auth/paths";
 import styles from "./onboarding.module.css";
 
@@ -140,7 +145,7 @@ export function Onboarding() {
                   checked={sectors.has(sector)}
                   onChange={() => setSectors(toggled(sectors, sector))}
                 />
-                {sector}
+                {SECTOR_LABELS[sector]}
               </label>
             ))}
           </div>
@@ -156,7 +161,7 @@ export function Onboarding() {
                   checked={stages.has(stage)}
                   onChange={() => setStages(toggled(stages, stage))}
                 />
-                {stage}
+                {STAGE_LABELS[stage]}
               </label>
             ))}
           </div>
