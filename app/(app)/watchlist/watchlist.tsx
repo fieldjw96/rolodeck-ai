@@ -48,7 +48,7 @@ const EMPTY_WATCHLIST_DETAIL =
   "Profiles you Keep in the Deck collect here, ready for a conversation.";
 const LOAD_ERROR_DETAIL = "Check your connection, then reload the page.";
 
-/** Names the Profile, so the reader knows exactly what did not take back. */
+/** Names the Profile, so the reader knows exactly which Pass did not save. */
 export function passErrorMessage(name: string): string {
   return `Couldn't Pass ${name}.`;
 }
