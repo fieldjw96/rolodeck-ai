@@ -1,0 +1,378 @@
+<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"
+	xmlns:content="http://purl.org/rss/1.0/modules/content/"
+	xmlns:wfw="http://wellformedweb.org/CommentAPI/"
+	xmlns:dc="http://purl.org/dc/elements/1.1/"
+	xmlns:atom="http://www.w3.org/2005/Atom"
+	xmlns:sy="http://purl.org/rss/1.0/modules/syndication/"
+	xmlns:slash="http://purl.org/rss/1.0/modules/slash/"
+	>
+
+<channel>
+	<title>TechCrunch</title>
+	<atom:link href="https://techcrunch.com/feed/" rel="self" type="application/rss+xml" />
+	<link>https://techcrunch.com/</link>
+	<description>Startup and Technology News</description>
+	<lastBuildDate>Sat, 24 Oct 2026 22:25:39 +0000</lastBuildDate>
+	<language>en-US</language>
+	<sy:updatePeriod>
+	hourly	</sy:updatePeriod>
+	<sy:updateFrequency>
+	1	</sy:updateFrequency>
+	<generator>https://wordpress.org/?v=6.9.10</generator>
+
+<image>
+	<url>https://techcrunch.com/wp-content/uploads/2015/02/cropped-cropped-favicon-gradient.png?w=32</url>
+	<title>TechCrunch</title>
+	<link>https://techcrunch.com/</link>
+	<width>32</width>
+	<height>32</height>
+</image> 
+	<item>
+		<title>Starlink seems to be working normally again in Ukraine</title>
+		<link>https://techcrunch.com/2026/10/24/starlink-seems-to-be-working-normally-again-in-ukraine/</link>
+		
+		<dc:creator><![CDATA[Anthony Ha]]></dc:creator>
+		<pubDate>Sat, 24 Oct 2026 20:46:34 +0000</pubDate>
+				<category><![CDATA[Government & Policy]]></category>
+		<category><![CDATA[Space]]></category>
+		<category><![CDATA[Donald Trump]]></category>
+		<category><![CDATA[Elon Musk]]></category>
+		<category><![CDATA[SpaceX]]></category>
+		<category><![CDATA[Starlink]]></category>
+		<category><![CDATA[ukraine]]></category>
+		<guid isPermaLink="false">https://techcrunch.com/?p=3181518</guid>
+
+					<description><![CDATA[Elon Musk reportedly ordered SpaceX to throttle Ukraine's Starlink access.]]></description>
+		
+		
+		
+			</item>
+		<item>
+		<title>Will AI expose the rickety infrastructure of the internet?</title>
+		<link>https://techcrunch.com/2026/10/24/will-ai-expose-the-rickety-infrastructure-of-the-internet/</link>
+		
+		<dc:creator><![CDATA[Anthony Ha]]></dc:creator>
+		<pubDate>Sat, 24 Oct 2026 20:15:33 +0000</pubDate>
+				<category><![CDATA[Security]]></category>
+		<category><![CDATA[Equity podcast]]></category>
+		<category><![CDATA[php]]></category>
+		<guid isPermaLink="false">https://techcrunch.com/?p=3181514</guid>
+
+					<description><![CDATA[The moment you realize the internet is "held together by glue and dreams."]]></description>
+		
+		
+		
+			</item>
+		<item>
+		<title>The AI graveyard: a running list of projects and startups that didn&#8217;t make it</title>
+		<link>https://techcrunch.com/2026/10/24/the-ai-graveyard-a-running-list-of-projects-and-startups-that-didnt-make-it/</link>
+		
+		<dc:creator><![CDATA[Lauren Forristal]]></dc:creator>
+		<pubDate>Sat, 24 Oct 2026 19:00:00 +0000</pubDate>
+				<category><![CDATA[AI]]></category>
+		<category><![CDATA[evergreens]]></category>
+		<category><![CDATA[Microsoft]]></category>
+		<category><![CDATA[OpenAI]]></category>
+		<category><![CDATA[siri ai]]></category>
+		<guid isPermaLink="false">https://techcrunch.com/?p=3162590</guid>
+
+					<description><![CDATA[From Apple's repeatedly delayed Siri AI to OpenAI's messy "super app" launch, here's a look at the AI projects that shut down or missed expectations.]]></description>
+		
+		
+		
+			</item>
+		<item>
+		<title>Instacart reportedly discussed selling itself with DoorDash and Uber</title>
+		<link>https://techcrunch.com/2026/10/24/instacart-reportedly-discussed-selling-itself-with-doordash-and-uber/</link>
+		
+		<dc:creator><![CDATA[Anthony Ha]]></dc:creator>
+		<pubDate>Sat, 24 Oct 2026 16:30:00 +0000</pubDate>
+				<category><![CDATA[Commerce]]></category>
+		<category><![CDATA[DoorDash]]></category>
+		<category><![CDATA[Instacart]]></category>
+		<category><![CDATA[Uber]]></category>
+		<guid isPermaLink="false">https://techcrunch.com/?p=3181509</guid>
+
+					<description><![CDATA[Instacart might sell itself to a larger competitor.]]></description>
+		
+		
+		
+			</item>
+		<item>
+		<title>Block&#8217;s new voice model sounds eerily human</title>
+		<link>https://techcrunch.com/2026/10/24/blocks-new-voice-model-sounds-eerily-human/</link>
+		
+		<dc:creator><![CDATA[Ivan Mehta]]></dc:creator>
+		<pubDate>Sat, 24 Oct 2026 16:00:00 +0000</pubDate>
+				<category><![CDATA[AI]]></category>
+		<category><![CDATA[block]]></category>
+		<category><![CDATA[jack dorsey]]></category>
+		<category><![CDATA[voice AI]]></category>
+		<guid isPermaLink="false">https://techcrunch.com/?p=3181490</guid>
+
+					<description><![CDATA[Block said that the voice model can run locally on a MacBook M4 Max]]></description>
+		
+		
+		
+			</item>
+		<item>
+		<title>PHP-ocalypse: How two critical web bugs almost broke the internet</title>
+		<link>https://techcrunch.com/2026/10/24/php-ocalypse-how-two-critical-web-bugs-almost-broke-the-internet/</link>
+		
+		<dc:creator><![CDATA[Zack Whittaker]]></dc:creator>
+		<pubDate>Sat, 24 Oct 2026 15:30:00 +0000</pubDate>
+				<category><![CDATA[Security]]></category>
+		<category><![CDATA[php]]></category>
+		<category><![CDATA[cybersecurity]]></category>
+		<category><![CDATA[cyberattack]]></category>
+		<guid isPermaLink="false">https://techcrunch.com/?p=3181497</guid>
+
+					<description><![CDATA[Two critical bugs in the PHP web programming language, used by the majority of the internet, threatened to upend the internet — and it's unlikely to be the last major software scare.]]></description>
+		
+		
+		
+			</item>
+		<item>
+		<title>These clever apps show off the iPhone Duo&#8217;s potential</title>
+		<link>https://techcrunch.com/2026/10/24/these-clever-apps-show-off-the-iphone-duos-potential/</link>
+		
+		<dc:creator><![CDATA[Sarah Perez]]></dc:creator>
+		<pubDate>Sat, 24 Oct 2026 15:00:00 +0000</pubDate>
+				<category><![CDATA[Apps]]></category>
+		<category><![CDATA[Apple]]></category>
+		<category><![CDATA[Duo]]></category>
+		<guid isPermaLink="false">https://techcrunch.com/?p=3180643</guid>
+
+					<description><![CDATA[From retro cassette players and virtual notebooks to flight trackers and even a digital toaster, developers are finding creative ways to take advantage of Apple's first foldable iPhone.]]></description>
+		
+		
+		
+			</item>
+		<item>
+		<title>Forced to pick, Grok’s AI model chooses Republicans. OpenAI’s picks Democrats. </title>
+		<link>https://techcrunch.com/2026/10/24/forced-to-pick-groks-ai-model-chooses-republicans-openais-picks-democrats/</link>
+		
+		<dc:creator><![CDATA[Rebecca Bellan]]></dc:creator>
+		<pubDate>Sat, 24 Oct 2026 15:00:00 +0000</pubDate>
+				<category><![CDATA[AI]]></category>
+		<category><![CDATA[Government & Policy]]></category>
+		<category><![CDATA[Elon Musk]]></category>
+		<category><![CDATA[SpaceX]]></category>
+		<category><![CDATA[vote]]></category>
+		<category><![CDATA[Exclusive]]></category>
+		<category><![CDATA[xAI]]></category>
+		<category><![CDATA[sam altman]]></category>
+		<category><![CDATA[OpenAI]]></category>
+		<category><![CDATA[ChatGPT]]></category>
+		<guid isPermaLink="false">https://techcrunch.com/?p=3181243</guid>
+
+					<description><![CDATA[A new study found Grok's AI overwhelmingly recommends Republican candidates while OpenAI's GPT favors Democrats, with the two AI models disagreeing in more than 90% of nearly 500 election races.]]></description>
+		
+		
+		
+			</item>
+		<item>
+		<title>The Boox Palma 2 Pro finally got me to stop reading on my phone</title>
+		<link>https://techcrunch.com/2026/10/24/the-boox-palma-2-pro-finally-got-me-to-stop-reading-on-my-phone/</link>
+		
+		<dc:creator><![CDATA[Aisha Malik]]></dc:creator>
+		<pubDate>Sat, 24 Oct 2026 14:15:00 +0000</pubDate>
+				<category><![CDATA[Hardware]]></category>
+		<category><![CDATA[Gadgets]]></category>
+		<guid isPermaLink="false">https://techcrunch.com/?p=3181189</guid>
+
+					<description><![CDATA[The $400 Boox Palma 2 Pro is a smartphone-sized e-reader designed for people who want to read books, articles, and documents on a small E Ink display. ]]></description>
+		
+		
+		
+			</item>
+		<item>
+		<title>Here are the top AI agents that can live in your text messages </title>
+		<link>https://techcrunch.com/2026/10/24/all-the-ai-agents-that-can-live-in-your-text-messages/</link>
+		
+		<dc:creator><![CDATA[Lauren Forristal]]></dc:creator>
+		<pubDate>Sat, 24 Oct 2026 14:00:00 +0000</pubDate>
+				<category><![CDATA[AI]]></category>
+		<category><![CDATA[instinct]]></category>
+		<category><![CDATA[AI agents]]></category>
+		<guid isPermaLink="false">https://techcrunch.com/?p=3173132</guid>
+
+					<description><![CDATA[We created a list of the most notable AI agents that can live in your text messages, from general assistants to agents designed for families, travel, and work.]]></description>
+		
+		
+		
+			</item>
+		<item>
+		<title>Startups don&#8217;t need to go viral to win customers</title>
+		<link>https://techcrunch.com/2026/10/23/startups-dont-need-to-go-viral-to-win-customers/</link>
+		
+		<dc:creator><![CDATA[Lucas Ropek]]></dc:creator>
+		<pubDate>Fri, 23 Oct 2026 23:07:45 +0000</pubDate>
+				<category><![CDATA[Startups]]></category>
+		<category><![CDATA[engine]]></category>
+		<category><![CDATA[Gamma]]></category>
+		<category><![CDATA[Google]]></category>
+		<guid isPermaLink="false">https://techcrunch.com/?p=3181279</guid>
+
+					<description><![CDATA[At TechCrunch Disrupt last week, two founders and a VC discussed how to not just gain an early following but keep one. ]]></description>
+		
+		
+		
+			</item>
+		<item>
+		<title>OpenAI says it will no longer train its AI models on the live internet, citing “significant risks”</title>
+		<link>https://techcrunch.com/2026/10/23/openai-says-it-will-no-longer-train-its-ai-models-on-the-live-internet-citing-significant-risks/</link>
+		
+		<dc:creator><![CDATA[Tim Fernholz]]></dc:creator>
+		<pubDate>Fri, 23 Oct 2026 23:05:49 +0000</pubDate>
+				<category><![CDATA[AI]]></category>
+		<guid isPermaLink="false">https://techcrunch.com/?p=3181396</guid>
+
+					<description><![CDATA[OpenAI will cut frontier models off from the internet weeks after one of its engineers said that solution wouldn't work. ]]></description>
+		
+		
+		
+			</item>
+		<item>
+		<title>Hottest toy for Christmas? Nvidia CEO plays with adorable Microduck robots, 20,000 sell</title>
+		<link>https://techcrunch.com/2026/10/23/hottest-toy-for-christmas-nvidia-ceo-plays-with-adorable-microduck-robots-20000-sell/</link>
+		
+		<dc:creator><![CDATA[Julie Bort]]></dc:creator>
+		<pubDate>Fri, 23 Oct 2026 21:59:19 +0000</pubDate>
+				<category><![CDATA[AI]]></category>
+		<category><![CDATA[Gadgets]]></category>
+		<category><![CDATA[TC]]></category>
+		<category><![CDATA[nvidia]]></category>
+		<category><![CDATA[pollen robotics]]></category>
+		<category><![CDATA[toys]]></category>
+		<guid isPermaLink="false">https://techcrunch.com/?p=3181412</guid>
+
+					<description><![CDATA[The robots, stomping their little feet and making tiny R2-D2 noises, sat, fell down dead for a "nap," and summersaulted on voice command. ]]></description>
+		
+		
+		
+			</item>
+		<item>
+		<title>VCs, Superhuman Mail founder share red flags about product-market fit</title>
+		<link>https://techcrunch.com/2026/10/23/vcs-superhuman-mail-founder-share-red-flags-about-product-market-fit/</link>
+		
+		<dc:creator><![CDATA[Dominic-Madori Davis]]></dc:creator>
+		<pubDate>Fri, 23 Oct 2026 20:57:13 +0000</pubDate>
+				<category><![CDATA[Startups]]></category>
+		<category><![CDATA[Venture]]></category>
+		<category><![CDATA[TechCrunch Disrupt]]></category>
+		<guid isPermaLink="false">https://techcrunch.com/?p=3181268</guid>
+
+					<description><![CDATA[Top investors from Iconiq and Sapphire Ventures, along with Rahul Vohra, the founder of Superhuman Mail, share the do's and don'ts for building hit products.]]></description>
+		
+		
+		
+			</item>
+		<item>
+		<title>TechCrunch Founder Summit 2026 roundtables: Go deeper on the challenges founders are solving right now </title>
+		<link>https://techcrunch.com/2026/10/23/techcrunch-founder-summit-2026-roundtables-go-deeper-on-the-challenges-founders-are-solving-right-now/</link>
+		
+		<dc:creator><![CDATA[TechCrunch Events]]></dc:creator>
+		<pubDate>Fri, 23 Oct 2026 20:03:14 +0000</pubDate>
+				<category><![CDATA[Startups]]></category>
+		<category><![CDATA[TechCrunch Founder Summit]]></category>
+		<guid isPermaLink="false">https://techcrunch.com/?p=3181272</guid>
+
+					<description><![CDATA[TechCrunch Founder Summit 2026 is coming to SoWa Power Station in Boston on November 4, bringing founders, investors, and operators together for a full day of candid conversations, practical sessions, live pitching, networking, and smaller roundtables built for deeper discussion. ]]></description>
+		
+		
+		
+			</item>
+		<item>
+		<title>Carta and NewView partner, hoping to entice more startups to let employees sell shares early</title>
+		<link>https://techcrunch.com/2026/10/23/carta-and-newview-partner-hoping-to-entice-more-startups-to-let-employees-sell-shares-early/</link>
+		
+		<dc:creator><![CDATA[Marina Temkin]]></dc:creator>
+		<pubDate>Fri, 23 Oct 2026 19:25:13 +0000</pubDate>
+				<category><![CDATA[Startups]]></category>
+		<category><![CDATA[Venture]]></category>
+		<category><![CDATA[Carta]]></category>
+		<category><![CDATA[NewView Capital]]></category>
+		<guid isPermaLink="false">https://techcrunch.com/?p=3181257</guid>
+
+					<description><![CDATA[A new program wants to encourage more startups to allow workers to cash out early by making it easier to transact tender offers.]]></description>
+		
+		
+		
+			</item>
+		<item>
+		<title>From Toast to Bessemer: Who founders will hear from at TechCrunch Founder Summit 2026 </title>
+		<link>https://techcrunch.com/2026/10/23/from-toast-to-bessemer-who-founders-will-hear-from-at-techcrunch-founder-summit-2026/</link>
+		
+		<dc:creator><![CDATA[TechCrunch Events]]></dc:creator>
+		<pubDate>Fri, 23 Oct 2026 19:06:23 +0000</pubDate>
+				<category><![CDATA[Startups]]></category>
+		<category><![CDATA[AI]]></category>
+		<category><![CDATA[Fundraising]]></category>
+		<category><![CDATA[TechCrunch Founder Summit]]></category>
+		<guid isPermaLink="false">https://techcrunch.com/?p=3181271</guid>
+
+					<description><![CDATA[Hosted by TechCrunch in partnership with Fidelity Private Shares, the full-day event goes beyond fundraising and AI to explore the realities of finding customers, building teams, sharpening a pitch, developing founder leadership, and scaling companies both inside and outside traditional startup hubs.]]></description>
+		
+		
+		
+			</item>
+		<item>
+		<title>Agent cloud startup Daytona hits $1B valuation backed by FirstMark and a who’s who of angels</title>
+		<link>https://techcrunch.com/2026/10/23/agent-cloud-startup-daytona-hits-1b-valuation-backed-by-firstmark-and-a-whos-who-of-angels/</link>
+		
+		<dc:creator><![CDATA[Julie Bort]]></dc:creator>
+		<pubDate>Fri, 23 Oct 2026 16:26:29 +0000</pubDate>
+				<category><![CDATA[Fundraising]]></category>
+		<category><![CDATA[Startups]]></category>
+		<category><![CDATA[Daytona]]></category>
+		<category><![CDATA[Firstmark]]></category>
+		<category><![CDATA[In Brief]]></category>
+		<guid isPermaLink="false">https://techcrunch.com/?p=3181153</guid>
+
+					<description><![CDATA[Daytona is building a cloud for agents that's like giving every agent its own computer. It has attracted founders of Stripe, Perplextity, Datadog, Mercor, and others as angels, it says.]]></description>
+		
+		
+		
+			</item>
+		<item>
+		<title>Commonwealth Fusion Systems gets $85M to build better fusion-ready semiconductors</title>
+		<link>https://techcrunch.com/2026/10/23/commonwealth-fusion-systems-gets-85m-to-build-better-fusion-ready-semiconductors/</link>
+		
+		<dc:creator><![CDATA[Tim De Chant]]></dc:creator>
+		<pubDate>Fri, 23 Oct 2026 16:20:28 +0000</pubDate>
+				<category><![CDATA[Climate]]></category>
+		<category><![CDATA[Chips Act]]></category>
+		<category><![CDATA[Commonwealth Fusion Systems]]></category>
+		<category><![CDATA[fusion power]]></category>
+		<guid isPermaLink="false">https://techcrunch.com/?p=3181139</guid>
+
+					<description><![CDATA[Top-funded fusion startup Commonwealth Fusion Systems received an $85 million award from the federal government to advance conductors for fusion power plants.]]></description>
+		
+		
+		
+			</item>
+		<item>
+		<title>What some of Anthropic’s backers are worth before its IPO</title>
+		<link>https://techcrunch.com/2026/10/23/what-some-of-anthropics-backers-are-reportedly-worth-before-its-ipo/</link>
+		
+		<dc:creator><![CDATA[Marina Temkin]]></dc:creator>
+		<pubDate>Fri, 23 Oct 2026 16:02:43 +0000</pubDate>
+				<category><![CDATA[Venture]]></category>
+		<category><![CDATA[Anthropic]]></category>
+		<category><![CDATA[Eric Schmidt]]></category>
+		<category><![CDATA[ICONIQ]]></category>
+		<category><![CDATA[IPO]]></category>
+		<category><![CDATA[menlo ventures]]></category>
+		<category><![CDATA[Sequoia Capital]]></category>
+		<category><![CDATA[sound ventures]]></category>
+		<category><![CDATA[Spark Capital]]></category>
+		<guid isPermaLink="false">https://techcrunch.com/?p=3181130</guid>
+
+					<description><![CDATA[Early-stage and follow-on investors in the AI lab are already sitting on major paper returns.]]></description>
+		
+		
+		
+			</item>
+	</channel>
+</rss>
