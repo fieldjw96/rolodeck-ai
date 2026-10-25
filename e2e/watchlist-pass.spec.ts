@@ -18,6 +18,22 @@ async function login(page: Page, baseURL: string, user: SeededUser) {
   await expect(page).toHaveURL(`${baseURL}/deck`);
 }
 
+/** Clicks the Deck's Keep button and waits for its write to land, so a Watchlist visited
+ * right after is reading a Keep that has actually happened rather than racing one `deck.tsx`
+ * fired with `keepalive` and never waits on (see its own `recordSwipe`). Started before the
+ * click, same as that module's write, so a response fast enough to land inside the click
+ * itself is still caught. */
+async function keep(page: Page) {
+  await Promise.all([
+    page.waitForResponse(
+      (response) =>
+        /\/api\/profiles\/[^/]+\/keep$/.test(response.url()) &&
+        response.request().method() === "POST",
+    ),
+    page.getByRole("button", { name: "Keep" }).click(),
+  ]);
+}
+
 test("Passing a Kept Profile from the Watchlist takes it back, and the Watchlist still does not carry it after a reload", async ({
   page,
   app,
@@ -29,10 +45,10 @@ test("Passing a Kept Profile from the Watchlist takes it back, and the Watchlist
 
   // Keep both Profiles so the Watchlist has one left after the Pass under test.
   await expect(page.getByRole("heading", { name: newer })).toBeVisible();
-  await page.getByRole("button", { name: "Keep" }).click();
+  await keep(page);
 
   await expect(page.getByRole("heading", { name: older })).toBeVisible();
-  await page.getByRole("button", { name: "Keep" }).click();
+  await keep(page);
 
   await page.getByRole("link", { name: "Watchlist" }).click();
   await expect(page).toHaveURL(`${app.baseURL}/watchlist`);
@@ -65,7 +81,7 @@ test("Passing the only Kept Profile from the Watchlist shows the empty state", a
   await login(page, app.baseURL, seededUser);
 
   await expect(page.getByRole("heading", { name: newer })).toBeVisible();
-  await page.getByRole("button", { name: "Keep" }).click();
+  await keep(page);
 
   await page.getByRole("link", { name: "Watchlist" }).click();
   await expect(page).toHaveURL(`${app.baseURL}/watchlist`);
