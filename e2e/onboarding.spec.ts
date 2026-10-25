@@ -36,13 +36,13 @@ test("a User who has never saved a User Profile is asked before the Deck, and st
   //
   // `exact` is load-bearing on every name matched in this file. Playwright's `name` option is a
   // case-insensitive *substring* match by default, and this screen renders a closed list with
-  // values that contain each other: "seed" is a substring of "pre-seed", so without `exact` the
+  // values that contain each other: "Seed" is a substring of "Pre-seed", so without `exact` the
   // locator resolves to two checkboxes and fails on strict mode rather than on the assertion.
   await expect(
-    page.getByRole("checkbox", { name: "ai-ml", exact: true }),
+    page.getByRole("checkbox", { name: "AI / ML", exact: true }),
   ).toBeChecked();
   await expect(
-    page.getByRole("checkbox", { name: "seed", exact: true }),
+    page.getByRole("checkbox", { name: "Seed", exact: true }),
   ).toBeChecked();
 
   await page.getByRole("button", { name: "Save and see my Deck" }).click();
@@ -117,15 +117,15 @@ test("skipping is one click, saves every preference empty, and is still editable
   const stages = page.getByRole("group", { name: "Stages", exact: true });
 
   await expect(
-    sectors.getByRole("checkbox", { name: "ai-ml", exact: true }),
+    sectors.getByRole("checkbox", { name: "AI / ML", exact: true }),
   ).not.toBeChecked();
   await expect(
-    stages.getByRole("checkbox", { name: "seed", exact: true }),
+    stages.getByRole("checkbox", { name: "Seed", exact: true }),
   ).not.toBeChecked();
 
   // Not a one-time-only screen: the User who skipped can still state a preference later from
   // the same Settings page everyone else edits.
-  await sectors.getByRole("checkbox", { name: "fintech", exact: true }).click();
+  await sectors.getByRole("checkbox", { name: "Fintech", exact: true }).click();
   await page.getByRole("button", { name: /save/i }).click();
   await expect(page.getByRole("status")).toContainText("Saved.");
 });

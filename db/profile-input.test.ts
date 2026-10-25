@@ -1,7 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 
-import { parseProfileInput, profileInputSchema } from "./profile-input";
+import {
+  parseProfileInput,
+  profileInputSchema,
+  SECTOR_LABELS,
+  SECTOR_VALUES,
+  STAGE_LABELS,
+  STAGE_VALUES,
+} from "./profile-input";
 
 const VALID_INPUT = {
   name: "Sprocket",
@@ -61,6 +68,44 @@ const MALFORMED_PAYLOADS: ReadonlyArray<{
     field: "website",
   },
 ];
+
+describe("SECTOR_LABELS and STAGE_LABELS", () => {
+  it("has exactly one label per Sector value, no more and no fewer", () => {
+    expect(Object.keys(SECTOR_LABELS).sort()).toEqual(
+      [...SECTOR_VALUES].sort(),
+    );
+  });
+
+  it("has exactly one label per Stage value, no more and no fewer", () => {
+    expect(Object.keys(STAGE_LABELS).sort()).toEqual([...STAGE_VALUES].sort());
+  });
+
+  it("holds the words from the Ticket's table, exactly", () => {
+    expect(SECTOR_LABELS).toEqual({
+      "ai-ml": "AI / ML",
+      "developer-tools": "Developer tools",
+      "data-infrastructure": "Data infrastructure",
+      "saas-enterprise": "Enterprise SaaS",
+      fintech: "Fintech",
+      "health-bio": "Health & bio",
+      security: "Security",
+      "hardware-robotics": "Hardware & robotics",
+      "climate-energy": "Climate & energy",
+      "consumer-marketplace": "Consumer & marketplaces",
+      "vertical-saas": "Vertical SaaS",
+      other: "Other",
+    });
+
+    expect(STAGE_LABELS).toEqual({
+      "pre-seed": "Pre-seed",
+      seed: "Seed",
+      "series-a": "Series A",
+      "series-b-plus": "Series B+",
+      growth: "Growth",
+      "not-stated": "Not stated",
+    });
+  });
+});
 
 describe("profileInputSchema", () => {
   it("parses a valid payload with no data loss", () => {

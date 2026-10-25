@@ -2,7 +2,12 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 
-import { SECTOR_VALUES, STATED_STAGE_VALUES } from "../../../db/profile-input";
+import {
+  SECTOR_LABELS,
+  SECTOR_VALUES,
+  STAGE_LABELS,
+  STATED_STAGE_VALUES,
+} from "../../../db/profile-input";
 import { StateNotice } from "../../../lib/ui/state-notice";
 import styles from "./settings.module.css";
 
@@ -257,7 +262,7 @@ export function Settings() {
                   checked={values.sectors.has(sector)}
                   onChange={() => toggleSector(sector)}
                 />
-                {sector}
+                {SECTOR_LABELS[sector]}
               </label>
             ))}
           </div>
@@ -273,7 +278,7 @@ export function Settings() {
                   checked={values.excludedSectors.has(sector)}
                   onChange={() => toggleExcludedSector(sector)}
                 />
-                {sector}
+                {SECTOR_LABELS[sector]}
               </label>
             ))}
           </div>
@@ -289,7 +294,7 @@ export function Settings() {
                   checked={values.stages.has(stage)}
                   onChange={() => toggleStage(stage)}
                 />
-                {stage}
+                {STAGE_LABELS[stage]}
               </label>
             ))}
           </div>
