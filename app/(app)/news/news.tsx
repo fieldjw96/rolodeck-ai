@@ -2,8 +2,18 @@
 
 import { useEffect, useState } from "react";
 
+import { SECTOR_LABELS } from "../../../db/profile-input";
 import { StateNotice } from "../../../lib/ui/state-notice";
 import styles from "./news.module.css";
+
+/** A Sector's label, or the raw value where it names none: `profile.sector` crosses the API
+ * boundary as a plain string, so a value off `SECTOR_VALUES` renders as itself rather than
+ * blank. */
+function sectorLabel(sector: string): string {
+  return Object.hasOwn(SECTOR_LABELS, sector)
+    ? (SECTOR_LABELS as Record<string, string>)[sector]!
+    : sector;
+}
 
 type NewsItem = {
   id: string;
@@ -146,7 +156,9 @@ export function News() {
               <h2 id={headingId} className={styles.companyName}>
                 {company.profile.name}
               </h2>
-              <p className={styles.sector}>{company.profile.sector}</p>
+              <p className={styles.sector}>
+                {sectorLabel(company.profile.sector)}
+              </p>
             </div>
             <ol className={styles.items}>
               {company.items.map((item) => (

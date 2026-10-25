@@ -4,7 +4,21 @@ import { useId, useState, type KeyboardEvent } from "react";
 
 import { NOT_STATED_STAGE } from "../../db/not-stated-stage";
 import type { CompanyLinks, Founder } from "../../db/profile-input";
+import { SECTOR_LABELS } from "../../db/sector-labels";
+import { STAGE_LABELS } from "../../db/stage-labels";
 import styles from "./profile-card.module.css";
+
+/**
+ * A Sector or Stage's label, or the raw value where it names none: every caller in this repo
+ * passes a value out of `SECTOR_VALUES`/`STAGE_VALUES`, but the prop is typed as a plain
+ * `string` so a test fixture may pass anything.
+ */
+function labelOf(
+  value: string,
+  labels: Readonly<Record<string, string>>,
+): string {
+  return Object.hasOwn(labels, value) ? labels[value]! : value;
+}
 
 type ProfileCardProps = {
   name: string;
@@ -70,7 +84,9 @@ function CompactCard({
       <dl className={styles.meta}>
         <div className={styles.field}>
           <dt className={styles.fieldLabel}>Sector</dt>
-          <dd className={styles.fieldValue}>{sector}</dd>
+          <dd className={styles.fieldValue}>
+            {labelOf(sector, SECTOR_LABELS)}
+          </dd>
         </div>
         <div className={styles.field}>
           <dt className={styles.fieldLabel}>Stage</dt>
@@ -99,9 +115,11 @@ function StageValue({
   className: string | undefined;
 }) {
   return stage === NOT_STATED_STAGE ? (
-    <dd className={`${className} ${styles.notStated}`}>Not stated</dd>
+    <dd className={`${className} ${styles.notStated}`}>
+      {labelOf(stage, STAGE_LABELS)}
+    </dd>
   ) : (
-    <dd className={className}>{stage}</dd>
+    <dd className={className}>{labelOf(stage, STAGE_LABELS)}</dd>
   );
 }
 
@@ -266,7 +284,7 @@ function CompanyPanel({
       )}
 
       <ul className={styles.chips} aria-label="Sectors">
-        <li className={styles.chip}>{sector}</li>
+        <li className={styles.chip}>{labelOf(sector, SECTOR_LABELS)}</li>
       </ul>
     </>
   );

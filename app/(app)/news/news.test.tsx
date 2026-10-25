@@ -99,6 +99,10 @@ describe("News", () => {
     const published = within(companies[0]!).getByText("Sep 5, 2026");
     expect(published).toHaveAttribute("datetime", "2026-09-05T12:00:00.000Z");
     expect(within(companies[0]!).getByText("TechCrunch")).toBeInTheDocument();
+
+    // RAMP and MERCURY both state `fintech`, which reads as the word "Fintech", not the slug.
+    expect(within(companies[0]!).getByText("Fintech")).toBeInTheDocument();
+    expect(screen.queryByText("fintech")).not.toBeInTheDocument();
   });
 
   it("says so, with a designed empty state, when there is no News", async () => {
