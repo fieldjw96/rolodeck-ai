@@ -1,4 +1,5 @@
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -11,6 +12,7 @@ import {
   EMPTY_WATCHLIST_MESSAGE,
   LOAD_ERROR_MESSAGE,
   Watchlist,
+  passErrorMessage,
 } from "./watchlist";
 
 type KeptProfile = {
@@ -39,6 +41,56 @@ const globex: KeptProfile = {
 
 function jsonResponse(body: unknown): Response {
   return { ok: true, json: async () => body } as Response;
+}
+
+/**
+ * Answers `pages` at once and holds every Pass POST open until the test settles it by URL
+ * with a status — the same shape `deck.test.tsx`'s `stubSwipes` uses, so a test can look at
+ * the Watchlist with a write still in flight, or retry it.
+ */
+function stubPass(pages: Record<string, unknown>) {
+  const open: { url: string; settle: (response: Response) => void }[] = [];
+  const posted: string[] = [];
+
+  const fetchMock = vi.fn(
+    async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === "string" ? input : input.toString();
+
+      if ((init?.method ?? "GET") === "POST") {
+        posted.push(url);
+        return new Promise<Response>((settle) => open.push({ url, settle }));
+      }
+
+      const body = pages[`GET ${url}`];
+
+      if (body === undefined) {
+        throw new Error(`unexpected fetch: GET ${url}`);
+      }
+
+      return jsonResponse(body);
+    },
+  );
+
+  vi.stubGlobal("fetch", fetchMock);
+
+  return {
+    posted: () => [...posted],
+    pending: () => open.map((request) => request.url),
+    answer(url: string, status: number) {
+      const at = open.findIndex((request) => request.url === url);
+
+      if (at === -1) {
+        throw new Error(`no pending request ${url}`);
+      }
+
+      const [request] = open.splice(at, 1);
+      request!.settle(
+        (status < 400
+          ? { ok: true, status, json: async () => ({}) }
+          : { ok: false, status }) as Response,
+      );
+    },
+  };
 }
 
 afterEach(() => {
@@ -112,7 +164,7 @@ describe("the Watchlist", () => {
       return screen.findByRole("button", { name: "Open Acme" });
     }
 
-    it("offers each row as a real button and opens the full card, with its tabs and no Keep or Pass, on a pointer click", async () => {
+    it("offers each row as a real button and opens the full card, with its tabs, a Pass button and no Keep, on a pointer click", async () => {
       const row = await renderReady();
 
       expect(row.tagName).toBe("BUTTON");
@@ -128,8 +180,11 @@ describe("the Watchlist", () => {
           .map((tab) => tab.textContent),
       ).toEqual(["Company", "Team", "Contact"]);
       expect(
-        within(dialog).queryByRole("button", { name: /keep|pass/i }),
+        within(dialog).queryByRole("button", { name: "Keep" }),
       ).not.toBeInTheDocument();
+      expect(
+        within(dialog).getByRole("button", { name: "Pass" }),
+      ).toBeInTheDocument();
       expect(document.body.style.overflow).toBe("hidden");
     });
 
@@ -151,15 +206,15 @@ describe("the Watchlist", () => {
       fireEvent.click(await renderReady());
       const dialog = screen.getByRole("dialog");
       const close = within(dialog).getByRole("button", { name: "Close" });
-
-      const selectedTab = within(dialog).getByRole("tab", { selected: true });
+      // The last focusable stop in the panel, since the Pass button sits below the card.
+      const pass = within(dialog).getByRole("button", { name: "Pass" });
 
       // Shift+Tab off the first stop wraps to the last; Tab off the last wraps to the first.
       close.focus();
       fireEvent.keyDown(close, { key: "Tab", shiftKey: true });
-      expect(selectedTab).toHaveFocus();
+      expect(pass).toHaveFocus();
 
-      fireEvent.keyDown(selectedTab, { key: "Tab" });
+      fireEvent.keyDown(pass, { key: "Tab" });
       expect(close).toHaveFocus();
     });
 
@@ -191,6 +246,105 @@ describe("the Watchlist", () => {
       fireEvent.click(await screen.findByRole("button", { name: "Open Acme" }));
 
       expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("Passing a Kept Profile from its open card", () => {
+    async function openDialog(...profiles: KeptProfile[]) {
+      const swipes = stubPass({
+        "GET /api/profiles?filter=kept": { profiles },
+      });
+      render(<Watchlist />);
+      fireEvent.click(
+        await screen.findByRole("button", { name: `Open ${profiles[0]!.name}` }),
+      );
+      return swipes;
+    }
+
+    it("sends POST /api/profiles/:id/pass, closes the Dialog, removes the row and updates the count", async () => {
+      const swipes = await openDialog(acme, globex);
+
+      fireEvent.click(
+        within(screen.getByRole("dialog")).getByRole("button", {
+          name: "Pass",
+        }),
+      );
+      expect(swipes.pending()).toEqual([`/api/profiles/${acme.id}/pass`]);
+
+      await act(async () => swipes.answer(`/api/profiles/${acme.id}/pass`, 200));
+
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: "Open Acme" }),
+      ).not.toBeInTheDocument();
+      expect(screen.getByText("1 Kept Profile")).toBeInTheDocument();
+    });
+
+    it("moves focus to the Watchlist heading once the opener button it would otherwise have returned to is gone", async () => {
+      const swipes = await openDialog(acme, globex);
+
+      fireEvent.click(
+        within(screen.getByRole("dialog")).getByRole("button", {
+          name: "Pass",
+        }),
+      );
+      await act(async () => swipes.answer(`/api/profiles/${acme.id}/pass`, 200));
+
+      expect(screen.getByRole("heading", { name: "Watchlist" })).toHaveFocus();
+    });
+
+    it("shows the existing empty state when the last Kept Profile is Passed", async () => {
+      const swipes = await openDialog(acme);
+
+      fireEvent.click(
+        within(screen.getByRole("dialog")).getByRole("button", {
+          name: "Pass",
+        }),
+      );
+      await act(async () => swipes.answer(`/api/profiles/${acme.id}/pass`, 200));
+
+      expect(
+        await screen.findByText(EMPTY_WATCHLIST_MESSAGE),
+      ).toBeInTheDocument();
+    });
+
+    it("keeps the Dialog open and the row in place on a failed Pass, names the Profile in an alert, and Retry re-sends the same POST", async () => {
+      vi.spyOn(console, "error").mockImplementation(() => {});
+      const swipes = await openDialog(acme, globex);
+
+      const dialog = screen.getByRole("dialog");
+      fireEvent.click(within(dialog).getByRole("button", { name: "Pass" }));
+      await act(async () => swipes.answer(`/api/profiles/${acme.id}/pass`, 500));
+
+      expect(within(dialog).getByRole("alert")).toHaveTextContent(
+        passErrorMessage("Acme"),
+      );
+      expect(
+        screen.getByRole("button", { name: "Open Acme" }),
+      ).toBeInTheDocument();
+
+      fireEvent.click(within(dialog).getByRole("button", { name: "Retry" }));
+      await act(async () => swipes.answer(`/api/profiles/${acme.id}/pass`, 200));
+
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+      expect(swipes.posted()).toEqual([
+        `/api/profiles/${acme.id}/pass`,
+        `/api/profiles/${acme.id}/pass`,
+      ]);
+    });
+
+    it("disables Pass while the request is in flight, so a double click sends exactly one POST", async () => {
+      const swipes = await openDialog(acme, globex);
+
+      const pass = within(screen.getByRole("dialog")).getByRole("button", {
+        name: "Pass",
+      });
+      fireEvent.click(pass);
+      fireEvent.click(pass);
+
+      expect(swipes.posted()).toEqual([`/api/profiles/${acme.id}/pass`]);
+
+      await act(async () => swipes.answer(`/api/profiles/${acme.id}/pass`, 200));
     });
   });
 });
