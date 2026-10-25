@@ -374,6 +374,66 @@ describe("persistNewsItems", () => {
   });
 });
 
+describe("deduplication across multiple feeds", () => {
+  it("stores articles once when the same url appears in multiple feeds", async () => {
+    const sharedUrl = "https://techcrunch.com/shared-article";
+    const mainOnlyUrl = "https://techcrunch.com/main-only";
+    const ycOnlyUrl = "https://techcrunch.com/yc-only";
+
+    // Articles from the main TechCrunch feed
+    const mainFeedArticles: NewsArticleInput[] = [
+      {
+        title: "Shared Article",
+        description: "This appears in both feeds",
+        url: sharedUrl,
+        publishedAt: new Date("2026-10-01T12:00:00Z"),
+        sourceName: "TechCrunch",
+      },
+      {
+        title: "Main Feed Only",
+        description: "Only in the main feed",
+        url: mainOnlyUrl,
+        publishedAt: new Date("2026-10-02T12:00:00Z"),
+        sourceName: "TechCrunch",
+      },
+    ];
+
+    // Articles from the Y Combinator tag feed
+    const ycFeedArticles: NewsArticleInput[] = [
+      {
+        title: "Shared Article",
+        description: "This appears in both feeds",
+        url: sharedUrl,
+        publishedAt: new Date("2026-10-01T12:00:00Z"),
+        sourceName: "TechCrunch",
+      },
+      {
+        title: "YC Feed Only",
+        description: "Only in the YC feed",
+        url: ycOnlyUrl,
+        publishedAt: new Date("2026-10-03T12:00:00Z"),
+        sourceName: "TechCrunch",
+      },
+    ];
+
+    // Store articles from both feeds together
+    const report = await persistNewsArticles(scratch.db, {
+      articles: [...mainFeedArticles, ...ycFeedArticles],
+    });
+
+    // Should have inserted 3 unique articles (the shared URL triggers an update on the second occurrence)
+    expect(report.inserted).toBe(3);
+    expect(report.updated).toBe(1);
+    expect(report.fresh).toHaveLength(3);
+
+    // Verify unique URLs are stored (ordered by publishedAt DESC)
+    const stored = await readStoredNewsArticles(scratch.db);
+    const urls = stored.map((article) => article.url);
+    expect(urls).toEqual([ycOnlyUrl, mainOnlyUrl, sharedUrl]); // newest first
+    expect(new Set(urls).size).toBe(3); // 3 unique URLs
+  });
+});
+
 describe("readNews", () => {
   it("does not return a below-threshold item, although it is persisted", async () => {
     const [id] = await seedProfiles(scratch.db, { count: 1 });

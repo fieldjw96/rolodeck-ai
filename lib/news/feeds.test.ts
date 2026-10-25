@@ -247,3 +247,45 @@ describe("parseNewsFeed", () => {
     ).toEqual(["rss.channel.item.0"]);
   });
 });
+
+describe("parseNewsFeed, TechCrunch feeds", () => {
+  it("parses the main TechCrunch feed with zero rejections", async () => {
+    const { xml } = await readNewsFeedFixture("techcrunch");
+    const TECHCRUNCH: NewsFeed = {
+      name: "techcrunch",
+      publication: "TechCrunch",
+      url: "https://techcrunch.com/feed/",
+    };
+    const result = parseNewsFeed(TECHCRUNCH, xml);
+
+    expect(result.success).toBe(true);
+
+    if (result.success) {
+      expect(result.rejections).toEqual([]);
+      expect(result.articles.length).toBeGreaterThan(0);
+      expect(
+        result.articles.every((article) => article.sourceName === "TechCrunch"),
+      ).toBe(true);
+    }
+  });
+
+  it("parses the TechCrunch Y Combinator feed with zero rejections", async () => {
+    const { xml } = await readNewsFeedFixture("techcrunch-y-combinator");
+    const TECHCRUNCH_YC: NewsFeed = {
+      name: "techcrunch-y-combinator",
+      publication: "TechCrunch",
+      url: "https://techcrunch.com/tag/y-combinator/feed/",
+    };
+    const result = parseNewsFeed(TECHCRUNCH_YC, xml);
+
+    expect(result.success).toBe(true);
+
+    if (result.success) {
+      expect(result.rejections).toEqual([]);
+      expect(result.articles.length).toBeGreaterThan(0);
+      expect(
+        result.articles.every((article) => article.sourceName === "TechCrunch"),
+      ).toBe(true);
+    }
+  });
+});
