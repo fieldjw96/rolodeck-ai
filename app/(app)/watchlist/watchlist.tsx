@@ -53,7 +53,8 @@ export function passErrorMessage(name: string): string {
   return `Couldn't Pass ${name}.`;
 }
 
-type PassState = { status: "idle" } | { status: "pending" } | { status: "error" };
+type PassState =
+  { status: "idle" } | { status: "pending" } | { status: "error" };
 
 async function fetchKept(): Promise<ProfilesPage> {
   const response = await fetch("/api/profiles?filter=kept");

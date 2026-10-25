@@ -256,7 +256,9 @@ describe("the Watchlist", () => {
       });
       render(<Watchlist />);
       fireEvent.click(
-        await screen.findByRole("button", { name: `Open ${profiles[0]!.name}` }),
+        await screen.findByRole("button", {
+          name: `Open ${profiles[0]!.name}`,
+        }),
       );
       return swipes;
     }
@@ -271,7 +273,9 @@ describe("the Watchlist", () => {
       );
       expect(swipes.pending()).toEqual([`/api/profiles/${acme.id}/pass`]);
 
-      await act(async () => swipes.answer(`/api/profiles/${acme.id}/pass`, 200));
+      await act(async () =>
+        swipes.answer(`/api/profiles/${acme.id}/pass`, 200),
+      );
 
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
       expect(
@@ -288,7 +292,9 @@ describe("the Watchlist", () => {
           name: "Pass",
         }),
       );
-      await act(async () => swipes.answer(`/api/profiles/${acme.id}/pass`, 200));
+      await act(async () =>
+        swipes.answer(`/api/profiles/${acme.id}/pass`, 200),
+      );
 
       expect(screen.getByRole("heading", { name: "Watchlist" })).toHaveFocus();
     });
@@ -301,7 +307,9 @@ describe("the Watchlist", () => {
           name: "Pass",
         }),
       );
-      await act(async () => swipes.answer(`/api/profiles/${acme.id}/pass`, 200));
+      await act(async () =>
+        swipes.answer(`/api/profiles/${acme.id}/pass`, 200),
+      );
 
       expect(
         await screen.findByText(EMPTY_WATCHLIST_MESSAGE),
@@ -314,7 +322,9 @@ describe("the Watchlist", () => {
 
       const dialog = screen.getByRole("dialog");
       fireEvent.click(within(dialog).getByRole("button", { name: "Pass" }));
-      await act(async () => swipes.answer(`/api/profiles/${acme.id}/pass`, 500));
+      await act(async () =>
+        swipes.answer(`/api/profiles/${acme.id}/pass`, 500),
+      );
 
       expect(within(dialog).getByRole("alert")).toHaveTextContent(
         passErrorMessage("Acme"),
@@ -324,7 +334,9 @@ describe("the Watchlist", () => {
       ).toBeInTheDocument();
 
       fireEvent.click(within(dialog).getByRole("button", { name: "Retry" }));
-      await act(async () => swipes.answer(`/api/profiles/${acme.id}/pass`, 200));
+      await act(async () =>
+        swipes.answer(`/api/profiles/${acme.id}/pass`, 200),
+      );
 
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
       expect(swipes.posted()).toEqual([
@@ -344,7 +356,9 @@ describe("the Watchlist", () => {
 
       expect(swipes.posted()).toEqual([`/api/profiles/${acme.id}/pass`]);
 
-      await act(async () => swipes.answer(`/api/profiles/${acme.id}/pass`, 200));
+      await act(async () =>
+        swipes.answer(`/api/profiles/${acme.id}/pass`, 200),
+      );
     });
   });
 });
