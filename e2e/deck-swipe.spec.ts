@@ -22,20 +22,24 @@ async function login(page: Page, baseURL: string, user: SeededUser) {
 }
 
 /**
- * Drags the card to the right by `fraction` of its own width and lets go, pressing on the
- * company's name so the gesture starts on the card itself rather than on one of its tabs or
- * links. Several small moves rather than one jump, because that is what a pointer does and
- * because the first of them is what fixes the gesture's axis.
+ * Drags the card to the right by `fraction` of its own width and lets go. Several small moves
+ * rather than one jump, because that is what a pointer does, and because the first of them is
+ * what fixes the gesture's axis.
  */
 async function dragRight(page: Page, card: Locator, fraction: number) {
   const box = await card.boundingBox();
-  expect(box, "the card has no layout to drag").not.toBeNull();
 
+  if (box === null) {
+    throw new Error("the card has no layout to drag");
+  }
+
+  // Across the middle of the card but near its top, which is the company's name: far from the
+  // tabs and the links further down, so the press never lands on something of their own.
   const from = {
-    x: box!.x + box!.width / 2,
-    y: box!.y + Math.min(box!.height / 2, 60),
+    x: box.x + box.width / 2,
+    y: box.y + Math.min(box.height / 2, 60),
   };
-  const distance = box!.width * fraction;
+  const distance = box.width * fraction;
 
   await page.mouse.move(from.x, from.y);
   await page.mouse.down();

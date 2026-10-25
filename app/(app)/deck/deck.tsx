@@ -598,9 +598,10 @@ export function Deck() {
 
       {/*
        * The card is the swipe surface as well as the card: a horizontal drag across it is the
-       * same decision the two buttons below make. Keyed by Profile for the same reason the
-       * card is, and for one more — a committed swipe replaces this element, so the Profile
-       * behind it starts at rest rather than sliding in from wherever the last was let go of.
+       * same decision the two buttons below make. Keyed by Profile, which does two things:
+       * every Profile opens on the Company tab rather than on whichever tab the last one was
+       * left on, and a committed swipe replaces this element, so the Profile behind it starts
+       * at rest rather than sliding in from wherever the last one was let go of.
        */}
       <div
         key={profile.id}
@@ -612,10 +613,7 @@ export function Deck() {
         }
         onPointerDown={startGesture}
       >
-        {/* Keyed by Profile, so every Profile opens on the Company tab rather than on
-            whichever tab the last one was left on. */}
         <ProfileCard
-          key={profile.id}
           headingLevel={1}
           name={profile.name}
           description={profile.description}
