@@ -1,0 +1,406 @@
+<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"
+	xmlns:content="http://purl.org/rss/1.0/modules/content/"
+	xmlns:wfw="http://wellformedweb.org/CommentAPI/"
+	xmlns:dc="http://purl.org/dc/elements/1.1/"
+	xmlns:atom="http://www.w3.org/2005/Atom"
+	xmlns:sy="http://purl.org/rss/1.0/modules/syndication/"
+	xmlns:slash="http://purl.org/rss/1.0/modules/slash/"
+	>
+
+<channel>
+	<title>Y Combinator | TechCrunch</title>
+	<atom:link href="https://techcrunch.com/tag/y-combinator/feed/" rel="self" type="application/rss+xml" />
+	<link>https://techcrunch.com/tag/y-combinator/</link>
+	<description>Startup and Technology News</description>
+	<lastBuildDate>Fri, 18 Sep 2026 21:53:19 +0000</lastBuildDate>
+	<language>en-US</language>
+	<sy:updatePeriod>
+	hourly	</sy:updatePeriod>
+	<sy:updateFrequency>
+	1	</sy:updateFrequency>
+	<generator>https://wordpress.org/?v=6.9.10</generator>
+
+<image>
+	<url>https://techcrunch.com/wp-content/uploads/2015/02/cropped-cropped-favicon-gradient.png?w=32</url>
+	<title>Y Combinator | TechCrunch</title>
+	<link>https://techcrunch.com/tag/y-combinator/</link>
+	<width>32</width>
+	<height>32</height>
+</image> 
+	<item>
+		<title>Y Combinator insurance tech alum Angle Health hits $2.7B valuation</title>
+		<link>https://techcrunch.com/2026/09/18/y-combinator-insurance-tech-alum-angle-health-hits-2-7b-valuation/</link>
+		
+		<dc:creator><![CDATA[Julie Bort]]></dc:creator>
+		<pubDate>Fri, 18 Sep 2026 20:24:33 +0000</pubDate>
+				<category><![CDATA[Fundraising]]></category>
+		<category><![CDATA[Biotech & Health]]></category>
+		<category><![CDATA[Startups]]></category>
+		<category><![CDATA[TC]]></category>
+		<category><![CDATA[Y Combinator]]></category>
+		<category><![CDATA[insurance tech]]></category>
+		<category><![CDATA[In Brief]]></category>
+		<guid isPermaLink="false">https://techcrunch.com/?p=3166337</guid>
+
+					<description><![CDATA[Angle Health has grown to 5,000 customers and become profitable by helping small businesses get "level-funded" health insurance.]]></description>
+		
+		
+		
+			</item>
+		<item>
+		<title>The 9 buzziest startups from Y Combinator’s latest Demo Day, according to VCs</title>
+		<link>https://techcrunch.com/2026/09/13/the-9-buzziest-startups-from-y-combinators-latest-demo-day-according-to-vcs/</link>
+		
+		<dc:creator><![CDATA[Marina Temkin, Dominic-Madori Davis]]></dc:creator>
+		<pubDate>Sun, 13 Sep 2026 20:28:00 +0000</pubDate>
+				<category><![CDATA[Startups]]></category>
+		<category><![CDATA[Venture]]></category>
+		<category><![CDATA[Y Combinator]]></category>
+		<category><![CDATA[YC Demo Day]]></category>
+		<category><![CDATA[deep tech]]></category>
+		<guid isPermaLink="false">https://techcrunch.com/?p=3163451</guid>
+
+					<description><![CDATA[From floating reactors to brain chips: VCs picked their favorite YC startups from the summer batch.]]></description>
+		
+		
+		
+			</item>
+		<item>
+		<title>Y Combinator&#8217;s Garry Tan wants US open-weight AI labs to &#8216;distill&#8217; frontier models, too</title>
+		<link>https://techcrunch.com/2026/09/11/y-combinators-garry-tan-wants-u-s-open-weight-ai-labs-to-distill-frontier-models-too/</link>
+		
+		<dc:creator><![CDATA[Julie Bort]]></dc:creator>
+		<pubDate>Fri, 11 Sep 2026 20:59:47 +0000</pubDate>
+				<category><![CDATA[TC]]></category>
+		<category><![CDATA[Venture]]></category>
+		<category><![CDATA[AI]]></category>
+		<category><![CDATA[Y Combinator]]></category>
+		<category><![CDATA[garry tan]]></category>
+		<guid isPermaLink="false">https://techcrunch.com/?p=3163179</guid>
+
+					<description><![CDATA[Tan wants smaller, American open-weight AI labs to use the same kind of training techniques on American frontier AI labs, giving the U.S. a more robust set of open-weight options that aren’t Chinese.]]></description>
+		
+		
+		
+			</item>
+		<item>
+		<title>AfterQuery reportedly becomes Y Combinator&#8217;s fastest-ever unicorn, now valued at $3.2B</title>
+		<link>https://techcrunch.com/2026/09/01/afterquery-reportedly-becomes-y-combinators-fastest-ever-unicorn-now-valued-at-3-2b/</link>
+		
+		<dc:creator><![CDATA[Julie Bort]]></dc:creator>
+		<pubDate>Tue, 01 Sep 2026 22:08:24 +0000</pubDate>
+				<category><![CDATA[Venture]]></category>
+		<category><![CDATA[AI]]></category>
+		<category><![CDATA[In Brief]]></category>
+		<category><![CDATA[Y Combinator]]></category>
+		<guid isPermaLink="false">https://techcrunch.com/?p=3159934</guid>
+
+					<description><![CDATA[AI model-training startup AfterQuery has reportedly raised a round that valued it at $3.2 billion, just five months after announcing its $30 million Series A at a $300 million valuation in April.]]></description>
+		
+		
+		
+			</item>
+		<item>
+		<title>AI code-testing startup Blacksmith&#8217;s valuation jumps almost 10x in less than a year</title>
+		<link>https://techcrunch.com/2026/08/12/blacksmiths-valuation-jumps-10x-to-550m-as-ai-coding-fuels-software-validation/</link>
+		
+		<dc:creator><![CDATA[Jagmeet Singh]]></dc:creator>
+		<pubDate>Wed, 12 Aug 2026 11:00:00 +0000</pubDate>
+				<category><![CDATA[Enterprise]]></category>
+		<category><![CDATA[Startups]]></category>
+		<category><![CDATA[AI]]></category>
+		<category><![CDATA[Y Combinator]]></category>
+		<category><![CDATA[Exclusive]]></category>
+		<category><![CDATA[GV]]></category>
+		<category><![CDATA[Peak XV Partners]]></category>
+		<category><![CDATA[Blacksmith]]></category>
+		<guid isPermaLink="false">https://techcrunch.com/?p=3151847</guid>
+
+					<description><![CDATA[Blacksmith says revenue has grown more than tenfold over the past year.]]></description>
+		
+		
+		
+			</item>
+		<item>
+		<title>Robinhood to list a fund that lets anyone back Y Combinator startups</title>
+		<link>https://techcrunch.com/2026/08/05/robinhood-to-list-a-fund-that-lets-anyone-back-y-combinator-startups/</link>
+		
+		<dc:creator><![CDATA[Julie Bort]]></dc:creator>
+		<pubDate>Wed, 05 Aug 2026 12:23:52 +0000</pubDate>
+				<category><![CDATA[Venture]]></category>
+		<category><![CDATA[Startups]]></category>
+		<category><![CDATA[Robinhood]]></category>
+		<category><![CDATA[Y Combinator]]></category>
+		<guid isPermaLink="false">https://techcrunch.com/?p=3149868</guid>
+
+					<description><![CDATA[Robinhood's latest financial instrument intends to let any retail investor feel like they, too, can make money by backing Y Combinator startups. ]]></description>
+		
+		
+		
+			</item>
+		<item>
+		<title>Pocket raises $11M in bet on rising demand for AI note-taking devices</title>
+		<link>https://techcrunch.com/2026/06/29/pocket-raises-11m-in-bet-on-rising-demand-for-ai-note-taking-devices/</link>
+		
+		<dc:creator><![CDATA[Ivan Mehta]]></dc:creator>
+		<pubDate>Mon, 29 Jun 2026 13:16:00 +0000</pubDate>
+				<category><![CDATA[Hardware]]></category>
+		<category><![CDATA[Gadgets]]></category>
+		<category><![CDATA[Fundraising]]></category>
+		<category><![CDATA[Accel]]></category>
+		<category><![CDATA[Y Combinator]]></category>
+		<category><![CDATA[pocket]]></category>
+		<category><![CDATA[AI notetaker]]></category>
+		<category><![CDATA[Mati Staniszewski]]></category>
+		<guid isPermaLink="false">https://techcrunch.com/?p=3136998</guid>
+
+					<description><![CDATA[Pocket sells a $129 credit card-shaped puck, which sticks to the back of your phone, and promises unlimited recordings, transcriptions, and to-do items.]]></description>
+		
+		
+		
+			</item>
+		<item>
+		<title>Corgi, the buzzy Y Combinator-backed insurance tech startup, says it didn&#8217;t steal an open source product</title>
+		<link>https://techcrunch.com/2026/06/26/corgi-the-buzzy-y-combinator-backed-insurance-tech-startup-says-it-didnt-steal-an-open-source-product/</link>
+		
+		<dc:creator><![CDATA[Julie Bort]]></dc:creator>
+		<pubDate>Fri, 26 Jun 2026 22:00:37 +0000</pubDate>
+				<category><![CDATA[TC]]></category>
+		<category><![CDATA[Startups]]></category>
+		<category><![CDATA[open source]]></category>
+		<category><![CDATA[Y Combinator]]></category>
+		<category><![CDATA[corgi]]></category>
+		<category><![CDATA[vibe coding]]></category>
+		<guid isPermaLink="false">https://techcrunch.com/?p=3136556</guid>
+
+					<description><![CDATA[Corgi became embroiled in  controversy when Papermark accused it of stealing its software. Corgi says it did not, raising new questions about vibe coding.]]></description>
+		
+		
+		
+			</item>
+		<item>
+		<title>The 11 standout startups from YC&#8217;s Demo Day, according to VCs</title>
+		<link>https://techcrunch.com/2026/06/18/the-11-standout-startups-from-ycs-demo-day-according-to-vcs/</link>
+		
+		<dc:creator><![CDATA[Marina Temkin, Dominic-Madori Davis]]></dc:creator>
+		<pubDate>Thu, 18 Jun 2026 19:52:19 +0000</pubDate>
+				<category><![CDATA[Startups]]></category>
+		<category><![CDATA[Venture]]></category>
+		<category><![CDATA[Y Combinator]]></category>
+		<category><![CDATA[Y Combinator Demo Day]]></category>
+		<guid isPermaLink="false">https://techcrunch.com/?p=3134197</guid>
+
+					<description><![CDATA[TechCrunch spoke to investors to find the hottest startups in the Spring 2026 YC batch. Some of them commanded valuations of over $175 million, VCs said.]]></description>
+		
+		
+		
+			</item>
+		<item>
+		<title>Convective Capital raises an $85 million fund to build disaster resilience</title>
+		<link>https://techcrunch.com/2026/05/21/convective-capital-raises-an-85-million-fund-to-build-disaster-resilience/</link>
+		
+		<dc:creator><![CDATA[Tim Fernholz]]></dc:creator>
+		<pubDate>Thu, 21 May 2026 17:41:20 +0000</pubDate>
+				<category><![CDATA[Venture]]></category>
+		<category><![CDATA[Convective Capital]]></category>
+		<category><![CDATA[Y Combinator]]></category>
+		<category><![CDATA[Funding]]></category>
+		<guid isPermaLink="false">https://techcrunch.com/?p=3125079</guid>
+
+					<description><![CDATA[After launching to invest in fire tech, Convective is broadening its mandate to disaster resilience. ]]></description>
+		
+		
+		
+			</item>
+		<item>
+		<title>Sam Altman makes &#8216;mic drop&#8217; offer to every Y Combinator startup</title>
+		<link>https://techcrunch.com/2026/05/20/sam-altman-makes-mic-drop-offer-to-every-y-combinator-startup/</link>
+		
+		<dc:creator><![CDATA[Julie Bort]]></dc:creator>
+		<pubDate>Wed, 20 May 2026 21:23:02 +0000</pubDate>
+				<category><![CDATA[Startups]]></category>
+		<category><![CDATA[Venture]]></category>
+		<category><![CDATA[Y Combinator]]></category>
+		<category><![CDATA[sam altman]]></category>
+		<category><![CDATA[OpenAI]]></category>
+		<guid isPermaLink="false">https://techcrunch.com/?p=3124612</guid>
+
+					<description><![CDATA[Altman offered to have OpenAI invest in every single startup in this Y Combinator class: tokens for equity.]]></description>
+		
+		
+		
+			</item>
+		<item>
+		<title>Fintech startup Parker files for bankruptcy</title>
+		<link>https://techcrunch.com/2026/05/09/fintech-startup-parker-files-for-bankruptcy/</link>
+		
+		<dc:creator><![CDATA[Anthony Ha]]></dc:creator>
+		<pubDate>Sat, 09 May 2026 20:32:17 +0000</pubDate>
+				<category><![CDATA[Startups]]></category>
+		<category><![CDATA[Fintech]]></category>
+		<category><![CDATA[Yacine Sibous]]></category>
+		<category><![CDATA[Valar Ventures]]></category>
+		<category><![CDATA[Y Combinator]]></category>
+		<category><![CDATA[Parker]]></category>
+		<guid isPermaLink="false">https://techcrunch.com/?p=3121044</guid>
+
+					<description><![CDATA[Parker, a well-funded startup offering corporate credit cards and banking services, has filed for bankruptcy and is widely reported to have shut down.]]></description>
+		
+		
+		
+			</item>
+		<item>
+		<title>Insurance startup Corgi hits $1.3B valuation 4 months after its Series A</title>
+		<link>https://techcrunch.com/2026/05/06/insurance-startup-corgi-hits-1-3b-valuation-4-months-after-its-series-a/</link>
+		
+		<dc:creator><![CDATA[Dominic-Madori Davis]]></dc:creator>
+		<pubDate>Wed, 06 May 2026 20:39:16 +0000</pubDate>
+				<category><![CDATA[Startups]]></category>
+		<category><![CDATA[Venture]]></category>
+		<category><![CDATA[Y Combinator]]></category>
+		<category><![CDATA[yc]]></category>
+		<category><![CDATA[In Brief]]></category>
+		<category><![CDATA[InsuranceTech]]></category>
+		<guid isPermaLink="false">https://techcrunch.com/?p=3119893</guid>
+
+					<description><![CDATA[Corgi announced on Wednesday a $160 million Series B, led by TCV, valuing the startup at $1.3 billion.]]></description>
+		
+		
+		
+			</item>
+		<item>
+		<title>Y Combinator alum Skio sells for $105M cash, only raised $8M, founder says</title>
+		<link>https://techcrunch.com/2026/04/30/y-combinator-alum-skio-sells-for-105m-cash-only-raised-8m-founder-says/</link>
+		
+		<dc:creator><![CDATA[Julie Bort]]></dc:creator>
+		<pubDate>Thu, 30 Apr 2026 23:58:52 +0000</pubDate>
+				<category><![CDATA[Startups]]></category>
+		<category><![CDATA[Fintech]]></category>
+		<category><![CDATA[Skio]]></category>
+		<category><![CDATA[exits]]></category>
+		<category><![CDATA[Exclusive]]></category>
+		<category><![CDATA[Y Combinator]]></category>
+		<guid isPermaLink="false">https://techcrunch.com/?p=3118287</guid>
+
+					<description><![CDATA[Subscription billing fintech Skio sold to its competitor Recharge in what was a healthy exit, according to its founder and former CEO.]]></description>
+		
+		
+		
+			</item>
+		<item>
+		<title>Bret Taylor&#8217;s Sierra buys YC-backed AI startup Fragment</title>
+		<link>https://techcrunch.com/2026/04/23/bret-taylors-sierra-buys-yc-backed-ai-startup-fragment/</link>
+		
+		<dc:creator><![CDATA[Dominic-Madori Davis]]></dc:creator>
+		<pubDate>Thu, 23 Apr 2026 21:00:00 +0000</pubDate>
+				<category><![CDATA[Startups]]></category>
+		<category><![CDATA[Venture]]></category>
+		<category><![CDATA[AI]]></category>
+		<category><![CDATA[Bret Taylor]]></category>
+		<category><![CDATA[Y Combinator]]></category>
+		<category><![CDATA[sierra]]></category>
+		<category><![CDATA[Fragment]]></category>
+		<category><![CDATA[In Brief]]></category>
+		<guid isPermaLink="false">https://techcrunch.com/?p=3115915</guid>
+
+					<description><![CDATA[Sierra, the AI customer service agent startup founded by technologist Bret Taylor, announced today that it has acquired the YC-backed French startup Fragment. ]]></description>
+		
+		
+		
+			</item>
+		<item>
+		<title>Embattled startup Delve has ‘parted ways’ with Y Combinator</title>
+		<link>https://techcrunch.com/2026/04/04/embattled-startup-delve-has-parted-ways-with-y-combinator/</link>
+		
+		<dc:creator><![CDATA[Anthony Ha]]></dc:creator>
+		<pubDate>Sat, 04 Apr 2026 21:03:43 +0000</pubDate>
+				<category><![CDATA[Startups]]></category>
+		<category><![CDATA[Enterprise]]></category>
+		<category><![CDATA[Y Combinator]]></category>
+		<category><![CDATA[Delve]]></category>
+		<category><![CDATA[selin kocalar]]></category>
+		<category><![CDATA[karun kaushik]]></category>
+		<guid isPermaLink="false">https://techcrunch.com/?p=3109441</guid>
+
+					<description><![CDATA[The controversy around Delve appears to have cost the compliance startup its relationship with accelerator Y Combinator.]]></description>
+		
+		
+		
+			</item>
+		<item>
+		<title>Starcloud raises $170 million Series A to build data centers in space</title>
+		<link>https://techcrunch.com/2026/03/30/starcloud-raises-170-million-series-ato-build-data-centers-in-space/</link>
+		
+		<dc:creator><![CDATA[Tim Fernholz]]></dc:creator>
+		<pubDate>Mon, 30 Mar 2026 11:00:00 +0000</pubDate>
+				<category><![CDATA[Space]]></category>
+		<category><![CDATA[AI]]></category>
+		<category><![CDATA[Benchmark]]></category>
+		<category><![CDATA[Y Combinator]]></category>
+		<category><![CDATA[eqt ventures]]></category>
+		<category><![CDATA[Starcloud]]></category>
+		<guid isPermaLink="false">https://techcrunch.com/?p=3107081</guid>
+
+					<description><![CDATA[Starcloud becomes the fastest Y Combinator startup to reach unicorn status, just 17 months after demo day.]]></description>
+		
+		
+		
+			</item>
+		<item>
+		<title>16 of the most interesting startups from YC W26 Demo Day</title>
+		<link>https://techcrunch.com/2026/03/26/16-of-the-most-interesting-startups-from-yc-w26-demo-day/</link>
+		
+		<dc:creator><![CDATA[Dominic-Madori Davis]]></dc:creator>
+		<pubDate>Thu, 26 Mar 2026 19:30:00 +0000</pubDate>
+				<category><![CDATA[Startups]]></category>
+		<category><![CDATA[Venture]]></category>
+		<category><![CDATA[Y Combinator]]></category>
+		<category><![CDATA[demo day]]></category>
+		<category><![CDATA[yc]]></category>
+		<guid isPermaLink="false">https://techcrunch.com/?p=3106367</guid>
+
+					<description><![CDATA[From redirecting doomscrolling to training humanoid robots, these 16 startups stood out as the most interesting ones from an overflowing YC cohort.]]></description>
+		
+		
+		
+			</item>
+		<item>
+		<title>Conntour raises $7M from General Catalyst, YC to build an AI search engine for security video systems</title>
+		<link>https://techcrunch.com/2026/03/26/conntour-raises-7m-from-general-catalyst-yc-to-build-an-ai-search-engine-for-security-video-systems/</link>
+		
+		<dc:creator><![CDATA[Ram Iyer]]></dc:creator>
+		<pubDate>Thu, 26 Mar 2026 13:41:00 +0000</pubDate>
+				<category><![CDATA[Startups]]></category>
+		<category><![CDATA[Security]]></category>
+		<category><![CDATA[AI]]></category>
+		<category><![CDATA[General Catalyst]]></category>
+		<category><![CDATA[Y Combinator]]></category>
+		<category><![CDATA[Conntour]]></category>
+		<guid isPermaLink="false">https://techcrunch.com/?p=3106434</guid>
+
+					<description><![CDATA[Conntour uses AI models to let security teams query camera feeds using natural language to find any object, person, or situation.]]></description>
+		
+		
+		
+			</item>
+		<item>
+		<title>Why Garry Tan&#8217;s Claude Code setup has gotten so much love, and hate</title>
+		<link>https://techcrunch.com/2026/03/17/why-garry-tans-claude-code-setup-has-gotten-so-much-love-and-hate/</link>
+		
+		<dc:creator><![CDATA[Julie Bort]]></dc:creator>
+		<pubDate>Tue, 17 Mar 2026 20:50:04 +0000</pubDate>
+				<category><![CDATA[AI]]></category>
+		<category><![CDATA[Startups]]></category>
+		<category><![CDATA[TC]]></category>
+		<category><![CDATA[Y Combinator]]></category>
+		<category><![CDATA[sxsw 2026]]></category>
+		<category><![CDATA[garry tan]]></category>
+		<guid isPermaLink="false">https://techcrunch.com/?p=3103004</guid>
+
+					<description><![CDATA[Thousands of people are trying Garry Tan's Claude Code setup, which was shared on GitHub. And everyone has an opinion: even Claude, ChatGPT, and Gemini.]]></description>
+		
+		
+		
+			</item>
+	</channel>
+</rss>
