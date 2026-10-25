@@ -15,6 +15,7 @@ import {
   LOAD_ERROR_MESSAGE,
   LOADING_DECK_MESSAGE,
   PREFETCH_AT_REMAINING,
+  SWIPE_COMMIT_FRACTION,
   unsavedMessage,
 } from "./deck";
 
@@ -717,6 +718,210 @@ describe("the Deck", () => {
     expect(pass.textContent).toContain("Pass");
     expect(keep.textContent).toContain("Keep");
     expect(pass.textContent).not.toBe(keep.textContent);
+  });
+});
+
+describe("swiping the Deck's card by pointer drag", () => {
+  /** jsdom lays nothing out, so the card measures zero wide and a threshold taken as a
+   * fraction of its width would be zero too — every drag would clear it. One stubbed width
+   * stands in for the layout a browser would have done. */
+  const CARD_WIDTH = 320;
+
+  const THRESHOLD_PX = CARD_WIDTH * SWIPE_COMMIT_FRACTION;
+
+  /** Where a drag starts, in a viewport the card is imagined to be centred in. */
+  const START = { clientX: 160, clientY: 400 };
+
+  function stubCardWidth() {
+    vi.spyOn(Element.prototype, "getBoundingClientRect").mockReturnValue(
+      new DOMRect(0, 0, CARD_WIDTH, 480),
+    );
+  }
+
+  /** The card's drag surface: the element the Deck's own pointer handler sits on. */
+  function dragSurface(): HTMLElement {
+    const surface = screen.getByRole("article").parentElement;
+
+    if (surface === null) {
+      throw new Error("the card is not inside a drag surface");
+    }
+
+    return surface;
+  }
+
+  /**
+   * One whole gesture: down on `target`, two moves — so the first fixes the axis and the
+   * second is the drag proper, as a real pointer does — and up where the second move left it.
+   * The moves and the release go to `window`, which is where a browser sends them once the
+   * pointer has left the card.
+   */
+  function drag(target: Element, { dx, dy = 0 }: { dx: number; dy?: number }) {
+    fireEvent.pointerDown(target, {
+      pointerId: 1,
+      isPrimary: true,
+      button: 0,
+      ...START,
+    });
+
+    for (const fraction of [0.5, 1]) {
+      fireEvent.pointerMove(window, {
+        pointerId: 1,
+        clientX: START.clientX + dx * fraction,
+        clientY: START.clientY + dy * fraction,
+      });
+    }
+
+    fireEvent.pointerUp(window, {
+      pointerId: 1,
+      clientX: START.clientX + dx,
+      clientY: START.clientY + dy,
+    });
+  }
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("moves the card with the pointer while a horizontal drag is under way", async () => {
+    stubCardWidth();
+    stubSwipes({
+      "GET /api/profiles": { profiles: [acme, globex], next_cursor: null },
+    });
+
+    render(<Deck />);
+
+    await screen.findByRole("heading", { name: "Acme" });
+
+    fireEvent.pointerDown(screen.getByRole("article"), {
+      pointerId: 1,
+      isPrimary: true,
+      button: 0,
+      ...START,
+    });
+    fireEvent.pointerMove(window, {
+      pointerId: 1,
+      clientX: START.clientX + 40,
+      clientY: START.clientY,
+    });
+
+    expect(dragSurface().style.transform).toBe("translateX(40px)");
+
+    // Let go short of the threshold: the card springs back to where it started.
+    fireEvent.pointerUp(window, {
+      pointerId: 1,
+      clientX: START.clientX + 40,
+      clientY: START.clientY,
+    });
+
+    expect(dragSurface().style.transform).toBe("");
+  });
+
+  it("Keeps the Profile on a drag to the right past the threshold, with exactly one POST", async () => {
+    stubCardWidth();
+    const swipes = stubSwipes({
+      "GET /api/profiles": { profiles: [acme, globex], next_cursor: null },
+    });
+
+    render(<Deck />);
+
+    await screen.findByRole("heading", { name: "Acme" });
+
+    drag(screen.getByRole("article"), { dx: THRESHOLD_PX + 10 });
+
+    expect(swipes.posted()).toEqual([`/api/profiles/${acme.id}/keep`]);
+    expect(screen.getByRole("heading", { name: "Globex" })).toBeInTheDocument();
+  });
+
+  it("Passes the Profile on a drag to the left past the threshold, with exactly one POST", async () => {
+    stubCardWidth();
+    const swipes = stubSwipes({
+      "GET /api/profiles": { profiles: [acme, globex], next_cursor: null },
+    });
+
+    render(<Deck />);
+
+    await screen.findByRole("heading", { name: "Acme" });
+
+    drag(screen.getByRole("article"), { dx: -(THRESHOLD_PX + 10) });
+
+    expect(swipes.posted()).toEqual([`/api/profiles/${acme.id}/pass`]);
+    expect(screen.getByRole("heading", { name: "Globex" })).toBeInTheDocument();
+  });
+
+  it("records nothing for a drag that stops short of the threshold", async () => {
+    stubCardWidth();
+    const swipes = stubSwipes({
+      "GET /api/profiles": { profiles: [acme, globex], next_cursor: null },
+    });
+
+    render(<Deck />);
+
+    await screen.findByRole("heading", { name: "Acme" });
+
+    drag(screen.getByRole("article"), { dx: THRESHOLD_PX - 10 });
+
+    expect(swipes.posted()).toEqual([]);
+    expect(screen.getByRole("heading", { name: "Acme" })).toBeInTheDocument();
+  });
+
+  it("records nothing for a mostly vertical drag, however far it later wanders sideways", async () => {
+    stubCardWidth();
+    const swipes = stubSwipes({
+      "GET /api/profiles": { profiles: [acme, globex], next_cursor: null },
+    });
+
+    render(<Deck />);
+
+    await screen.findByRole("heading", { name: "Acme" });
+
+    // Down first, then across: a scroll that drifts is still a scroll.
+    fireEvent.pointerDown(screen.getByRole("article"), {
+      pointerId: 1,
+      isPrimary: true,
+      button: 0,
+      ...START,
+    });
+    fireEvent.pointerMove(window, {
+      pointerId: 1,
+      clientX: START.clientX,
+      clientY: START.clientY + 60,
+    });
+    fireEvent.pointerMove(window, {
+      pointerId: 1,
+      clientX: START.clientX + THRESHOLD_PX + 10,
+      clientY: START.clientY + 60,
+    });
+    fireEvent.pointerUp(window, {
+      pointerId: 1,
+      clientX: START.clientX + THRESHOLD_PX + 10,
+      clientY: START.clientY + 60,
+    });
+
+    expect(swipes.posted()).toEqual([]);
+    expect(screen.getByRole("heading", { name: "Acme" })).toBeInTheDocument();
+    expect(dragSurface().style.transform).toBe("");
+  });
+
+  it("leaves a press on a tab inside the card to the tab, deciding nothing", async () => {
+    stubCardWidth();
+    const swipes = stubSwipes({
+      "GET /api/profiles": {
+        profiles: [{ ...acme, website: "https://acme.example" }, globex],
+        next_cursor: null,
+      },
+    });
+
+    render(<Deck />);
+
+    await screen.findByRole("heading", { name: "Acme" });
+
+    const contact = screen.getByRole("tab", { name: "Contact" });
+    drag(contact, { dx: THRESHOLD_PX + 10 });
+    fireEvent.click(contact);
+
+    expect(screen.getByRole("tabpanel")).toHaveAccessibleName("Contact");
+    expect(swipes.posted()).toEqual([]);
+    expect(screen.getByRole("heading", { name: "Acme" })).toBeInTheDocument();
   });
 });
 

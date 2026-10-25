@@ -1,6 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 
 import type { CompanyLinks, Founder } from "../../../db/profile-input";
 import { ProfileCard } from "../../../lib/ui/profile-card";
@@ -59,6 +65,39 @@ type UnsavedSwipe = {
  * Deck down.
  */
 export const PREFETCH_AT_REMAINING = 5;
+
+/**
+ * How far across the card a pointer drag has to travel before letting go decides the Profile:
+ * a quarter of the card's own width, so the gesture means the same thing on a phone and on a
+ * laptop, where a pixel count would not. Short of it the card springs back and nothing is
+ * recorded. Distance alone decides — a flick is not a decision, by Ticket #231.
+ */
+export const SWIPE_COMMIT_FRACTION = 0.25;
+
+/**
+ * How far a pointer has to move before the press counts as a drag at all, in CSS pixels.
+ * Under this it is still a press: a tap on the card, or a thumb about to scroll. The first
+ * move past it fixes the gesture's axis for the rest of its life, so a drag that set off
+ * downwards stays a scroll however far sideways it wanders afterwards.
+ */
+const SWIPE_SLOP_PX = 8;
+
+/**
+ * What inside the card answers a pointer itself: the tabs, and the links on the Contact tab.
+ * A press that starts on one of these belongs to that control, and never starts a swipe.
+ */
+const INTERACTIVE_SELECTOR = "a, button, input, select, textarea, summary";
+
+/** A pointer drag under way on the card. */
+type Gesture = {
+  pointerId: number;
+  startX: number;
+  startY: number;
+  /** The card's width when the drag began: what `SWIPE_COMMIT_FRACTION` is a fraction of. */
+  width: number;
+  /** Set by the first move past `SWIPE_SLOP_PX`, and only when that move was mostly sideways. */
+  horizontal: boolean;
+};
 
 /** A real string rather than a blank screen, per the Ticket. */
 export const EMPTY_DECK_MESSAGE = "No Profiles left in the Deck.";
@@ -357,6 +396,116 @@ export function Deck() {
     [commit, save],
   );
 
+  // The drag under way, if any, and how far the card has been pulled from its resting place.
+  // The gesture lives in a ref because the listeners below are registered once, when the
+  // pointer goes down, and read the start of the drag from it on every move; the offset is in
+  // state because it is the only part of a gesture the render needs.
+  const gestureRef = useRef<Gesture | null>(null);
+  const detachRef = useRef<(() => void) | null>(null);
+  const [dragX, setDragX] = useState<number | null>(null);
+
+  const endGesture = useCallback(() => {
+    gestureRef.current = null;
+    detachRef.current?.();
+    detachRef.current = null;
+    setDragX(null);
+  }, []);
+
+  // A drag still live when the Deck unmounts would otherwise leave its listeners on `window`.
+  useEffect(() => () => detachRef.current?.(), []);
+
+  /**
+   * A press on the card. The rest of the drag is followed on `window` rather than on the card
+   * itself, so a pointer that leaves the card mid-drag — off the top of a phone, past the
+   * edge of a laptop window — is still the same gesture, and letting go anywhere ends it.
+   * Every commit goes through `decide`, exactly as the buttons and the arrow keys do.
+   */
+  const startGesture = useCallback(
+    (event: ReactPointerEvent<HTMLDivElement>) => {
+      if (!event.isPrimary || event.button !== 0 || gestureRef.current !== null) {
+        return;
+      }
+
+      if (
+        event.target instanceof Element &&
+        event.target.closest(INTERACTIVE_SELECTOR) !== null
+      ) {
+        return;
+      }
+
+      const gesture: Gesture = {
+        pointerId: event.pointerId,
+        startX: event.clientX,
+        startY: event.clientY,
+        width: event.currentTarget.getBoundingClientRect().width,
+        horizontal: false,
+      };
+
+      gestureRef.current = gesture;
+
+      function onMove(move: PointerEvent) {
+        if (move.pointerId !== gesture.pointerId) {
+          return;
+        }
+
+        const dx = move.clientX - gesture.startX;
+        const dy = move.clientY - gesture.startY;
+
+        if (!gesture.horizontal) {
+          if (Math.abs(dx) < SWIPE_SLOP_PX && Math.abs(dy) < SWIPE_SLOP_PX) {
+            return;
+          }
+
+          // Mostly vertical: the reader is scrolling the page, which the browser is doing for
+          // them under `touch-action: pan-y`. Dropping the gesture here is what stops the rest
+          // of that scroll from ever being read as a Keep or a Pass.
+          if (Math.abs(dx) <= Math.abs(dy)) {
+            endGesture();
+            return;
+          }
+
+          gesture.horizontal = true;
+        }
+
+        setDragX(dx);
+      }
+
+      function onUp(up: PointerEvent) {
+        if (up.pointerId !== gesture.pointerId) {
+          return;
+        }
+
+        const dx = up.clientX - gesture.startX;
+        const committed =
+          gesture.horizontal &&
+          Math.abs(dx) >= gesture.width * SWIPE_COMMIT_FRACTION;
+
+        endGesture();
+
+        if (committed) {
+          decide(dx > 0 ? "keep" : "pass");
+        }
+      }
+
+      function onCancel(cancel: PointerEvent) {
+        if (cancel.pointerId === gesture.pointerId) {
+          endGesture();
+        }
+      }
+
+      window.addEventListener("pointermove", onMove);
+      window.addEventListener("pointerup", onUp);
+      window.addEventListener("pointercancel", onCancel);
+
+      detachRef.current = () => {
+        window.removeEventListener("pointermove", onMove);
+        window.removeEventListener("pointerup", onUp);
+        window.removeEventListener("pointercancel", onCancel);
+      };
+    },
+    [decide, endGesture],
+  );
+
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       // A key something inside the page has already claimed, such as an arrow key moving
@@ -443,20 +592,37 @@ export function Deck() {
     <main className={styles.deck}>
       {unsavedNotice}
 
-      {/* Keyed by Profile, so every Profile opens on the Company tab rather than on
-          whichever tab the last one was left on. */}
-      <ProfileCard
+      {/*
+       * The card is the swipe surface as well as the card: a horizontal drag across it is the
+       * same decision the two buttons below make. Keyed by Profile for the same reason the
+       * card is, and for one more — a committed swipe replaces this element, so the Profile
+       * behind it starts at rest rather than sliding in from wherever the last was let go of.
+       */}
+      <div
         key={profile.id}
-        headingLevel={1}
-        name={profile.name}
-        description={profile.description}
-        sector={profile.sector}
-        stage={profile.stage}
-        location={profile.location}
-        website={profile.website}
-        founders={profile.founders}
-        links={profile.links}
-      />
+        className={`${styles.swipe} ${dragX === null ? styles.resting : styles.dragging}`}
+        style={
+          dragX === null
+            ? undefined
+            : { transform: `translateX(${String(dragX)}px)` }
+        }
+        onPointerDown={startGesture}
+      >
+        {/* Keyed by Profile, so every Profile opens on the Company tab rather than on
+            whichever tab the last one was left on. */}
+        <ProfileCard
+          key={profile.id}
+          headingLevel={1}
+          name={profile.name}
+          description={profile.description}
+          sector={profile.sector}
+          stage={profile.stage}
+          location={profile.location}
+          website={profile.website}
+          founders={profile.founders}
+          links={profile.links}
+        />
+      </div>
 
       {/*
        * Keep and Pass are the page's primary actions and are told apart without being read:
