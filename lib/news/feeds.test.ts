@@ -289,9 +289,10 @@ describe("parseNewsFeed, TechCrunch feeds", () => {
     }
   });
 
-  it("articles from both TechCrunch feeds are keyed by URL so duplicates are deduplicated", async () => {
-    const { xml: mainXml } = await readNewsFeedFixture("techcrunch");
-    const { xml: ycXml } = await readNewsFeedFixture("techcrunch-y-combinator");
+  it("deduplicated articles by URL when the same article appears in multiple feeds", () => {
+    const sharedUrl = "https://news.example/shared-article";
+    const mainOnlyUrl = "https://news.example/main-only";
+    const ycOnlyUrl = "https://news.example/yc-only";
 
     const TECHCRUNCH: NewsFeed = {
       name: "techcrunch",
@@ -304,25 +305,39 @@ describe("parseNewsFeed, TechCrunch feeds", () => {
       url: "https://techcrunch.com/tag/y-combinator/feed/",
     };
 
-    const mainResult = parseNewsFeed(TECHCRUNCH, mainXml);
-    const ycResult = parseNewsFeed(TECHCRUNCH_YC, ycXml);
+    // Create feeds with overlapping URLs: the shared article appears in both feeds
+    const mainFeedXml = rss(
+      item({ link: sharedUrl, title: "Shared Article" }),
+      item({ link: mainOnlyUrl, title: "Main Feed Only" }),
+    );
+    const ycFeedXml = rss(
+      item({ link: sharedUrl, title: "Shared Article" }),
+      item({ link: ycOnlyUrl, title: "YC Feed Only" }),
+    );
+
+    const mainResult = parseNewsFeed(TECHCRUNCH, mainFeedXml);
+    const ycResult = parseNewsFeed(TECHCRUNCH_YC, ycFeedXml);
 
     expect(mainResult.success && ycResult.success).toBe(true);
 
     if (mainResult.success && ycResult.success) {
-      const mainUrls = new Set(mainResult.articles.map((a) => a.url));
-      const ycUrls = new Set(ycResult.articles.map((a) => a.url));
-      const allUrls = new Set([...mainUrls, ...ycUrls]);
+      // Combine all articles from both feeds
+      const allArticles = [...mainResult.articles, ...ycResult.articles];
 
-      // Combined articles from both feeds, with duplicates removed by URL, should equal
-      // the union of unique URLs from both feeds
-      expect(allUrls.size).toBe(
-        mainUrls.size +
-          ycUrls.size -
-          (mainUrls.size + ycUrls.size - allUrls.size),
+      // Deduplicate by URL
+      const uniqueByUrl = new Map(
+        allArticles.map((article) => [article.url, article]),
       );
-      // This is a tautology, but demonstrates the deduplication concept: if there are any
-      // common URLs, the union would be smaller than the sum of the two sets.
+
+      // Should have 3 unique articles: sharedUrl (once), mainOnlyUrl, ycOnlyUrl
+      expect(uniqueByUrl.size).toBe(3);
+      expect(uniqueByUrl.has(sharedUrl)).toBe(true);
+      expect(uniqueByUrl.has(mainOnlyUrl)).toBe(true);
+      expect(uniqueByUrl.has(ycOnlyUrl)).toBe(true);
+
+      // The combined feeds have 4 articles, but only 3 unique URLs
+      expect(allArticles).toHaveLength(4);
+      expect(uniqueByUrl.size).toBeLessThan(allArticles.length);
     }
   });
 });
