@@ -18,8 +18,9 @@
  *     GITHUB_TOKEN=... GITHUB_REPOSITORY=owner/name npm run check:ingest-freshness
  *
  * Exits non-zero only when the check itself could not be carried out. A Source found late is
- * reported by opening or commenting on its issue and is not a failure of this run: red here
- * means the checker is broken, which is a different thing to look at than a dead Source.
+ * reported by opening or commenting on its issue, and a Source found running again closes that
+ * same issue; neither is a failure of this run. Red here means the checker is broken, which is a
+ * different thing to look at than a dead Source.
  */
 
 import { readdir, readFile } from "node:fs/promises";
@@ -33,6 +34,7 @@ import {
   judgeFreshness,
   lateSourceIssueBody,
   lateSourceIssueTitle,
+  type Freshness,
   type LateSourceReport,
 } from "../lib/ingest/freshness";
 import {
@@ -277,6 +279,75 @@ async function report(
   console.log(`  commented on issue #${existing}: ${title}`);
 }
 
+/** The comment left on a Source's alarm when it is closed, naming when it last succeeded. */
+function recoveredComment(source: IngestSource, lastSuccessAt: Date): string {
+  const when = `${lastSuccessAt.toISOString().slice(0, 16).replace("T", " ")} UTC`;
+  return `**${source.name}** is running again. It last completed successfully at ${when}.`;
+}
+
+/**
+ * Closes the alarm for a Source that is on-time again, if one is open.
+ *
+ * Same title and the same `findOpenIssue` as `report`, so the comment and the close land on the
+ * thread the alarm itself opened. A Source with no open issue is not reported never having been
+ * late, so there is nothing to close and nothing is written.
+ */
+export async function closeRecoveredIssue(
+  environment: Environment,
+  source: IngestSource,
+  lastSuccessAt: Date,
+): Promise<void> {
+  const title = lateSourceIssueTitle(source.name);
+  const existing = await findOpenIssue(environment, title);
+
+  if (existing === null) {
+    return;
+  }
+
+  const issue = `/repos/${environment.GITHUB_REPOSITORY}/issues/${existing}`;
+
+  await callGitHub(environment, `${issue}/comments`, {
+    method: "POST",
+    body: JSON.stringify({ body: recoveredComment(source, lastSuccessAt) }),
+  });
+
+  await callGitHub(environment, issue, {
+    method: "PATCH",
+    body: JSON.stringify({ state: "closed", state_reason: "completed" }),
+  });
+
+  console.log(`  closed issue #${existing}: ${title}`);
+}
+
+/**
+ * What this check does about one Source, given its verdict. Late and never-succeeded are
+ * reported; on-time closes its own alarm if one is open; too-new-to-judge and on-time with no
+ * open issue write nothing to GitHub at all.
+ */
+export async function handleSource(
+  environment: Environment,
+  source: IngestSource,
+  history: SourceHistory,
+  freshness: Freshness,
+): Promise<void> {
+  if (freshness.late) {
+    const late: LateSourceReport = {
+      source,
+      freshness,
+      workflowState: history.workflowState,
+      runsUrl: history.runsUrl,
+    };
+
+    console.log(`  ${describeLateSource(late)}`);
+    await report(environment, late);
+    return;
+  }
+
+  if (freshness.verdict === "on-time" && freshness.lastSuccessAt !== null) {
+    await closeRecoveredIssue(environment, source, freshness.lastSuccessAt);
+  }
+}
+
 async function main(): Promise<void> {
   // `parseEnv` rather than a bare `parse`: it reports the variable's name and what is wrong with
   // it and never its value, and one of these is a token. The two optional variables are omitted
@@ -324,20 +395,11 @@ async function main(): Promise<void> {
 
     console.log(`- ${source.name}: ${freshness.verdict}`);
 
-    if (!freshness.late) {
-      continue;
+    if (freshness.late) {
+      lateCount += 1;
     }
 
-    lateCount += 1;
-    const late: LateSourceReport = {
-      source,
-      freshness,
-      workflowState: history.workflowState,
-      runsUrl: history.runsUrl,
-    };
-
-    console.log(`  ${describeLateSource(late)}`);
-    await report(environment, late);
+    await handleSource(environment, source, history, freshness);
   }
 
   console.log(
