@@ -421,15 +421,15 @@ describe("deduplication across multiple feeds", () => {
       articles: [...mainFeedArticles, ...ycFeedArticles],
     });
 
-    // Should have inserted 3 unique articles
+    // Should have inserted 3 unique articles (the shared URL triggers an update on the second occurrence)
     expect(report.inserted).toBe(3);
-    expect(report.updated).toBe(0);
+    expect(report.updated).toBe(1);
     expect(report.fresh).toHaveLength(3);
 
-    // Verify unique URLs are stored
+    // Verify unique URLs are stored (ordered by publishedAt DESC)
     const stored = await readStoredNewsArticles(scratch.db);
     const urls = stored.map((article) => article.url);
-    expect(urls).toEqual([sharedUrl, ycOnlyUrl, mainOnlyUrl]);
+    expect(urls).toEqual([ycOnlyUrl, mainOnlyUrl, sharedUrl]); // newest first
     expect(new Set(urls).size).toBe(3); // 3 unique URLs
   });
 });
