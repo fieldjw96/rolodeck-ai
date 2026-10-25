@@ -53,8 +53,7 @@ export function passErrorMessage(name: string): string {
   return `Couldn't Pass ${name}.`;
 }
 
-type PassState =
-  { status: "idle" } | { status: "pending" } | { status: "error" };
+type PassStatus = "pending" | "error";
 
 async function fetchKept(): Promise<ProfilesPage> {
   const response = await fetch("/api/profiles?filter=kept");
@@ -91,13 +90,26 @@ export function Watchlist() {
   const [openId, setOpenId] = useState<string | null>(null);
   // The row button that opened the card, which the Dialog returns focus to on close.
   const [opener, setOpener] = useState<HTMLElement | null>(null);
-  const [passState, setPassState] = useState<PassState>({ status: "idle" });
+  // Keyed by Profile id rather than held as one Watchlist-wide value, so a Pass that lands
+  // after the reader has closed its Dialog, or opened a different Profile, updates only the
+  // row it was ever about rather than whichever Dialog happens to be open when it lands.
+  const [passStatuses, setPassStatuses] = useState<
+    ReadonlyMap<string, PassStatus>
+  >(new Map());
   // The Watchlist's own heading, so focus has somewhere to go once a successful Pass has
   // removed the row the Dialog's own return-focus would otherwise have aimed at.
   const headingRef = useRef<HTMLHeadingElement>(null);
   // Set the instant a Pass succeeds and read by the effect below once the Dialog has actually
   // unmounted, rather than focusing the heading while it is still behind an open dialog.
   const focusHeadingRef = useRef(false);
+  // The Profile id whose Dialog is open right now, read by `pass` once its request settles.
+  // `openId` itself is stale inside that closure: a late response must act on the Dialog that
+  // is open when it lands, not the one that was open when the request was sent.
+  const openIdRef = useRef(openId);
+
+  useEffect(() => {
+    openIdRef.current = openId;
+  }, [openId]);
 
   useEffect(() => {
     if (openId === null && focusHeadingRef.current) {
@@ -161,23 +173,21 @@ export function Watchlist() {
   const open = state.profiles.find((profile) => profile.id === openId);
 
   async function pass(profile: KeptProfile) {
-    setPassState({ status: "pending" });
+    setPassStatuses((statuses) => new Map(statuses).set(profile.id, "pending"));
 
     try {
       await recordPass(profile.id);
     } catch (error) {
       console.error(error);
-      setPassState({ status: "error" });
+      setPassStatuses((statuses) => new Map(statuses).set(profile.id, "error"));
       return;
     }
 
-    // The opener button is about to be removed along with its row, so the Dialog's own
-    // return-focus has nothing left to aim at; the effect above sends focus to the heading
-    // once `openId` actually reaches null.
-    focusHeadingRef.current = true;
-    setOpener(null);
-    setOpenId(null);
-    setPassState({ status: "idle" });
+    setPassStatuses((statuses) => {
+      const next = new Map(statuses);
+      next.delete(profile.id);
+      return next;
+    });
     setState((previous) => {
       if (previous.status !== "ready") {
         return previous;
@@ -189,6 +199,18 @@ export function Watchlist() {
         ? { status: "empty" }
         : { status: "ready", profiles };
     });
+
+    // Only the Dialog that is still open on this Profile closes over a Pass that lands late:
+    // the reader may since have closed it, or opened a different Profile, while this request
+    // was in flight, and that Dialog's own close is not this Pass's to take.
+    if (openIdRef.current === profile.id) {
+      // The opener button is about to be removed along with its row, so the Dialog's own
+      // return-focus has nothing left to aim at; the effect above sends focus to the heading
+      // once `openId` actually reaches null.
+      focusHeadingRef.current = true;
+      setOpener(null);
+      setOpenId(null);
+    }
   }
 
   return (
@@ -221,7 +243,18 @@ export function Watchlist() {
               onClick={(event) => {
                 setOpener(event.currentTarget);
                 setOpenId(profile.id);
-                setPassState({ status: "idle" });
+                // Clear a stale error from a previous attempt so the reopened Dialog starts
+                // clean; a request already in flight for this Profile is left alone, so the
+                // Pass button stays disabled rather than inviting a second POST.
+                setPassStatuses((statuses) => {
+                  if (statuses.get(profile.id) !== "error") {
+                    return statuses;
+                  }
+
+                  const next = new Map(statuses);
+                  next.delete(profile.id);
+                  return next;
+                });
               }}
             >
               <span className={styles.openLabel}>Open {profile.name}</span>
@@ -248,7 +281,7 @@ export function Watchlist() {
             founders={open.founders}
             links={open.links}
           />
-          {passState.status === "error" ? (
+          {passStatuses.get(open.id) === "error" ? (
             <div role="alert" className={styles.passError}>
               <p>{passErrorMessage(open.name)}</p>
               <button
@@ -263,7 +296,7 @@ export function Watchlist() {
             <button
               type="button"
               className={styles.pass}
-              disabled={passState.status === "pending"}
+              disabled={passStatuses.get(open.id) === "pending"}
               onClick={() => pass(open)}
             >
               Pass
