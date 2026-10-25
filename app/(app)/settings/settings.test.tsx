@@ -55,20 +55,20 @@ describe("Settings", () => {
 
     render(<Settings />);
 
-    await screen.findByRole("checkbox", { name: "seed" });
+    await screen.findByRole("checkbox", { name: "Seed" });
 
     expect(
-      within(sectorsGroup()).getByRole("checkbox", { name: "ai-ml" }),
+      within(sectorsGroup()).getByRole("checkbox", { name: "AI / ML" }),
     ).toBeChecked();
     expect(
       within(excludedSectorsGroup()).getByRole("checkbox", {
-        name: "security",
+        name: "Security",
       }),
     ).toBeChecked();
     expect(
-      within(sectorsGroup()).getByRole("checkbox", { name: "security" }),
+      within(sectorsGroup()).getByRole("checkbox", { name: "Security" }),
     ).not.toBeChecked();
-    expect(screen.getByRole("checkbox", { name: "seed" })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "Seed" })).toBeChecked();
 
     expect(screen.getByLabelText("Area")).toHaveValue("Bay Area");
   });
@@ -80,7 +80,7 @@ describe("Settings", () => {
     );
 
     render(<Settings />);
-    await screen.findByRole("checkbox", { name: "seed" });
+    await screen.findByRole("checkbox", { name: "Seed" });
 
     const stages = within(screen.getByRole("group", { name: "Stages" }));
 
@@ -88,9 +88,9 @@ describe("Settings", () => {
       stages
         .getAllByRole("checkbox")
         .map((box) => box.parentElement?.textContent),
-    ).toEqual(["pre-seed", "seed", "series-a", "series-b-plus", "growth"]);
+    ).toEqual(["Pre-seed", "Seed", "Series A", "Series B+", "Growth"]);
     expect(
-      screen.queryByRole("checkbox", { name: "not-stated" }),
+      screen.queryByRole("checkbox", { name: "Not stated" }),
     ).not.toBeInTheDocument();
     expect(screen.queryByText(/not.stated/i)).not.toBeInTheDocument();
   });
@@ -116,13 +116,13 @@ describe("Settings", () => {
     );
 
     render(<Settings />);
-    await screen.findByRole("checkbox", { name: "seed" });
+    await screen.findByRole("checkbox", { name: "Seed" });
 
     const stated = within(sectorsGroup()).getByRole("checkbox", {
-      name: "ai-ml",
+      name: "AI / ML",
     });
     const excluded = within(excludedSectorsGroup()).getByRole("checkbox", {
-      name: "ai-ml",
+      name: "AI / ML",
     });
 
     fireEvent.click(stated);
@@ -143,10 +143,10 @@ describe("Settings", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     render(<Settings />);
-    await screen.findByRole("checkbox", { name: "seed" });
+    await screen.findByRole("checkbox", { name: "Seed" });
 
     fireEvent.click(
-      within(sectorsGroup()).getByRole("checkbox", { name: "fintech" }),
+      within(sectorsGroup()).getByRole("checkbox", { name: "Fintech" }),
     );
     fireEvent.click(screen.getByRole("button", { name: /save/i }));
 
@@ -171,7 +171,7 @@ describe("Settings", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     render(<Settings />);
-    await screen.findByRole("checkbox", { name: "seed" });
+    await screen.findByRole("checkbox", { name: "Seed" });
 
     fireEvent.click(screen.getByRole("button", { name: /save/i }));
 

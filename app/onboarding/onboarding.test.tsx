@@ -67,9 +67,9 @@ describe("Onboarding", () => {
       within(stagesGroup())
         .getAllByRole("checkbox")
         .map((box) => box.parentElement?.textContent),
-    ).toEqual(["pre-seed", "seed", "series-a", "series-b-plus", "growth"]);
+    ).toEqual(["Pre-seed", "Seed", "Series A", "Series B+", "Growth"]);
     expect(
-      screen.queryByRole("checkbox", { name: "not-stated" }),
+      screen.queryByRole("checkbox", { name: "Not stated" }),
     ).not.toBeInTheDocument();
   });
 
@@ -82,10 +82,10 @@ describe("Onboarding", () => {
     render(<Onboarding />);
 
     fireEvent.click(
-      within(sectorsGroup()).getByRole("checkbox", { name: "fintech" }),
+      within(sectorsGroup()).getByRole("checkbox", { name: "Fintech" }),
     );
     fireEvent.click(
-      within(stagesGroup()).getByRole("checkbox", { name: "growth" }),
+      within(stagesGroup()).getByRole("checkbox", { name: "Growth" }),
     );
     fireEvent.click(screen.getByRole("button", { name: /save/i }));
 
