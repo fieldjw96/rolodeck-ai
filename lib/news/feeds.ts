@@ -47,15 +47,30 @@ export type NewsFeed = {
  * proves it reads what is here rather than assuming an empty list is fine by never exercising
  * the read path.
  *
- * Considered and not added: TechCrunch's `/feed/`. `robots.txt` checked with `curl` on
- * 2026-09-16: `User-agent: *` disallows only `/wp-admin/`,
- * `/wp-json/`, `/search/`, `/?s=` and customizer previews, so `/feed/` is open to the
- * `User-Agent` this project sends. But the same file gives `anthropic-ai`, `ClaudeBot` and
- * `Claude-Web` `Disallow: /`, and every capture in this repo is taken by a Claude Run. A
- * capture TechCrunch has asked Anthropic's agents not to take is not one a Run should take, so
- * it waits for one taken by hand; with that capture committed, adding it is one entry below.
+ * TechCrunch's RSS terms (https://techcrunch.com/rss-terms-of-use/) say: "If you choose to
+ * use a TechCrunch RSS feed, you are only permitted to display the content that is provided
+ * in the feed, with attribution to TechCrunch, and you must link to the full article on
+ * TechCrunch." News shows a headline, names the publication and links out, which is that.
+ *
+ * Both feeds' `robots.txt` was checked with `curl` from a normal machine on 2026-10-24:
+ * `/feed/` gives `User-agent: *` disallows only `/wp-admin/`, `/wp-json/`, `/search/`, `/?s=`
+ * and customizer previews, so both feeds are open to the default `User-Agent`. The same file
+ * gives `anthropic-ai`, `ClaudeBot` and `Claude-Web` `Disallow: /`, so captures are taken by
+ * hand rather than by a Claude Run. Feeds are committed as `news-feed-techcrunch.xml` and
+ * `news-feed-techcrunch-y-combinator.xml`, fetched with `curl` and unedited.
  */
-export const NEWS_FEEDS: readonly NewsFeed[] = [];
+export const NEWS_FEEDS: readonly NewsFeed[] = [
+  {
+    name: "techcrunch",
+    publication: "TechCrunch",
+    url: "https://techcrunch.com/feed/",
+  },
+  {
+    name: "techcrunch-y-combinator",
+    publication: "TechCrunch",
+    url: "https://techcrunch.com/tag/y-combinator/feed/",
+  },
+];
 
 /** An article as News stores it, whichever feed it came from. */
 export type NewsArticle = {
