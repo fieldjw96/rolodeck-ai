@@ -236,9 +236,7 @@ export function Watchlist() {
           onClose={() => setOpenId(null)}
         >
           {/* The Deck's card, unchanged, with no Keep: the Watchlist is decisions already
-              made. Pass is the one decision a Watchlist row can still change, taking back a
-              Keep made by mistake — `recordSwipe` (`db/deck.ts`) treats it as the newer
-              decision overwriting the old one, same as a Pass from the Deck itself. */}
+              made, except that the Pass button below can still take one back. */}
           <ProfileCard
             headingLevel={2}
             name={open.name}
