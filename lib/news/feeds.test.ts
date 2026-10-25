@@ -317,7 +317,9 @@ describe("parseNewsFeed, TechCrunch feeds", () => {
       // Combined articles from both feeds, with duplicates removed by URL, should equal
       // the union of unique URLs from both feeds
       expect(allUrls.size).toBe(
-        mainUrls.size + ycUrls.size - (mainUrls.size + ycUrls.size - allUrls.size),
+        mainUrls.size +
+          ycUrls.size -
+          (mainUrls.size + ycUrls.size - allUrls.size),
       );
       // This is a tautology, but demonstrates the deduplication concept: if there are any
       // common URLs, the union would be smaller than the sum of the two sets.
