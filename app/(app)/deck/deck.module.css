@@ -13,6 +13,31 @@
   padding: var(--space-6) var(--space-4) var(--space-8);
 }
 
+/* The card is the swipe surface: a horizontal pointer drag across it is a Keep or a Pass.
+   `pan-y` claims the horizontal axis and leaves the vertical one to the browser, so the page
+   still scrolls under a thumb that moves down the card rather than across it. */
+.swipe {
+  touch-action: pan-y;
+}
+
+/* Back to rest, for a drag that did not reach SWIPE_COMMIT_FRACTION. Only while the card is
+   at rest: a transition during the drag would leave the card trailing the pointer. */
+.resting {
+  transition: transform var(--transition-fast);
+}
+
+/* Dragging the card is not dragging a selection across the description it happens to cross. */
+.dragging {
+  user-select: none;
+  cursor: grabbing;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .resting {
+    transition: none;
+  }
+}
+
 .actions {
   display: flex;
   gap: var(--space-3);
