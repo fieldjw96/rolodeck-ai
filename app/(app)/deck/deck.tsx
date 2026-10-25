@@ -422,7 +422,11 @@ export function Deck() {
    */
   const startGesture = useCallback(
     (event: ReactPointerEvent<HTMLDivElement>) => {
-      if (!event.isPrimary || event.button !== 0 || gestureRef.current !== null) {
+      if (
+        !event.isPrimary ||
+        event.button !== 0 ||
+        gestureRef.current !== null
+      ) {
         return;
       }
 
