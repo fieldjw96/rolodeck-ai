@@ -2,6 +2,8 @@ import { z } from "zod";
 
 import { issueField } from "../lib/zod/issues";
 import { NOT_STATED_STAGE } from "./not-stated-stage";
+import { SECTOR_LABELS as SECTOR_LABEL_TEXT } from "./sector-labels";
+import { STAGE_LABELS as STAGE_LABEL_TEXT } from "./stage-labels";
 
 export { NOT_STATED_STAGE };
 
@@ -34,6 +36,14 @@ export const STAGE_VALUES = [...STATED_STAGE_VALUES, NOT_STATED_STAGE] as const;
 export const stageSchema = z.enum(STAGE_VALUES);
 
 export type Stage = z.infer<typeof stageSchema>;
+
+/**
+ * The words each Stage reads as, next to `STAGE_VALUES`, so a User reads "Series B+" rather
+ * than `series-b-plus`. The stored value and the API shape are unchanged; this is display
+ * text only. Typed against `Stage` so a value added to `STAGE_VALUES` without a label here
+ * fails `npm run typecheck` rather than rendering blank. See docs/adr/0015 for `not-stated`.
+ */
+export const STAGE_LABELS: Record<Stage, string> = STAGE_LABEL_TEXT;
 
 /**
  * A stage an owner can prefer. `not-stated` is not one: it says a Source was silent, not what
@@ -76,6 +86,14 @@ export const sectorSchema = z.enum(SECTOR_VALUES, {
 });
 
 export type Sector = z.infer<typeof sectorSchema>;
+
+/**
+ * The words each Sector reads as, next to `SECTOR_VALUES`, so a User reads "Enterprise SaaS"
+ * rather than `saas-enterprise`. The stored value and the API shape are unchanged; this is
+ * display text only. Typed against `Sector` so a value added to `SECTOR_VALUES` without a
+ * label here fails `npm run typecheck` rather than rendering blank.
+ */
+export const SECTOR_LABELS: Record<Sector, string> = SECTOR_LABEL_TEXT;
 
 /**
  * The one shared boundary schema for anything that produces a Profile: scraper, seed loader,
