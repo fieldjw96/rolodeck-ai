@@ -161,6 +161,11 @@ export function Watchlist() {
   if (state.status === "empty") {
     return (
       <main className={styles.watchlist}>
+        {/* The Pass that emptied the Watchlist focuses this heading below, same as the
+            ready branch's: without it here, that focus would land nowhere. */}
+        <h1 ref={headingRef} tabIndex={-1} className={styles.title}>
+          Watchlist
+        </h1>
         <StateNotice
           title={EMPTY_WATCHLIST_MESSAGE}
           body={EMPTY_WATCHLIST_DETAIL}

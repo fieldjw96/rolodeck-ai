@@ -316,6 +316,22 @@ describe("the Watchlist", () => {
       ).toBeInTheDocument();
     });
 
+    it("moves focus to the Watchlist heading when Passing the last Kept Profile empties the list", async () => {
+      const swipes = await openDialog(acme);
+
+      fireEvent.click(
+        within(screen.getByRole("dialog")).getByRole("button", {
+          name: "Pass",
+        }),
+      );
+      await act(async () =>
+        swipes.answer(`/api/profiles/${acme.id}/pass`, 200),
+      );
+
+      await screen.findByText(EMPTY_WATCHLIST_MESSAGE);
+      expect(screen.getByRole("heading", { name: "Watchlist" })).toHaveFocus();
+    });
+
     it("keeps the Dialog open and the row in place on a failed Pass, names the Profile in an alert, and Retry re-sends the same POST", async () => {
       vi.spyOn(console, "error").mockImplementation(() => {});
       const swipes = await openDialog(acme, globex);
