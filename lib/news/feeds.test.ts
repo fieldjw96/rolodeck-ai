@@ -288,5 +288,4 @@ describe("parseNewsFeed, TechCrunch feeds", () => {
       ).toBe(true);
     }
   });
-
 });
