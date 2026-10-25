@@ -269,3 +269,144 @@ describe("fetchSourceHistory resilience", () => {
     logSpy.mockRestore();
   });
 });
+
+/**
+ * Ticket #232: a recovered Source closes its own alarm instead of leaving it open until someone
+ * closes it by hand.
+ *
+ * `handleSource` is the one place that decides whether anything gets written to GitHub for a
+ * given verdict, so these tests go through it rather than `closeRecoveredIssue` alone — a
+ * `too-new-to-judge` Source never even reaches `closeRecoveredIssue`, and that is the point being
+ * proven.
+ */
+describe("handleSource", () => {
+  const mockEnvironment = {
+    GITHUB_API_URL: "https://api.github.com",
+    GITHUB_REPOSITORY: "test/repo",
+    GITHUB_SERVER_URL: "https://github.com",
+  };
+
+  const mockSource = {
+    name: "news",
+    workflowPath: ".github/workflows/ingest-news.yml",
+    crons: ["20 8 * * *"],
+  };
+
+  const mockHistory = {
+    workflowState: "active",
+    workflowCreatedAt: new Date("2026-01-01T00:00:00Z"),
+    lastSuccessAt: new Date("2026-10-23T08:05:00Z"),
+    runsUrl: "https://github.com/test/repo/actions/workflows/ingest-news.yml",
+  };
+
+  const issueTitle = "Ingest Source has not run: news";
+
+  const onTime = {
+    verdict: "on-time" as const,
+    late: false,
+    dueAt: new Date("2026-10-23T08:00:00Z"),
+    lastSuccessAt: mockHistory.lastSuccessAt,
+  };
+
+  const tooNewToJudge = {
+    verdict: "too-new-to-judge" as const,
+    late: false,
+    dueAt: new Date("2026-10-23T08:00:00Z"),
+    lastSuccessAt: null,
+  };
+
+  type RecordedCall = { url: string; method: string; body: unknown };
+
+  /** A fetch mock that records every call and answers the open-issues list with `openIssues`. */
+  function mockFetch(openIssues: unknown[]): RecordedCall[] {
+    const calls: RecordedCall[] = [];
+
+    const fetchMock = vi.fn(async (url: string, init: RequestInit = {}) => {
+      const method = init.method ?? "GET";
+      calls.push({
+        url,
+        method,
+        body:
+          init.body === undefined ? undefined : JSON.parse(init.body as string),
+      });
+
+      const body =
+        method === "GET" && url.includes("/issues?state=open")
+          ? openIssues
+          : {};
+
+      return new Response(JSON.stringify(body), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    });
+
+    global.fetch = fetchMock as unknown as typeof fetch;
+    return calls;
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("on-time with an open issue: one comment POST, then one PATCH closing it", async () => {
+    const calls = mockFetch([{ number: 42, title: issueTitle }]);
+
+    await freshness.handleSource(
+      mockEnvironment as Parameters<typeof freshness.handleSource>[0],
+      mockSource as Parameters<typeof freshness.handleSource>[1],
+      mockHistory,
+      onTime,
+    );
+
+    const posts = calls.filter((call) => call.method === "POST");
+    const patches = calls.filter((call) => call.method === "PATCH");
+
+    expect(posts).toHaveLength(1);
+    expect(posts[0]!.url).toBe(
+      "https://api.github.com/repos/test/repo/issues/42/comments",
+    );
+    expect((posts[0]!.body as { body: string }).body).toContain(
+      "running again",
+    );
+
+    expect(patches).toHaveLength(1);
+    expect(patches[0]!.url).toBe(
+      "https://api.github.com/repos/test/repo/issues/42",
+    );
+    expect(patches[0]!.body).toEqual({
+      state: "closed",
+      state_reason: "completed",
+    });
+
+    expect(calls.indexOf(posts[0]!)).toBeLessThan(calls.indexOf(patches[0]!));
+  });
+
+  it("on-time with no open issue: no POST and no PATCH", async () => {
+    const calls = mockFetch([]);
+
+    await freshness.handleSource(
+      mockEnvironment as Parameters<typeof freshness.handleSource>[0],
+      mockSource as Parameters<typeof freshness.handleSource>[1],
+      mockHistory,
+      onTime,
+    );
+
+    expect(calls.some((call) => call.method === "POST")).toBe(false);
+    expect(calls.some((call) => call.method === "PATCH")).toBe(false);
+  });
+
+  it("too-new-to-judge causes no write, even with an open issue", async () => {
+    const calls = mockFetch([{ number: 42, title: issueTitle }]);
+
+    await freshness.handleSource(
+      mockEnvironment as Parameters<typeof freshness.handleSource>[0],
+      mockSource as Parameters<typeof freshness.handleSource>[1],
+      mockHistory,
+      tooNewToJudge,
+    );
+
+    expect(calls.some((call) => call.method === "POST")).toBe(false);
+    expect(calls.some((call) => call.method === "PATCH")).toBe(false);
+  });
+});
