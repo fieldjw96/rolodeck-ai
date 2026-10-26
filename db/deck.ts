@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { citiesInArea } from "../lib/location/bay-area";
 import type { Database } from "./connection";
+import { STATED_STAGE_VALUES } from "./profile-input";
 import { profiles, swipes, type Profile, type SwipeDecision } from "./schema";
 import {
   EMPTY_USER_PROFILE,
@@ -167,18 +168,42 @@ const weighted = (matches: SQL, weight: number) =>
   sql`case when ${matches} then ${weight}::int else 0 end`;
 
 /**
+ * Whether `stages` is every value of `STATED_STAGE_VALUES` rather than a User's actual choice
+ * among them. The first-run screen's checkboxes default to all checked (see
+ * `app/onboarding/onboarding.tsx`), so a User who presses "Save" without touching anything
+ * states this, not a preference for every Stage over `not-stated` — the same class of bug as
+ * the `AREA` comment in that file describes for area: a screen's default read back as if a User
+ * had chosen it. See docs/adr/0011: a preference reorders, and stating nothing reorders
+ * nothing, and selecting everything is stating nothing with extra steps.
+ *
+ * Sectors get no equivalent check. Every Company Profile's `sector` is in `SECTOR_VALUES`,
+ * `other` included, so a full Sector selection matches every row and adds the same sector
+ * weight to all of them alike — it changes no order, so there is nothing here to guard
+ * against. Stage is different only because `not-stated` is deliberately excluded from what a
+ * User can select (docs/adr/0015), which is what leaves a `not-stated` Profile unmatched, and
+ * last, when every selectable Stage is checked.
+ */
+function statesEveryStage(stages: UserProfile["stages"]): boolean {
+  return STATED_STAGE_VALUES.every((stage) => stages.includes(stage));
+}
+
+/**
  * A Company Profile's score under `userProfile`, as SQL, so the Deck is ordered inside
  * Postgres rather than by fetching every row. Each unstated preference compiles to `false` and
  * adds nothing, which is how a User Profile that states nothing deals the Deck newest-first
  * without anyone checking for it: an empty array for the three list preferences, and a null
- * `area`, which `citiesInArea` answers with no cities.
+ * `area`, which `citiesInArea` answers with no cities. The Stage term compiles to the same
+ * `false` when `userProfile.stages` states every Stage, for the reason `statesEveryStage`
+ * explains.
  */
 function deckScore(userProfile: UserProfile): SQL<number> {
   return sql<number>`(${weighted(
     inArray(profiles.sector, userProfile.sectors),
     DECK_RANK_WEIGHTS.sector,
   )} + ${weighted(
-    inArray(profiles.stage, userProfile.stages),
+    statesEveryStage(userProfile.stages)
+      ? sql`false`
+      : inArray(profiles.stage, userProfile.stages),
     DECK_RANK_WEIGHTS.stage,
   )} + ${weighted(
     inArray(locationCity, [...citiesInArea(userProfile.area)]),

@@ -9,7 +9,7 @@ import {
   type DeckCursor,
   type DeckPage,
 } from "./deck";
-import type { Sector, Stage } from "./profile-input";
+import { STATED_STAGE_VALUES, type Sector, type Stage } from "./profile-input";
 import { asUser } from "./rls";
 import { profiles, swipes, userProfiles } from "./schema";
 import { createScratchDb, type ScratchDb } from "./testing/scratch-db";
@@ -198,6 +198,38 @@ describe("ranking the Deck by the User Profile", () => {
       ["Stated"],
       ["Not stated"],
     ]);
+  });
+
+  it("deals the same order whether a User states every Stage or none, matching neither a stated Stage nor `not-stated`", async () => {
+    // Newer than its stated twin, so newest-first alone would deal it first — which is also
+    // the order stating no Stage deals it in, per the Ticket's Acceptance Criteria.
+    await seed([
+      { name: "Stated", minute: 0, sector: "ai-ml", stage: "series-a" },
+      { name: "Not stated", minute: 1, sector: "ai-ml", stage: "not-stated" },
+    ]);
+    await statePreferences({
+      sectors: ["ai-ml"],
+      stages: [...STATED_STAGE_VALUES],
+    });
+
+    await expect(dealPage()).resolves.toEqual(["Not stated", "Stated"]);
+
+    await statePreferences({ sectors: ["ai-ml"], stages: [] });
+
+    await expect(dealPage()).resolves.toEqual(["Not stated", "Stated"]);
+  });
+
+  it("still ranks a matching Company Profile above a `not-stated` one when the User states a strict subset of Stages", async () => {
+    await seed([
+      { name: "Not stated", minute: 0, sector: "ai-ml", stage: "not-stated" },
+      { name: "Stated", minute: 1, sector: "ai-ml", stage: "series-a" },
+    ]);
+    await statePreferences({
+      sectors: ["ai-ml"],
+      stages: STATED_STAGE_VALUES.slice(0, -1),
+    });
+
+    await expect(dealPage()).resolves.toEqual(["Stated", "Not stated"]);
   });
 
   it("omits a Company Profile in an excluded Sector entirely, however well it otherwise matches", async () => {
