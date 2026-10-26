@@ -382,10 +382,7 @@ export async function readKeptProfiles(
       and(eq(swipes.profileId, profiles.id), eq(swipes.userId, userId)),
     )
     .where(
-      and(
-        eq(swipes.decision, "keep"),
-        isNewestDecisionForCompany(db, userId),
-      ),
+      and(eq(swipes.decision, "keep"), isNewestDecisionForCompany(db, userId)),
     )
     .orderBy(desc(swipes.decidedAt), desc(profiles.id));
 }
