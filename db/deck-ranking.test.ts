@@ -34,16 +34,24 @@ type Company = {
   stage?: Stage;
   location?: string | null;
   id?: string;
+  /** Which Source found it. Two companies of one name under two Sources are siblings, per
+   * docs/adr/0008, and the Deck deals them as one company. */
+  source?: string;
 };
 
-/** Seeds `companies` for Jack as the superuser, and returns their ids by name. */
-async function seed(companies: Company[]): Promise<Record<string, string>> {
-  const written = await scratch.db
+/**
+ * Seeds `companies` for Jack as the superuser, and returns them in the order given. Siblings
+ * share a name, so a test about them has to hold onto ids rather than look one up by name.
+ */
+async function insertCompanies(
+  companies: Company[],
+): Promise<{ id: string; name: string }[]> {
+  return scratch.db
     .insert(profiles)
     .values(
       companies.map((company) => ({
         ...(company.id === undefined ? {} : { id: company.id }),
-        source: "seed",
+        source: company.source ?? "seed",
         name: company.name,
         description: "Seeded for the ranked Deck.",
         sector: company.sector ?? "other",
@@ -59,6 +67,11 @@ async function seed(companies: Company[]): Promise<Record<string, string>> {
       })),
     )
     .returning({ id: profiles.id, name: profiles.name });
+}
+
+/** The same, for the tests that know every name is its own company, by name. */
+async function seed(companies: Company[]): Promise<Record<string, string>> {
+  const written = await insertCompanies(companies);
 
   return Object.fromEntries(written.map((row) => [row.name, row.id]));
 }
@@ -79,6 +92,15 @@ async function dealPage(limit = 50): Promise<string[]> {
   );
 
   return page.profiles.map((profile) => profile.name);
+}
+
+/** One page of Jack's Deck, by id, for the tests whose companies share a name. */
+async function dealPageIds(limit = 50): Promise<string[]> {
+  const page = await asUser(scratch.db, JACK, (tx) =>
+    readDeckPage(tx, { userId: JACK, limit }),
+  );
+
+  return page.profiles.map((profile) => profile.id);
 }
 
 /** Jack's whole Deck, `limit` at a time, handing each cursor back as a client would. */
@@ -330,6 +352,46 @@ describe("ranking the Deck by the User Profile", () => {
       "Nowhere stated",
       "In San Francisco",
     ]);
+  });
+});
+
+/**
+ * Which of a company's two Company Profiles the Deck deals, now that it deals one of them: the
+ * first by its own order, among the siblings a Sector exclusion leaves. See docs/adr/0024.
+ */
+describe("ranking the siblings of one company", () => {
+  it("deals the one card for the higher-scoring sibling, not the newer one", async () => {
+    const [matched, newer] = await insertCompanies([
+      { name: "Sprocket", source: "yc", minute: 0, sector: "ai-ml" },
+      { name: "Sprocket", source: "show-hn", minute: 1 },
+    ]);
+    await statePreferences({ sectors: ["ai-ml"] });
+
+    // The newer row would win on `created_at`, which is the tiebreak and not the first key.
+    expect(await dealPageIds()).toEqual([matched!.id]);
+    expect(newer!.id).not.toEqual(matched!.id);
+  });
+
+  it("deals the sibling that is left when an excluded Sector takes the best-scoring one out", async () => {
+    const [excluded, remaining] = await insertCompanies([
+      {
+        name: "Sprocket",
+        source: "yc",
+        minute: 1,
+        sector: "consumer-marketplace",
+        stage: "series-a",
+      },
+      { name: "Sprocket", source: "show-hn", minute: 0 },
+    ]);
+    await statePreferences({
+      stages: ["series-a"],
+      excluded_sectors: ["consumer-marketplace"],
+    });
+
+    // The excluded row is both newer and better-scoring, and is no part of the Deck at all, so
+    // the company is dealt under the Source that is left rather than not dealt.
+    expect(await dealPageIds()).toEqual([remaining!.id]);
+    expect(excluded!.id).not.toEqual(remaining!.id);
   });
 });
 

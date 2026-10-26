@@ -4,6 +4,7 @@ import { z } from "zod";
 import { NEWS_DISPLAY_THRESHOLD } from "../lib/news/match";
 import { issueField } from "../lib/zod/issues";
 import type { Database } from "./connection";
+import { isNewestDecisionForCompany } from "./deck";
 import type { IngestRejection } from "./profile-input";
 import {
   newsArticles,
@@ -391,11 +392,18 @@ type NewsRow = NewsEntry & {
  * Groups rows that are already newest first. Each company's items stay newest first, and the
  * companies come out in order of their newest article, so the company with the freshest news
  * is at the top of the page.
+ *
+ * One url reaches a company once. A company two Sources both found is two Company Profiles
+ * (docs/adr/0008) and `news_items` is unique per `(profile_id, url)`, so an article about such
+ * a company is two Attributions of the same thing; `readNews` hands both rows here under the
+ * one company, and the first in this order — newest published, then the greater id — is the
+ * one shown. The two carry the same article and differ at most in `confidence`, which is the
+ * matcher's view of one Source's row rather than a fact about the company.
  */
 export function groupNewsByCompany(rows: readonly NewsRow[]): NewsGroup[] {
   const groups = new Map<
     string,
-    { profile: NewsGroup["profile"]; items: NewsEntry[] }
+    { profile: NewsGroup["profile"]; items: NewsEntry[]; urls: Set<string> }
   >();
 
   for (const row of rows) {
@@ -406,20 +414,27 @@ export function groupNewsByCompany(rows: readonly NewsRow[]): NewsGroup[] {
         sector: row.profileSector,
       },
       items: [],
+      urls: new Set<string>(),
     };
 
-    group.items.push({
-      id: row.id,
-      title: row.title,
-      url: row.url,
-      publishedAt: row.publishedAt,
-      sourceName: row.sourceName,
-      confidence: row.confidence,
-    });
+    if (!group.urls.has(row.url)) {
+      group.items.push({
+        id: row.id,
+        title: row.title,
+        url: row.url,
+        publishedAt: row.publishedAt,
+        sourceName: row.sourceName,
+        confidence: row.confidence,
+      });
+      group.urls.add(row.url);
+    }
+
     groups.set(row.profileId, group);
   }
 
-  return [...groups.values()];
+  // `urls` is this function's bookkeeping and no part of a group, so it does not travel: the
+  // route serialises `profile` and `items` and nothing else would stop it travelling.
+  return [...groups.values()].map(({ profile, items }) => ({ profile, items }));
 }
 
 /**
@@ -434,14 +449,44 @@ export function groupNewsByCompany(rows: readonly NewsRow[]): NewsGroup[] {
  * are not. So the reader is written into the join on `swipes.user_id` and nowhere else,
  * matching `readKeptProfiles`.
  *
- * Unchanged by docs/adr/0022, which is the point of it: gathering for the whole Catalogue means
- * a User who Keeps a company nobody else has Kept now finds News for it here, and this query is
- * the same query it always was.
+ * One group per company, not per Source: a company two Sources both found is two Company
+ * Profiles sharing a `name_key` (docs/adr/0008), each with its own Attributions, and the page
+ * names it once. The company is named by the Company Profile the Keep that counts was recorded
+ * against — the same row the Watchlist shows, by the same rule, `isNewestDecisionForCompany` —
+ * and each Attribution joins to it by `name_key`, so the group holds every Kept sibling's
+ * articles under one heading.
+ *
+ * Otherwise unchanged by docs/adr/0022, which is the point of it: gathering for the whole
+ * Catalogue means a User who Keeps a company nobody else has Kept now finds News for it here.
  */
 export async function readNews(
   db: Database,
   userId: string,
 ): Promise<NewsGroup[]> {
+  /**
+   * The Company Profile that names each company the reader currently Keeps, one row per
+   * `name_key`. Built here rather than shared with `readKeptProfiles` because what the two
+   * need from it differs — the Watchlist deals out a whole Company Profile, the page needs a
+   * heading — while the rule that picks the row is shared, and is the only part that could go
+   * wrong in two ways.
+   */
+  const kept = db
+    .select({
+      id: profiles.id,
+      name: profiles.name,
+      sector: profiles.sector,
+      nameKey: profiles.nameKey,
+    })
+    .from(profiles)
+    .innerJoin(
+      swipes,
+      and(eq(swipes.profileId, profiles.id), eq(swipes.userId, userId)),
+    )
+    .where(
+      and(eq(swipes.decision, "keep"), isNewestDecisionForCompany(db, userId)),
+    )
+    .as("current_keep");
+
   const rows = await db
     .select({
       id: newsItems.id,
@@ -450,12 +495,15 @@ export async function readNews(
       publishedAt: newsItems.publishedAt,
       sourceName: newsItems.sourceName,
       confidence: newsItems.confidence,
-      profileId: profiles.id,
-      profileName: profiles.name,
-      profileSector: profiles.sector,
+      profileId: kept.id,
+      profileName: kept.name,
+      profileSector: kept.sector,
     })
     .from(newsItems)
     .innerJoin(profiles, eq(profiles.id, newsItems.profileId))
+    // The article's own Company Profile has to be one this reader Keeps: an Attribution to a
+    // sibling they Passed is not theirs to read, even where a newer Keep on another sibling
+    // puts the company itself on the page.
     .innerJoin(
       swipes,
       and(
@@ -464,6 +512,7 @@ export async function readNews(
         eq(swipes.decision, "keep"),
       ),
     )
+    .innerJoin(kept, eq(kept.nameKey, profiles.nameKey))
     .where(gte(newsItems.confidence, NEWS_DISPLAY_THRESHOLD))
     .orderBy(desc(newsItems.publishedAt), desc(newsItems.id));
 
