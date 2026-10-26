@@ -274,10 +274,9 @@ export async function readDeckPage(
   const dealable = db
     .select({
       // Nested, so the page below hands the whole card back out without naming its columns a
-      // second time — and so `name_key`, which the window has to partition by, stays beside
-      // the card rather than in it. No caller may see it; see `deckColumns`.
+      // second time. `name_key` is not among them and is not selected here either: the window
+      // partitions by it directly, and no caller may see it. See `deckColumns`.
       profile: deckColumns,
-      nameKey: profiles.nameKey,
       score: score.as("score"),
       siblingRank:
         sql<number>`row_number() over (partition by ${profiles.nameKey} order by ${score} desc, ${profiles.createdAt} desc, ${profiles.id} desc)`.as(
