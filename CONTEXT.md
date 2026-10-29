@@ -23,6 +23,14 @@ Catalogue, so the same Company Profile is the same row for every User. Formerly 
 qualify it always now that **User Profile** below is a distinct thing.
 _Avoid_: card, entry, listing, and the bare word Profile
 
+**Siblings**:
+The Company Profiles sharing one `name_key` — one company that more than one Source found,
+which `(source, name_key)` keeps as one row per Source. Siblings are peers: nothing merges
+them or decides which Source is right. The Deck deals one of them, and the Watchlist and the
+News page name the company once, by collapsing them where they are read. See `docs/adr/0008`
+and `docs/adr/0024`.
+_Avoid_: duplicate, copy, match, the merged company
+
 **Founder**:
 A person a Source states is behind a Company Profile, stored as that Source stated them: name,
 and where stated, role, biography and links. Never an email address. Where the Source states
@@ -45,12 +53,14 @@ _Avoid_: settings, preferences, brief
 
 **Deck**:
 The ordered set of Company Profiles a session works through, ranked by the User Profile. Every
-Company Profile not yet swiped appears except those in an excluded Sector. See `docs/adr/0011`.
+Company Profile not yet swiped appears except those in an excluded Sector, and one per company
+where Siblings would otherwise deal it twice. See `docs/adr/0011` and `docs/adr/0024`.
 _Avoid_: feed, list, queue
 
 **Keep** / **Pass**:
 The two swipe actions on a Company Profile. Keep marks it worth a conversation; Pass
-dismisses it from the current Deck without deleting the Company Profile.
+dismisses it from the current Deck without deleting the Company Profile. Either answers for the
+whole company, Siblings included, and the newest of them is the one that counts.
 _Avoid_: like/dislike, save/skip, accept/reject
 
 **Sector**:

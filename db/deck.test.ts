@@ -16,7 +16,11 @@ import {
 import { asUser } from "./rls";
 import { profiles, swipes } from "./schema";
 import { createScratchDb, type ScratchDb } from "./testing/scratch-db";
-import { FIRST_CREATED_AT, seedProfiles } from "./testing/seed-profiles";
+import {
+  FIRST_CREATED_AT,
+  seedProfiles,
+  seedSiblings,
+} from "./testing/seed-profiles";
 
 const JACK = "11111111-1111-1111-1111-111111111111";
 const SOMEONE_ELSE = "22222222-2222-2222-2222-222222222222";
@@ -358,6 +362,83 @@ describe("reading the Watchlist", () => {
     );
 
     expect(kept).toEqual([]);
+  });
+});
+
+/**
+ * A company two Sources both found is two Company Profiles sharing a `name_key`, per
+ * docs/adr/0008, and one company to a reader. Nothing below merges the rows: what it asserts is
+ * that the Deck deals the company once, that a decision about it covers both rows, and that
+ * the Watchlist names it once — including for the pair of Keeps a reader could record before
+ * any of this existed. See docs/adr/0024.
+ */
+describe("a company two Sources found", () => {
+  /** Both rows for one company, newest Source last. Dealt and Kept by id, since they share a
+   * name and a test asserting on names could not tell which it had. */
+  const seedBoth = () =>
+    seedSiblings(scratch.db, { name: "Sprocket", sources: ["yc", "show-hn"] });
+
+  const dealtIds = async () => {
+    const page = await asUser(scratch.db, JACK, (tx) =>
+      readDeckPage(tx, { userId: JACK, limit: DEFAULT_PAGE_SIZE }),
+    );
+
+    return page.profiles.map((profile) => profile.id);
+  };
+
+  it("deals one card, and it is the first of the siblings by the Deck's own order", async () => {
+    const [older, newer] = await seedBoth();
+
+    // Nothing separates them on score, so the newer row wins on `created_at`.
+    expect(await dealtIds()).toEqual([newer]);
+    expect(older).not.toEqual(newer);
+  });
+
+  it("deals neither sibling once one of them is Passed", async () => {
+    const [, dealt] = await seedBoth();
+
+    await asUser(scratch.db, JACK, (tx) =>
+      recordSwipe(tx, { userId: JACK, profileId: dealt!, decision: "pass" }),
+    );
+
+    expect(await dealtIds()).toEqual([]);
+  });
+
+  it("deals neither sibling once one of them is Kept", async () => {
+    const [, dealt] = await seedBoth();
+
+    await asUser(scratch.db, JACK, (tx) =>
+      recordSwipe(tx, { userId: JACK, profileId: dealt!, decision: "keep" }),
+    );
+
+    expect(await dealtIds()).toEqual([]);
+  });
+
+  it("gives one Watchlist entry for a company Kept twice, the one Kept most recently", async () => {
+    const [keptFirst, keptSecond] = await seedBoth();
+
+    // The pair of Keeps a reader could record while the Deck still dealt both rows. Written
+    // with explicit timestamps, so which is the most recent is a fact about `decidedAt`.
+    await scratch.db.insert(swipes).values([
+      {
+        userId: JACK,
+        profileId: keptSecond!,
+        decision: "keep",
+        decidedAt: new Date(FIRST_CREATED_AT),
+      },
+      {
+        userId: JACK,
+        profileId: keptFirst!,
+        decision: "keep",
+        decidedAt: new Date(FIRST_CREATED_AT + 60_000),
+      },
+    ]);
+
+    const kept = await asUser(scratch.db, JACK, (tx) =>
+      readKeptProfiles(tx, JACK),
+    );
+
+    expect(kept.map((profile) => profile.id)).toEqual([keptFirst]);
   });
 });
 
