@@ -10,6 +10,7 @@ import {
   newsArticles,
   newsItems,
   newsProfileCoverage,
+  newsProfileSiteRecovery,
   profiles,
   swipes,
 } from "./schema";
@@ -74,13 +75,19 @@ export async function readLatestLaunchHnPublishedAt(
   return row?.publishedAt ?? null;
 }
 
-/** One feed article as it is stored, before anything has been attributed to a company. */
+/** One article as it is stored, before anything has been attributed to a company. */
 export type NewsArticleInput = {
   readonly title: string;
   readonly description: string | null;
   readonly url: string;
   readonly publishedAt: Date;
   readonly sourceName: string;
+  /**
+   * The Company Profile a history search found this article for, or null when a feed or Launch HN
+   * read it. An article with one is scored against that Profile and no other, which is how
+   * docs/adr/0018's rule survives being stored here at all. See docs/adr/0024.
+   */
+  readonly searchedForProfileId?: string | null;
 };
 
 /** One article on its way in, attributed to one Company Profile with a score for how sure. */
@@ -131,6 +138,8 @@ const articleSchema = z.strictObject({
   url: z.url({ protocol: /^https?$/ }),
   publishedAt: z.date(),
   sourceName: nonBlank,
+  /** Defaulted rather than optional, so one shape reaches the insert whoever built it. */
+  searchedForProfileId: z.guid().nullish().default(null),
 });
 
 export type NewsArticleIngestReport = NewsIngestReport & {
@@ -191,6 +200,10 @@ export async function persistNewsArticles(
             description: sql`excluded.description`,
             publishedAt: sql`excluded.published_at`,
             sourceName: sql`excluded.source_name`,
+            // `searched_for_profile_id` is deliberately not here, and ingest holds no UPDATE
+            // grant on it either: it says which Company Profile's search first stored this
+            // article, so an article a feed carried first stays Catalogue when a search finds
+            // the same url later. See docs/adr/0024.
           },
         })
         .returning({ inserted: sql<boolean>`(xmax = 0)` });
@@ -210,9 +223,13 @@ export async function persistNewsArticles(
 }
 
 /**
- * Every feed article stored, newest first. What a Company Profile new to News is scored against
- * on its first run, so it arrives with its News rather than waiting for the next thing published
+ * Every article stored, newest first. What a Company Profile new to News is scored against on
+ * its first run, so it arrives with its News rather than waiting for the next thing published
  * about it. See docs/adr/0022.
+ *
+ * `searchedForProfileId` comes back with each row because the caller must honour it: an article
+ * a search found is scored against that one Company Profile and no other, however many runs
+ * later it is read. See docs/adr/0024 and docs/adr/0018.
  */
 export async function readStoredNewsArticles(
   db: Database,
@@ -224,6 +241,7 @@ export async function readStoredNewsArticles(
       url: newsArticles.url,
       publishedAt: newsArticles.publishedAt,
       sourceName: newsArticles.sourceName,
+      searchedForProfileId: newsArticles.searchedForProfileId,
     })
     .from(newsArticles)
     .orderBy(desc(newsArticles.publishedAt), desc(newsArticles.url));
@@ -265,6 +283,44 @@ export async function recordNewsCoverage(
     .values(profileIds.map((profileId) => ({ profileId })))
     .onConflictDoNothing()
     .returning({ profileId: newsProfileCoverage.profileId });
+
+  return written.length;
+}
+
+/**
+ * The ids of the Company Profiles whose own-site search has already been run again under the
+ * news-only rule, so it is never run again. Read, not inferred, for the reason
+ * `readNewsCoveredProfileIds` gives: a company whose site query finds nothing is the ordinary
+ * case. See docs/adr/0024.
+ */
+export async function readNewsSiteRecoveredProfileIds(
+  db: Database,
+): Promise<Set<string>> {
+  const rows = await db
+    .select({ profileId: newsProfileSiteRecovery.profileId })
+    .from(newsProfileSiteRecovery);
+
+  return new Set(rows.map((row) => row.profileId));
+}
+
+/**
+ * Records that these Company Profiles have had their own-site search run again, and its results
+ * kept. Insert-only and idempotent, exactly as `recordNewsCoverage` is and for the same reason:
+ * the row says a thing happened once. Returns how many rows it added.
+ */
+export async function recordNewsSiteRecovery(
+  db: Database,
+  profileIds: readonly string[],
+): Promise<number> {
+  if (profileIds.length === 0) {
+    return 0;
+  }
+
+  const written = await db
+    .insert(newsProfileSiteRecovery)
+    .values(profileIds.map((profileId) => ({ profileId })))
+    .onConflictDoNothing()
+    .returning({ profileId: newsProfileSiteRecovery.profileId });
 
   return written.length;
 }

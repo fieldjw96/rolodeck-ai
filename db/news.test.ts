@@ -10,8 +10,10 @@ import {
   readLatestLaunchHnPublishedAt,
   readNews,
   readNewsCoveredProfileIds,
+  readNewsSiteRecoveredProfileIds,
   readStoredNewsArticles,
   recordNewsCoverage,
+  recordNewsSiteRecovery,
   type NewsArticleInput,
   type NewsCandidate,
 } from "./news";
@@ -20,6 +22,7 @@ import {
   newsArticles,
   newsItems,
   newsProfileCoverage,
+  newsProfileSiteRecovery,
   profiles,
   swipes,
   type SwipeDecision,
@@ -102,6 +105,7 @@ beforeEach(async () => {
   await scratch.db.delete(newsItems);
   await scratch.db.delete(newsArticles);
   await scratch.db.delete(newsProfileCoverage);
+  await scratch.db.delete(newsProfileSiteRecovery);
   await scratch.db.delete(swipes);
   await scratch.db.delete(profiles);
 });
@@ -177,6 +181,42 @@ describe("persistNewsArticles", () => {
       (await readStoredNewsArticles(scratch.db)).map((row) => row.title),
     ).toEqual(["Headline 5", "Headline 3", "Headline 1"]);
   });
+
+  it("stores and reads back the Company Profile a search found an article for", async () => {
+    const [searched] = await seedProfiles(scratch.db, { count: 1 });
+
+    await persistNewsArticles(scratch.db, {
+      articles: [article(1), article(2, { searchedForProfileId: searched })],
+    });
+
+    expect(
+      (await readStoredNewsArticles(scratch.db)).map((row) => [
+        row.title,
+        row.searchedForProfileId,
+      ]),
+    ).toEqual([
+      ["Headline 2", searched],
+      // A feed article names no Profile, which is what makes it Catalogue. See docs/adr/0024.
+      ["Headline 1", null],
+    ]);
+  });
+
+  it("leaves the Profile a search found an article for alone when the article is read again", async () => {
+    const [searched] = await seedProfiles(scratch.db, { count: 1 });
+
+    // A feed carried it first, so it is Catalogue, and a search finding the same url later does
+    // not narrow it. The other way about, the first writer's Profile stands. See docs/adr/0024.
+    await persistNewsArticles(scratch.db, { articles: [article(1)] });
+    await persistNewsArticles(scratch.db, {
+      articles: [article(1, { searchedForProfileId: searched })],
+    });
+
+    expect(
+      (await scratch.db.select().from(newsArticles)).map(
+        (row) => row.searchedForProfileId,
+      ),
+    ).toEqual([null]);
+  });
 });
 
 describe("readLatestLaunchHnPublishedAt", () => {
@@ -225,6 +265,28 @@ describe("news coverage", () => {
     expect(await storedRows()).toEqual([]);
     expect(await readNewsCoveredProfileIds(scratch.db)).toEqual(
       new Set([quiet]),
+    );
+  });
+
+  it("records an own-site re-search apart from the coverage it repairs, once each", async () => {
+    const [first, second] = await seedProfiles(scratch.db, { count: 2 });
+    await recordNewsCoverage(scratch.db, [first!, second!]);
+
+    expect(await readNewsSiteRecoveredProfileIds(scratch.db)).toEqual(
+      new Set(),
+    );
+
+    expect(await recordNewsSiteRecovery(scratch.db, [first!])).toBe(1);
+    // Already recorded: a later run says the same thing and adds nothing.
+    expect(await recordNewsSiteRecovery(scratch.db, [first!])).toBe(0);
+    expect(await recordNewsSiteRecovery(scratch.db, [])).toBe(0);
+
+    expect(await readNewsSiteRecoveredProfileIds(scratch.db)).toEqual(
+      new Set([first]),
+    );
+    // Coverage is untouched by it: two records, saying two different things.
+    expect(await readNewsCoveredProfileIds(scratch.db)).toEqual(
+      new Set([first, second]),
     );
   });
 });

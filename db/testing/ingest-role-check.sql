@@ -52,17 +52,17 @@ BEGIN
   WHERE c.relkind IN ('r', 'p', 'v', 'm', 'f')
     AND n.nspname <> 'information_schema'
     AND n.nspname NOT LIKE 'pg\_%'
-    AND NOT (n.nspname = 'public' AND c.relname IN ('profiles', 'news_items', 'news_articles', 'news_profile_coverage', 'events', 'event_attendances'))
+    AND NOT (n.nspname = 'public' AND c.relname IN ('profiles', 'news_items', 'news_articles', 'news_profile_coverage', 'news_profile_site_recovery', 'events', 'event_attendances'))
     AND (
       has_table_privilege(ingest_role, c.oid, 'SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER')
       OR has_any_column_privilege(ingest_role, c.oid, 'SELECT, INSERT, UPDATE, REFERENCES')
     );
 
   IF broader IS NOT NULL THEN
-    RAISE EXCEPTION 'rolodeck_ingest may hold no privilege beyond its six tables, but can reach %', broader;
+    RAISE EXCEPTION 'rolodeck_ingest may hold no privilege beyond its seven tables, but can reach %', broader;
   END IF;
 
-  -- None of its six tables takes its key from a sequence, so it needs none at all. The `case`
+  -- None of its seven tables takes its key from a sequence, so it needs none at all. The `case`
   -- because Postgres may evaluate the conditions in any order, and `has_sequence_privilege`
   -- raises on a relation that is not a sequence rather than returning false.
   SELECT string_agg(format('%I.%I', n.nspname, c.relname), ', ' ORDER BY n.nspname, c.relname)
@@ -84,7 +84,7 @@ BEGIN
   FROM pg_class c
   JOIN pg_namespace n ON n.oid = c.relnamespace
   WHERE n.nspname = 'public'
-    AND c.relname IN ('profiles', 'news_items', 'news_articles', 'news_profile_coverage', 'events', 'event_attendances')
+    AND c.relname IN ('profiles', 'news_items', 'news_articles', 'news_profile_coverage', 'news_profile_site_recovery', 'events', 'event_attendances')
     AND (
       has_table_privilege(ingest_role, c.oid, 'TRUNCATE, REFERENCES, TRIGGER')
       OR (c.relname <> 'event_attendances' AND has_table_privilege(ingest_role, c.oid, 'DELETE'))
@@ -97,19 +97,22 @@ BEGIN
   -- Its RLS policies are `with check (true)`, so the column grant is all that stops an update
   -- rewriting a row's identity. `owner_id` was the other column named here until docs/adr/0019
   -- took it off all four tables; what remains to protect is the primary key, and on
-  -- `news_articles` the `url` that is really the key (docs/adr/0022). `news_items.profile_id` is
-  -- deliberately not here: ingest may correct which company an article was attributed to.
+  -- `news_articles` the `url` that is really the key (docs/adr/0022), beside the
+  -- `searched_for_profile_id` that says which Company Profile's search first stored the row and
+  -- is written once (docs/adr/0024). `news_items.profile_id` is deliberately not here: ingest
+  -- may correct which company an article was attributed to.
   SELECT string_agg(format('%I.%I', c.relname, a.attname), ', ' ORDER BY c.relname, a.attname)
   INTO broader
   FROM pg_class c
   JOIN pg_namespace n ON n.oid = c.relnamespace
   JOIN pg_attribute a ON a.attrelid = c.oid AND NOT a.attisdropped
   WHERE n.nspname = 'public'
-    AND c.relname IN ('profiles', 'news_items', 'news_articles', 'news_profile_coverage', 'events', 'event_attendances')
+    AND c.relname IN ('profiles', 'news_items', 'news_articles', 'news_profile_coverage', 'news_profile_site_recovery', 'events', 'event_attendances')
     AND (
       a.attname IN ('id', 'owner_id')
-      OR (c.relname = 'news_articles' AND a.attname = 'url')
+      OR (c.relname = 'news_articles' AND a.attname IN ('url', 'searched_for_profile_id'))
       OR (c.relname = 'news_profile_coverage' AND a.attname IN ('profile_id', 'covered_at'))
+      OR (c.relname = 'news_profile_site_recovery' AND a.attname IN ('profile_id', 'recovered_at'))
     )
     AND has_column_privilege(ingest_role, c.oid, a.attnum, 'UPDATE');
 

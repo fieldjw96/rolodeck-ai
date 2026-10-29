@@ -364,7 +364,7 @@ export type UserProfileRow = typeof userProfiles.$inferSelect;
 export type NewUserProfileRow = typeof userProfiles.$inferInsert;
 
 /**
- * Every feed article News has read, stored once whoever it turns out to be about.
+ * Every article News has read, stored once whoever it turns out to be about.
  *
  * The articles and the attributions are apart, per docs/adr/0022. This table is the article: one
  * row per `url`, written whether or not it matches a single Company Profile. `news_items` below
@@ -376,9 +376,11 @@ export type NewUserProfileRow = typeof userProfiles.$inferInsert;
  * docs/adr/0010's reasoning that survives: the articles are all still here for a retuned rule to
  * re-score, without fetching anything again.
  *
- * Feed articles only. A history search's results are scored against the one Company Profile they
- * were searched for and no other (docs/adr/0018), so storing them here — where every future
- * Profile is scored against every row — would quietly undo that.
+ * History search results are here too, since docs/adr/0024, and they carry
+ * `searched_for_profile_id` so that docs/adr/0018's rule survives the move: a search result is
+ * scored against the Company Profile it was searched for and no other, on this run and on every
+ * later one. A feed or Launch HN article leaves the column null, which means the opposite — this
+ * article belongs to the whole Catalogue and is scored against every Profile.
  */
 export const newsArticles = pgTable(
   "news_articles",
@@ -391,6 +393,16 @@ export const newsArticles = pgTable(
     publishedAt: timestamp("published_at", { withTimezone: true }).notNull(),
     /** The publication, as the feed it came from names it: "Techmeme", not a hostname. */
     sourceName: text("source_name").notNull(),
+    /**
+     * The Company Profile a history search found this article for, or null when a feed or Launch
+     * HN read it. Written once, when the row is first stored, and never updated: an article a
+     * feed carried first is Catalogue, and a search finding the same url later does not narrow
+     * it. See docs/adr/0024.
+     */
+    searchedForProfileId: uuid("searched_for_profile_id").references(
+      () => profiles.id,
+      { onDelete: "cascade" },
+    ),
     /** When this article was first read. Not touched when a later run reads it again. */
     fetchedAt: timestamp("fetched_at", { withTimezone: true })
       .notNull()
@@ -469,6 +481,55 @@ export const newsProfileCoverage = pgTable(
 );
 
 export type NewsProfileCoverageRow = typeof newsProfileCoverage.$inferSelect;
+
+/**
+ * Which Company Profiles have had their own-site search run again under the news-only rule.
+ *
+ * `news_profile_coverage` above says a Profile's first run happened, and under docs/adr/0022
+ * that was for good: searched for once ever. Everything the `site` query found before
+ * docs/adr/0024 was scored by `scoreNewsMatch` alone, which scores a company's own post 0, and a
+ * 0 was stored nowhere — so those articles were dropped and the Profile was never searched
+ * again. This table is how they are recovered: one more `site` query per already-covered
+ * Profile, once, with the result kept this time.
+ *
+ * A second table rather than a column on `news_profile_coverage`, because that table is
+ * insert-only by grant and by design — ingest may not update it at all — and because the two
+ * facts are different: one says a Profile has been covered, the other says a past coverage has
+ * been repaired. A row here is written only when the re-search succeeded and the write that
+ * followed it did; a failed re-search leaves none and is retried on a later run.
+ */
+export const newsProfileSiteRecovery = pgTable(
+  "news_profile_site_recovery",
+  {
+    profileId: uuid("profile_id")
+      .primaryKey()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    recoveredAt: timestamp("recovered_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  () => [
+    /** Catalogue, and on exactly `news_profile_coverage`'s terms: see its policies above. */
+    pgPolicy("news_profile_site_recovery_select_catalogue", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`true`,
+    }),
+    pgPolicy("news_profile_site_recovery_ingest_select", {
+      for: "select",
+      to: ingestRole,
+      using: sql`true`,
+    }),
+    pgPolicy("news_profile_site_recovery_ingest_insert", {
+      for: "insert",
+      to: ingestRole,
+      withCheck: sql`true`,
+    }),
+  ],
+);
+
+export type NewsProfileSiteRecoveryRow =
+  typeof newsProfileSiteRecovery.$inferSelect;
 
 /**
  * News: an article attributed to a Company Profile, one row per pair.
