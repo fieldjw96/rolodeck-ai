@@ -2,6 +2,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import { NEWS_DISPLAY_THRESHOLD } from "../lib/news/match";
+import { readKeptProfiles, recordSwipe } from "./deck";
 import {
   persistNewsArticles,
   persistNewsItems,
@@ -27,13 +28,17 @@ import {
   type SwipeDecision,
 } from "./schema";
 import { createScratchDb, type ScratchDb } from "./testing/scratch-db";
-import { seedProfiles } from "./testing/seed-profiles";
+import { seedProfiles, seedSiblings } from "./testing/seed-profiles";
 
 const JACK = "11111111-1111-1111-1111-111111111111";
 const SOMEONE_ELSE = "22222222-2222-2222-2222-222222222222";
 
 const FIRST_PUBLISHED = Date.UTC(2026, 8, 1, 12, 0, 0);
 const A_DAY = 86_400_000;
+
+/** When the first of a test's swipes was decided, where which came first is the point. */
+const FIRST_DECIDED = Date.UTC(2026, 8, 1, 9, 0, 0);
+const A_MINUTE = 60_000;
 
 let scratch: ScratchDb;
 
@@ -610,5 +615,105 @@ describe("readNews", () => {
     expect(await storedRows()).toEqual([]);
 
     await scratch.reset();
+  });
+});
+
+/**
+ * A company two Sources both found is two Company Profiles sharing a `name_key`, per
+ * docs/adr/0008, each with its own Attributions for the same articles. The page names the
+ * company once and shows each article once. See docs/adr/0024.
+ */
+describe("readNews for a company two Sources found", () => {
+  /** Both rows for one company, newest Source last. */
+  const seedBoth = () =>
+    seedSiblings(scratch.db, { name: "Sprocket", sources: ["yc", "show-hn"] });
+
+  it("shows one group for two Kept siblings, holding both their articles once each", async () => {
+    const [yc, showHn] = await seedBoth();
+
+    await scratch.db.insert(swipes).values([
+      {
+        userId: JACK,
+        profileId: yc!,
+        decision: "keep",
+        decidedAt: new Date(FIRST_DECIDED),
+      },
+      {
+        userId: JACK,
+        profileId: showHn!,
+        decision: "keep",
+        decidedAt: new Date(FIRST_DECIDED + A_MINUTE),
+      },
+    ]);
+
+    await persistNewsItems(scratch.db, {
+      candidates: [
+        // The same article, attributed to each Source's row: two Attributions of one thing.
+        candidate(yc!, 1),
+        candidate(showHn!, 1, { confidence: 0.8 }),
+        candidate(yc!, 2, { title: "Only the yc row's" }),
+        candidate(showHn!, 3, { title: "Only the show-hn row's" }),
+      ],
+    });
+
+    expect(await storedRows()).toHaveLength(4);
+
+    const groups = await readNews(scratch.db, JACK);
+
+    expect(titles(groups)).toEqual([
+      {
+        company: "Sprocket",
+        titles: ["Only the show-hn row's", "Only the yc row's", "Headline 1"],
+      },
+    ]);
+    // Named by the Company Profile the Keep that counts was recorded against, which is the
+    // one the Watchlist shows.
+    expect(groups[0]?.profile.id).toEqual(showHn);
+  });
+
+  it("empties the Watchlist and the News page together when a company Kept twice is Passed", async () => {
+    const [keptFirst, keptSecond] = await seedBoth();
+
+    // The pair of Keeps a reader could record while the Deck still dealt both rows.
+    await scratch.db.insert(swipes).values([
+      {
+        userId: JACK,
+        profileId: keptFirst!,
+        decision: "keep",
+        decidedAt: new Date(FIRST_DECIDED),
+      },
+      {
+        userId: JACK,
+        profileId: keptSecond!,
+        decision: "keep",
+        decidedAt: new Date(FIRST_DECIDED + A_MINUTE),
+      },
+    ]);
+
+    await persistNewsItems(scratch.db, {
+      candidates: [candidate(keptFirst!, 1), candidate(keptSecond!, 2)],
+    });
+
+    // The Watchlist shows one entry, and a Pass from it goes through the one Company Profile
+    // that entry named, exactly as `app/api/profiles/[id]/pass` records it.
+    const [entry, ...rest] = await asUser(scratch.db, JACK, (tx) =>
+      readKeptProfiles(tx, JACK),
+    );
+    expect(rest).toEqual([]);
+    expect(entry?.id).toEqual(keptSecond);
+
+    await asUser(scratch.db, JACK, (tx) =>
+      recordSwipe(tx, { userId: JACK, profileId: entry!.id, decision: "pass" }),
+    );
+
+    await expect(
+      asUser(scratch.db, JACK, (tx) => readKeptProfiles(tx, JACK)),
+    ).resolves.toEqual([]);
+    expect(await readNews(scratch.db, JACK)).toEqual([]);
+    // Nothing was deleted to achieve it: the older Keep is still on the row it was recorded
+    // against, and both articles are still attributed.
+    await scratch.reset();
+    expect(await scratch.db.select().from(swipes)).toHaveLength(2);
+    expect(await storedRows()).toHaveLength(2);
   });
 });

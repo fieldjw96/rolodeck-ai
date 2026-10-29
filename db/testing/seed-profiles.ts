@@ -53,3 +53,40 @@ export async function seedProfiles(
 
   return written.map((row) => row.id);
 }
+
+/**
+ * One company that `sources` all found: that many Company Profiles with the one name, and so
+ * the one generated `name_key`, which is what makes them siblings. `(source, name_key)` is the
+ * Catalogue's key per docs/adr/0008, so this is the shape of the Catalogue today and not a
+ * state a test had to force.
+ *
+ * Returned in the order the Sources are given, each a minute newer than the last. So the Deck's
+ * own order — score, then newest, then id — puts the last Source's row first when nothing else
+ * separates them, and a test that wants a particular sibling to win can say which it expects.
+ */
+export async function seedSiblings(
+  db: Database,
+  {
+    name,
+    sources,
+    minute = 0,
+  }: { name: string; sources: readonly string[]; minute?: number },
+): Promise<string[]> {
+  const written = await db
+    .insert(profiles)
+    .values(
+      sources.map((source, index) => ({
+        source,
+        name,
+        description: `Found by ${source}.`,
+        sector: "hardware-robotics",
+        stage: "seed",
+        website: null,
+        provenance: SEEDED_PROVENANCE,
+        createdAt: new Date(FIRST_CREATED_AT + (minute + index) * A_MINUTE),
+      })),
+    )
+    .returning({ id: profiles.id });
+
+  return written.map((row) => row.id);
+}

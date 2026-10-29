@@ -36,8 +36,11 @@ import {
  * advances a window a day.
  *
  * Known limitation: a company already present under `sec-form-d`, `show-hn`,
- * `south-park-commons` or `angelpad` is not matched here, and becomes a second card in the Deck.
- * That is the cost docs/adr/0008 accepts and names; entity resolution is a later Ticket's.
+ * `south-park-commons` or `angelpad` is not matched here, and becomes a second Company Profile.
+ * That is the cost docs/adr/0008 accepts and names; entity resolution is a later Ticket's. It is
+ * no longer a second card: the Deck, the Watchlist and the News page collapse the rows sharing a
+ * `name_key` on read and show the company once, per docs/adr/0024. The rows are still two, which
+ * is what `npm run measure:profile-duplicates` counts.
  *
  * Exits non-zero when the sitemap cannot be read, when every company page picked failed, or when
  * the run wrote nothing.

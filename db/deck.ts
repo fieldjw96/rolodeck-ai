@@ -1,4 +1,14 @@
-import { and, desc, eq, inArray, notInArray, sql, type SQL } from "drizzle-orm";
+import {
+  and,
+  desc,
+  eq,
+  inArray,
+  notExists,
+  notInArray,
+  sql,
+  type SQL,
+} from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { z } from "zod";
 
 import { citiesInArea } from "../lib/location/bay-area";
@@ -212,10 +222,49 @@ function deckScore(userProfile: UserProfile): SQL<number> {
 }
 
 /**
+ * A Company Profile's siblings: the rows sharing its `name_key`, which is one company found by
+ * more than one Source. `(source, name_key)` is the Catalogue's key, so two Sources that both
+ * found a company are two rows and stay two rows — docs/adr/0008 defers merging them, and
+ * nothing here merges them. What the surfaces below do is deal, Keep and group a company once,
+ * by reading its siblings as one. Aliases, because every such clause is `profiles` joined to
+ * itself.
+ */
+const sibling = alias(profiles, "sibling");
+const siblingSwipe = alias(swipes, "sibling_swipe");
+
+/**
+ * Has this reader decided nothing yet about the company on the current row, under any of its
+ * Sources? A Keep or a Pass on one sibling speaks for every sibling, which is what keeps a
+ * company a reader has already judged from coming back under its other Source's row.
+ *
+ * `userId` is written into the subquery, as the single-row swipe clause it replaces wrote it:
+ * per CLAUDE.md the RLS policies are a backstop and never the only control.
+ */
+const undecidedBy = (db: Database, userId: string) =>
+  notExists(
+    db
+      .select({ decided: sql`1` })
+      .from(siblingSwipe)
+      .innerJoin(sibling, eq(sibling.id, siblingSwipe.profileId))
+      .where(
+        and(
+          eq(siblingSwipe.userId, userId),
+          eq(sibling.nameKey, profiles.nameKey),
+        ),
+      ),
+  );
+
+/**
  * One page of the Deck: the whole Catalogue of Company Profiles, minus the ones this reader has
  * already Kept or Passed and the ones in a Sector their User Profile excludes, ranked by that
  * User Profile and newest first within a rank. Ranked rather than filtered: a Profile matching
  * nothing the reader stated is still dealt, at the bottom. See docs/adr/0011.
+ *
+ * One card per company, not one per Source: of the siblings a Sector exclusion leaves, the
+ * first by the Deck's own order is dealt and the rest are not, however the pages are cut. The
+ * ranking happens in the subquery because the window that picks the winner has to see the same
+ * score the page is ordered by; the cursor then pages over the winners alone, and its
+ * `(score, created_at, id)` is as unique among them as it was over the whole Catalogue.
  *
  * Every User deals from the same Catalogue, per docs/adr/0019. What makes one reader's Deck
  * differ from another's is their own swipes and their own User Profile, both of which are
@@ -238,21 +287,54 @@ export async function readDeckPage(
     (await readSavedUserProfile(db, userId)) ?? EMPTY_USER_PROFILE;
   const score = deckScore(userProfile);
 
-  // One more row than asked for: whether it comes back is the whole of the "is there a next
-  // page?" question, and it costs one row rather than a second count query.
-  const rows = await db
-    .select({ profile: deckColumns, score })
+  /**
+   * Every Company Profile this reader could still be dealt, each carrying its score and its
+   * place among its siblings. `sibling_rank` is 1 for the one sibling that stands for the
+   * company and counts up through the rest.
+   *
+   * The swipe clause sits here rather than outside because it answers for a whole company at
+   * once — every sibling or none — so it cannot change which sibling wins, only whether the
+   * company is dealt at all.
+   */
+  const dealable = db
+    .select({
+      // Nested, so the page below hands the whole card back out without naming its columns a
+      // second time. `name_key` is not among them and is not selected here either: the window
+      // partitions by it directly, and no caller may see it. See `deckColumns`.
+      profile: deckColumns,
+      score: score.as("score"),
+      siblingRank:
+        sql<number>`row_number() over (partition by ${profiles.nameKey} order by ${score} desc, ${profiles.createdAt} desc, ${profiles.id} desc)`.as(
+          "sibling_rank",
+        ),
+    })
     .from(profiles)
     .where(
       and(
         notInArray(profiles.sector, userProfile.excludedSectors),
-        sql`not exists (select 1 from ${swipes} where ${swipes.profileId} = ${profiles.id} and ${swipes.userId} = ${userId})`,
-        cursor === undefined
-          ? undefined
-          : sql`(${score}, ${profiles.createdAt}, ${profiles.id}) < (${cursor.score}::int, ${cursor.createdAt.toISOString()}::timestamptz, ${cursor.id}::uuid)`,
+        undecidedBy(db, userId),
       ),
     )
-    .orderBy(desc(score), desc(profiles.createdAt), desc(profiles.id))
+    .as("dealable");
+
+  // One more row than asked for: whether it comes back is the whole of the "is there a next
+  // page?" question, and it costs one row rather than a second count query.
+  const rows = await db
+    .select({ profile: dealable.profile, score: dealable.score })
+    .from(dealable)
+    .where(
+      and(
+        sql`${dealable.siblingRank} = 1`,
+        cursor === undefined
+          ? undefined
+          : sql`(${dealable.score}, ${dealable.profile.createdAt}, ${dealable.profile.id}) < (${cursor.score}::int, ${cursor.createdAt.toISOString()}::timestamptz, ${cursor.id}::uuid)`,
+      ),
+    )
+    .orderBy(
+      desc(dealable.score),
+      desc(dealable.profile.createdAt),
+      desc(dealable.profile.id),
+    )
     .limit(limit + 1);
 
   const page = rows.slice(0, limit);
@@ -272,13 +354,45 @@ export async function readDeckPage(
 }
 
 /**
- * Every Profile the reader has Kept, newest decision first. Unlike `readDeckPage` this is not
- * paginated: the Watchlist is meant to show everything in one place, and per the Ticket
- * paging it is out of scope.
+ * Is the swipe on the current row this reader's newest decision about the company — the one
+ * that counts for all of its Sources' rows? For a query that has `profiles` joined to the
+ * reader's `swipes`, which is how both the Watchlist and the News page read a Keep. Pair it
+ * with `decision = 'keep'` and what survives is one row per company, or none where the reader's
+ * newest word on it was a Pass.
+ *
+ * That is what makes a Pass cover a sibling Kept before this collapsing existed: the Pass is
+ * newer, so the older Keep is not the decision that counts and the company leaves the Watchlist
+ * and the News page together. Two Keeps can tie on `decided_at`, since a reader could have Kept
+ * both siblings in one statement, which is why `(decided_at, id)` is compared as a pair: one of
+ * them still has to win.
+ *
+ * `userId` is written into the subquery as it is into the join outside: per CLAUDE.md the RLS
+ * policies are a backstop and never the only control.
+ */
+export const isNewestDecisionForCompany = (db: Database, userId: string) =>
+  notExists(
+    db
+      .select({ newer: sql`1` })
+      .from(siblingSwipe)
+      .innerJoin(sibling, eq(sibling.id, siblingSwipe.profileId))
+      .where(
+        and(
+          eq(siblingSwipe.userId, userId),
+          eq(sibling.nameKey, profiles.nameKey),
+          sql`(${siblingSwipe.decidedAt}, ${sibling.id}) > (${swipes.decidedAt}, ${profiles.id})`,
+        ),
+      ),
+  );
+
+/**
+ * Every company the reader currently Keeps, newest decision first, and one entry each however
+ * many Sources found it: the Company Profile the Keep that counts was recorded against. Unlike
+ * `readDeckPage` this is not paginated: the Watchlist is meant to show everything in one place,
+ * and per the Ticket paging it is out of scope.
  *
  * The Company Profiles are Catalogue and shared; the Keeps are not. So the reader is written
- * into the join on `swipes.user_id` and nowhere else, which is the whole of what makes this
- * one User's Watchlist rather than everybody's. See docs/adr/0019.
+ * into the join on `swipes.user_id` and into the clause above, and nowhere else, which is the
+ * whole of what makes this one User's Watchlist rather than everybody's. See docs/adr/0019.
  */
 export async function readKeptProfiles(
   db: Database,
@@ -291,7 +405,9 @@ export async function readKeptProfiles(
       swipes,
       and(eq(swipes.profileId, profiles.id), eq(swipes.userId, userId)),
     )
-    .where(eq(swipes.decision, "keep"))
+    .where(
+      and(eq(swipes.decision, "keep"), isNewestDecisionForCompany(db, userId)),
+    )
     .orderBy(desc(swipes.decidedAt), desc(profiles.id));
 }
 
@@ -329,7 +445,10 @@ export async function recordSwipe(
   }
 
   // Swiping the same Profile again is a correction rather than a second decision, so the
-  // primary key is the conflict target and the newer decision wins.
+  // primary key is the conflict target and the newer decision wins. One row, about the one
+  // Company Profile swiped: the siblings it also speaks for are joined to it on `name_key` by
+  // the reads above, so a decision covers a company it was never written against — including
+  // one whose other Source's row was swiped before any of this existed.
   const [recorded] = await db
     .insert(swipes)
     .values({ userId, profileId, decision })
