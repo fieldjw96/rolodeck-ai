@@ -750,6 +750,10 @@ export async function fetchNewsForTheCatalogue(
  *
  * Launch HN has no rule of its own, by design: see docs/adr/0023. A failed Launch HN search is
  * always named in the summary, and never on its own reason enough to fail the run.
+ *
+ * Nor do the own-site re-searches, for a related reason: a re-search repairs a Profile that is
+ * already covered, so one that failed has cost this run nothing it had before, and the next run
+ * runs it again. The count of them is in the summary. See docs/adr/0024.
  */
 export function newsRunFailures(report: NewsRunReport): string[] {
   const failures: string[] = [];
