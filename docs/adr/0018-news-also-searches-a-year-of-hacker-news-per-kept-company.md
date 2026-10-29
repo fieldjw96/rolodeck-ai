@@ -1,7 +1,7 @@
 ---
 status: accepted
 amends: 0015
-amended-by: 0022
+amended-by: 0022, 0024
 ---
 
 # News also searches a year of Hacker News for each Kept company
@@ -13,6 +13,12 @@ Amended by docs/adr/0022 on the window and the subject: the search covers two ye
 than once a run for each Kept one. Everything below about how the queries are built, why they
 are constrained, and that a result is scored against the Company Profile it was searched for and
 no other, stands.
+
+Amended again by docs/adr/0024 on what becomes of the results: every article a search finds is
+stored in `news_articles`, carrying the Company Profile it was searched for so that the rule in
+the paragraph above holds on every later run too, and a hit from the `site` query is shown when
+it is an announcement and hidden when it is an essay. See the consequence below on a company's
+own writing, which that ADR answers.
 
 ADR 0015 decided that News reads publisher feeds, and it gave a reason that turned out to be
 wrong: "searching by company name needs a search provider, and the keyless ones are closed."
@@ -97,6 +103,11 @@ host would be a further amendment.
 name in its headline, and `scoreNewsMatch` needs a mention to score anything. Those rows are stored
 with their scores, as every candidate is, and are the evidence a retune of the matcher would start
 from. This ADR does not retune it.
+
+_Amended by docs/adr/0024._ "Those rows are stored" was not true: a score of 0 was stored
+nowhere, so the articles were dropped and the Profile was never searched again. The matcher is
+still not retuned — an own-site hit is now judged by a rule of its own, and every search result
+is kept whatever it scores.
 
 **`source_name` is the linked site's host** for a link post, since that is who published it, and
 "Hacker News" for a text post, whose url is its Hacker News item. ADR 0015 set `source_name` to the

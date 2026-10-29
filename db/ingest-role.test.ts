@@ -17,6 +17,7 @@ import {
   newsArticles,
   newsItems,
   newsProfileCoverage,
+  newsProfileSiteRecovery,
   profiles,
   swipes,
   userProfiles,
@@ -92,6 +93,7 @@ beforeEach(async () => {
   await scratch.db.delete(newsItems);
   await scratch.db.delete(newsArticles);
   await scratch.db.delete(newsProfileCoverage);
+  await scratch.db.delete(newsProfileSiteRecovery);
   await scratch.db.delete(swipes);
   await scratch.db.delete(userProfiles);
   await scratch.db.delete(profiles);
@@ -153,6 +155,8 @@ describe("the ingest role itself", () => {
       { table: "public.news_items", privilege: "SELECT" },
       { table: "public.news_profile_coverage", privilege: "INSERT" },
       { table: "public.news_profile_coverage", privilege: "SELECT" },
+      { table: "public.news_profile_site_recovery", privilege: "INSERT" },
+      { table: "public.news_profile_site_recovery", privilege: "SELECT" },
       { table: "public.profiles", privilege: "INSERT" },
       { table: "public.profiles", privilege: "SELECT" },
     ]);
@@ -196,8 +200,9 @@ describe("the ingest role itself", () => {
       {
         table: "public.news_articles",
         privilege: "UPDATE",
-        // Not `url`, which is this table's key, and not `fetched_at`, which records when the
-        // article was first read. See migration 0016.
+        // Not `url`, which is this table's key, not `searched_for_profile_id`, which says
+        // which Company Profile's search stored the row (docs/adr/0024), and not `fetched_at`,
+        // which records when the article was first read. See migrations 0016 and 0017.
         columns: ["description", "published_at", "source_name", "title"],
       },
       {
@@ -299,6 +304,9 @@ describe("logged in as the ingest role", () => {
     expect(await refusal("select url from news_articles")).toBeNull();
     expect(
       await refusal("select profile_id from news_profile_coverage"),
+    ).toBeNull();
+    expect(
+      await refusal("select profile_id from news_profile_site_recovery"),
     ).toBeNull();
   });
 
@@ -405,6 +413,7 @@ describe("logged in as the ingest role", () => {
     "news_items",
     "news_articles",
     "news_profile_coverage",
+    "news_profile_site_recovery",
     "events",
   ])("cannot delete from %s", async (table) => {
     expect(await refusal(`delete from ${table}`)).toMatch(
@@ -412,12 +421,29 @@ describe("logged in as the ingest role", () => {
     );
   });
 
-  // The one table ingest may not update at all: a Company Profile is covered once, and the row
-  // says that it happened. See migration 0016.
+  // The two tables ingest may not update at all: a Company Profile is covered once, and
+  // re-searched once, and each row says that it happened. See migrations 0016 and 0017.
   it("cannot update news_profile_coverage", async () => {
     expect(
       await refusal("update news_profile_coverage set covered_at = now()"),
     ).toMatch(/permission denied for table news_profile_coverage/);
+  });
+
+  it("cannot update news_profile_site_recovery", async () => {
+    expect(
+      await refusal(
+        "update news_profile_site_recovery set recovered_at = now()",
+      ),
+    ).toMatch(/permission denied for table news_profile_site_recovery/);
+  });
+
+  // The column that says which Company Profile's search stored an article. It is written on
+  // insert and never again, so an article a feed carried first cannot be narrowed to one
+  // company, nor one company's search result widened to the Catalogue. See docs/adr/0024.
+  it("cannot update news_articles.searched_for_profile_id", async () => {
+    expect(
+      await refusal("update news_articles set searched_for_profile_id = null"),
+    ).toMatch(/permission denied for table news_articles/);
   });
 
   // TRUNCATE does not consult RLS at all, so a grant of it would be a bypass with no policy
@@ -427,6 +453,7 @@ describe("logged in as the ingest role", () => {
     "news_items",
     "news_articles",
     "news_profile_coverage",
+    "news_profile_site_recovery",
     "events",
     "event_attendances",
   ])("cannot truncate %s", async (table) => {
@@ -578,6 +605,72 @@ describe("what ingest does, as the ingest role", () => {
     ).toEqual([ramp]);
     expect(await scratch.db.select().from(newsArticles)).toHaveLength(1);
     expect(await scratch.db.select().from(newsProfileCoverage)).toHaveLength(2);
+  });
+
+  it("keeps a search's own-site article and records the re-search, which are the grants 0017 adds", async () => {
+    const [row] = await scratch.db
+      .insert(profiles)
+      .values({
+        ...candidate("Sprocket").input,
+        source: "seed",
+        website: "https://sprocket.example/",
+        provenance: { ...candidate("Sprocket").provenance, website: "scraped" },
+      })
+      .returning({ id: profiles.id });
+    const sprocket = row!.id;
+
+    const aDayAgo = Math.floor(Date.now() / 1_000) - 24 * 60 * 60;
+    const search = {
+      search: async (url: string) => {
+        const parsed = new URL(url);
+
+        return parsed.searchParams.get("restrictSearchableAttributes") === "url"
+          ? {
+              hits: [
+                {
+                  objectID: "1",
+                  title: "Announcing our seed round",
+                  url: "https://sprocket.example/blog/seed",
+                  created_at_i: aDayAgo,
+                },
+              ],
+            }
+          : { hits: [] };
+      },
+    };
+    const client: NewsFeedClient = {
+      get: async () => {
+        throw new Error("no feed is configured for this run");
+      },
+    };
+
+    await scratch.as("rolodeck_ingest");
+    // The first run searches and stores; the second re-searches the one covered Profile.
+    const first = await fetchNewsForTheCatalogue(scratch.db, {
+      feeds: [],
+      client,
+      search,
+    });
+    const second = await fetchNewsForTheCatalogue(scratch.db, {
+      feeds: [],
+      client,
+      search,
+    });
+    await scratch.reset();
+
+    expect(first.searchArticles).toMatchObject({ stored: 1, fresh: 1 });
+    expect(second.reSearches).toEqual({ done: 1, failed: 0, waiting: 0 });
+    expect(
+      (await scratch.db.select().from(newsArticles)).map((article) => [
+        article.url,
+        article.searchedForProfileId,
+      ]),
+    ).toEqual([["https://sprocket.example/blog/seed", sprocket]]);
+    expect(
+      (await scratch.db.select().from(newsProfileSiteRecovery)).map(
+        (recovery) => recovery.profileId,
+      ),
+    ).toEqual([sprocket]);
   });
 });
 

@@ -7,6 +7,7 @@ import {
   newsArticles,
   newsItems,
   newsProfileCoverage,
+  newsProfileSiteRecovery,
   profiles,
   swipes,
   type SwipeDecision,
@@ -229,6 +230,7 @@ beforeEach(async () => {
   await scratch.db.delete(newsItems);
   await scratch.db.delete(newsArticles);
   await scratch.db.delete(newsProfileCoverage);
+  await scratch.db.delete(newsProfileSiteRecovery);
   await scratch.db.delete(swipes);
   await scratch.db.delete(profiles);
   created = 0;
@@ -649,8 +651,7 @@ describe("fetchNewsForTheCatalogue", () => {
     ]);
     expect(report.fromSearches).toMatchObject({ candidates: 2, shown: 1 });
 
-    // Searched for Blacksmith, so never attributed to Ramp, and never stored as an article
-    // every future Company Profile would be scored against.
+    // Searched for Blacksmith, so never attributed to Ramp.
     const stored = await scratch.db.select().from(newsItems);
     expect(new Set(stored.map((row) => row.profileId))).toEqual(
       new Set([blacksmith]),
@@ -659,7 +660,185 @@ describe("fetchNewsForTheCatalogue", () => {
       ["https://news.ycombinator.com/item?id=3", "Hacker News"],
       ["https://www.blacksmith.sh/blog/seed", "blacksmith.sh"],
     ]);
-    expect(await scratch.db.select().from(newsArticles)).toEqual([]);
+    // Both articles are kept, each carrying the one Company Profile it was searched for, so
+    // nothing else is ever scored against them. See docs/adr/0024.
+    expect(report.searchArticles).toMatchObject({ stored: 2, fresh: 2 });
+    expect(
+      (await scratch.db.select().from(newsArticles))
+        .map((row) => [row.url, row.searchedForProfileId])
+        .sort(),
+    ).toEqual([
+      ["https://news.ycombinator.com/item?id=3", blacksmith],
+      ["https://www.blacksmith.sh/blog/seed", blacksmith],
+    ]);
+  });
+
+  it("keeps an article a search found even when it scored zero, so a retune can still reach it", async () => {
+    const quiet = await companyProfile("Quiet Co", "other");
+
+    const { client } = fakeClient({ [WIRE.url]: rss() });
+    const { search } = fakeSearch(() => ({
+      hits: [hit("1", "A quiet week in AI", "https://blog.example/quiet-week")],
+    }));
+
+    const report = await run({ client, search });
+
+    // The matcher placed it at zero, so it is no pair and no `news_items` row.
+    expect(report.fromSearches).toMatchObject({
+      candidates: 1,
+      shown: 0,
+      distribution: [{ confidence: 0, count: 1 }],
+    });
+    expect(await scratch.db.select().from(newsItems)).toEqual([]);
+    // The article itself is stored all the same, which is what docs/adr/0024 changed.
+    expect(report.searchArticles).toMatchObject({ stored: 1, fresh: 1 });
+    expect(
+      (await scratch.db.select().from(newsArticles)).map((row) => [
+        row.url,
+        row.searchedForProfileId,
+      ]),
+    ).toEqual([["https://blog.example/quiet-week", quiet]]);
+  });
+
+  it("never scores an article a search found against another Company Profile, on a later run", async () => {
+    const blacksmith = await companyProfile(
+      "Blacksmith",
+      "developer-tools",
+      "https://blacksmith.sh/",
+    );
+
+    const { client } = fakeClient({ [WIRE.url]: rss() });
+    const { search } = fakeSearch((_query, restriction) =>
+      restriction === "url"
+        ? {
+            hits: [
+              hit(
+                "1",
+                "Ramp now runs its CI on Blacksmith",
+                "https://blacksmith.sh/blog/ramp",
+              ),
+            ],
+          }
+        : { hits: [] },
+    );
+
+    await run({ client, search });
+
+    // Ramp arrives the next day, and the article stored for Blacksmith names it in its title.
+    const ramp = await companyProfile("Ramp", "fintech");
+    const second = await run({ client, search });
+
+    // Not one pair formed: the article belongs to Blacksmith's search. See docs/adr/0018.
+    expect(second.fromStored).toMatchObject({ candidates: 0 });
+
+    const stored = await scratch.db.select().from(newsItems);
+    expect(stored.filter((row) => row.profileId === ramp)).toEqual([]);
+    expect(new Set(stored.map((row) => row.profileId))).toEqual(
+      new Set([blacksmith]),
+    );
+  });
+
+  it("leaves an article a feed carried first as Catalogue when a search finds the same url", async () => {
+    await companyProfile(
+      "Blacksmith",
+      "developer-tools",
+      "https://blacksmith.sh/",
+    );
+    const url = "https://blacksmith.sh/blog/seed";
+
+    const { client } = fakeClient({
+      [WIRE.url]: rss(item("Blacksmith raises a seed round", url)),
+    });
+    const { search } = fakeSearch((_query, restriction) =>
+      restriction === "url"
+        ? { hits: [hit("1", "Blacksmith raises a seed round", url)] }
+        : { hits: [] },
+    );
+
+    await run({ client, search });
+
+    const articles = await scratch.db.select().from(newsArticles);
+    expect(articles.map((row) => [row.url, row.searchedForProfileId])).toEqual([
+      [url, null],
+    ]);
+  });
+
+  it("shows a company's own announcement to a User who Keeps it, and never its essay", async () => {
+    const acme = await companyProfile("Acme", "ai-ml", "https://acme.com/");
+    await swipe(acme, "keep");
+
+    const { client } = fakeClient({ [WIRE.url]: rss() });
+    const { search } = fakeSearch((_query, restriction) =>
+      restriction === "url"
+        ? {
+            hits: [
+              hit(
+                "1",
+                "Introducing Agent OS",
+                "https://acme.com/blog/agent-os",
+              ),
+              hit(
+                "2",
+                "Why agents need guardrails",
+                "https://acme.com/blog/guardrails",
+              ),
+            ],
+          }
+        : { hits: [] },
+    );
+
+    const report = await run({ client, search });
+
+    // Both kept, neither naming Acme, so the matcher scored both zero and the news-only rule
+    // decided between them. See docs/adr/0024.
+    expect(report.searchArticles).toMatchObject({ stored: 2, fresh: 2 });
+    expect(report.fromSearches).toMatchObject({
+      candidates: 2,
+      shown: 1,
+      distribution: [
+        { confidence: 0.6, count: 1 },
+        { confidence: 0, count: 1 },
+      ],
+    });
+
+    const news = await readNews(scratch.db, JACK);
+    expect(
+      news.map((group) => [
+        group.profile.name,
+        group.items.map((entry) => entry.url),
+      ]),
+    ).toEqual([["Acme", ["https://acme.com/blog/agent-os"]]]);
+  });
+
+  it("caps an own-site essay the matcher placed below the display threshold, so it is stored and not shown", async () => {
+    const acme = await companyProfile("Acme", "ai-ml", "https://acme.com/");
+    await swipe(acme, "keep");
+
+    const { client } = fakeClient({ [WIRE.url]: rss() });
+    const { search } = fakeSearch((_query, restriction) =>
+      restriction === "url"
+        ? {
+            hits: [
+              hit(
+                "1",
+                "Why Acme thinks AI agents need guardrails",
+                "https://acme.com/blog/guardrails",
+              ),
+            ],
+          }
+        : { hits: [] },
+    );
+
+    const report = await run({ client, search });
+
+    // 0.7 from the matcher — the name in the headline and two Sector terms — capped at 0.59.
+    expect(report.fromSearches.distribution).toEqual([
+      { confidence: 0.59, count: 1 },
+    ]);
+    expect(
+      (await scratch.db.select().from(newsItems)).map((row) => row.confidence),
+    ).toEqual([0.59]);
+    expect(await readNews(scratch.db, JACK)).toEqual([]);
   });
 
   it("does not search a Company Profile again once it has been searched, even one nothing was found for", async () => {
@@ -928,6 +1107,124 @@ describe("fetchNewsForTheCatalogue", () => {
       `created_at_i>=${Math.floor(old.getTime() / 1_000)}`,
     ]);
   });
+
+  it("re-searches an already-covered company's own site once, and then never again", async () => {
+    await companyProfile("Acme", "ai-ml", "https://acme.com/");
+
+    const { client } = fakeClient({ [WIRE.url]: rss() });
+    const { search, requested } = fakeSearch((_query, restriction) =>
+      restriction === "url"
+        ? {
+            hits: [
+              hit(
+                "1",
+                "Announcing our seed round",
+                "https://acme.com/blog/seed",
+              ),
+            ],
+          }
+        : { hits: [] },
+    );
+
+    // Nothing to recover on the run that covers it: `covered` is read before the searches.
+    const first = await run({ client, search });
+    expect(first.reSearches).toEqual({ done: 0, failed: 0, waiting: 0 });
+
+    const second = await run({ client, search });
+
+    expect(second).toMatchObject({
+      searches: [],
+      reSearches: { done: 1, failed: 0, waiting: 0 },
+    });
+    // The site query again, and not the title query, which never lost anything.
+    expect(requested).toEqual(["url:acme.com", 'title:"Acme"', "url:acme.com"]);
+    expect(
+      (await scratch.db.select().from(newsProfileSiteRecovery)).map(
+        (row) => row.profileId,
+      ),
+    ).toHaveLength(1);
+    expect(summariseNewsRun(second)).toContain(
+      "Re-searched the site query for 1 Company Profile already covered, 0 failed, with 0 still waiting.",
+    );
+
+    // Recorded, so the third run spends nothing on it.
+    const third = await run({ client, search });
+    expect(third.reSearches).toEqual({ done: 0, failed: 0, waiting: 0 });
+    expect(requested).toHaveLength(3);
+  });
+
+  it("records nothing for a re-search that failed, and runs it again next run", async () => {
+    await companyProfile("Acme", "ai-ml", "https://acme.com/");
+
+    const outage = "https://hn.algolia.com/api/v1/search answered 503";
+    let failing = false;
+    const { client } = fakeClient({ [WIRE.url]: rss() });
+    const { search } = fakeSearch((_query, restriction) =>
+      restriction === "url" && failing ? new Error(outage) : { hits: [] },
+    );
+
+    await run({ client, search });
+
+    failing = true;
+    const second = await run({ client, search });
+
+    expect(second.reSearches).toEqual({ done: 0, failed: 1, waiting: 0 });
+    expect(await scratch.db.select().from(newsProfileSiteRecovery)).toEqual([]);
+
+    failing = false;
+    const third = await run({ client, search });
+
+    expect(third.reSearches).toEqual({ done: 1, failed: 0, waiting: 0 });
+  });
+
+  it("never re-searches a company with no searchable website, since it has no site query to re-run", async () => {
+    await companyProfile("Quiet Co", "other");
+    // A website that is a page on somebody else's host is not a domain to search by.
+    await companyProfile("Hosted Co", "other", "https://github.com/hosted");
+
+    const { client } = fakeClient({ [WIRE.url]: rss() });
+    const { search, requested } = fakeSearch(() => ({ hits: [] }));
+
+    await run({ client, search });
+    const second = await run({ client, search });
+
+    expect(second.reSearches).toEqual({ done: 0, failed: 0, waiting: 0 });
+    expect(requested).toEqual(['title:"Quiet Co"', 'title:"Hosted Co"']);
+  });
+
+  it("spends nothing on a re-search when the first searches used the whole cap, and picks it up next run", async () => {
+    await companyProfile("Acme", "ai-ml", "https://acme.com/");
+
+    const { client } = fakeClient({ [WIRE.url]: rss() });
+    const { search, requested } = fakeSearch(() => ({ hits: [] }));
+
+    // Acme is covered, and waiting for its own-site re-search.
+    await run({ client, search });
+    expect(requested).toEqual(["url:acme.com", 'title:"Acme"']);
+
+    for (let index = 0; index < HISTORY_SEARCHES_PER_RUN; index += 1) {
+      await companyProfile(
+        `Company ${String(index).padStart(4, "0")}`,
+        "other",
+      );
+    }
+
+    const second = await run({ client, search });
+
+    // Every search this run went to a Company Profile that had never had one. First searches
+    // come first, and the re-search waits. See docs/adr/0024.
+    expect(second.searches).toHaveLength(HISTORY_SEARCHES_PER_RUN);
+    expect(second.reSearches).toEqual({ done: 0, failed: 0, waiting: 1 });
+    expect(requested).toHaveLength(2 + HISTORY_SEARCHES_PER_RUN);
+
+    const third = await run({ client, search });
+
+    expect(third).toMatchObject({
+      searches: [],
+      reSearches: { done: 1, failed: 0, waiting: 0 },
+    });
+    expect(requested.at(-1)).toBe("url:acme.com");
+  }, 120_000);
 });
 
 describe("confidenceDistribution", () => {
@@ -966,7 +1263,9 @@ describe("summariseNewsRun", () => {
       { company: "Ramp", failure: "the site query: answered 503" },
     ],
     waiting: 198,
+    reSearches: { done: 2, failed: 1, waiting: 7 },
     covered: 1,
+    searchArticles: { stored: 10, fresh: 8, rejections: [] },
     fromFeeds: {
       candidates: 1_600,
       shown: 2,
@@ -1012,9 +1311,11 @@ describe("summariseNewsRun", () => {
       "  Blacksmith: found 10 articles.",
       "    rejected on hits.4.url: Invalid URL",
       "  Ramp: failed, the site query: answered 503",
+      "Re-searched the site query for 2 Company Profiles already covered, 1 failed, with 7 still waiting.",
+      "Stored 10 articles from searches, 8 new to the Catalogue.",
       "From feeds and Launch HN: 1600 candidates, 2 at or above the display threshold of 0.6. Confidence: 0.6 ×2, 0.4 ×2, 0 ×1596.",
       "From stored articles: 30 candidates, 0 at or above the display threshold of 0.6. Confidence: 0.4 ×2, 0 ×28.",
-      "From searches: 10 candidates, 1 at or above the display threshold of 0.6. Confidence: 0.6 ×1, 0.4 ×4, 0 ×5.",
+      "From searches and re-searches: 10 candidates, 1 at or above the display threshold of 0.6. Confidence: 0.6 ×1, 0.4 ×4, 0 ×5.",
       "1 article from feeds or Launch HN cleared the threshold against more than one Company Profile.",
       "Stored 9 new and updated 2; 1629 pairs scored zero and were not stored.",
       "Covered 1 Company Profile of 400 in the Catalogue.",

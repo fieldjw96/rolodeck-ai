@@ -120,6 +120,13 @@
       "when": 1792828805244,
       "tag": "0016_news_for_the_catalogue",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1793234754959,
+      "tag": "0017_news_keeps_every_search_result",
+      "breakpoints": true
     }
   ]
 }

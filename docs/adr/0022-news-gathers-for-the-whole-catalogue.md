@@ -1,5 +1,6 @@
 ---
 status: accepted
+amended-by: 0024
 ---
 
 # News gathers for the whole Catalogue, and stores an article once
@@ -50,7 +51,10 @@ many companies Jack's own pipeline has ingested, which is the quantity he was al
 **The work per company is paid once.** The feeds are read once a run however large the Catalogue
 is: an article is fetched once and scored against the Profiles in memory. The only per-company
 request is the history search, and `news_profile_coverage` records that it happened, so a
-Company Profile is searched for on the first run that sees it and never again. A Catalogue of a
+Company Profile is searched for on the first run that sees it and never again. _Amended by
+docs/adr/0024:_ once more, for its `site` query alone, because everything that query found
+before was thrown away — recorded in `news_profile_site_recovery`, spending only the cap the
+first searches leave, and then never again. A Catalogue of a
 thousand companies is a thousand searches spread over however many runs it takes, not a
 thousand searches a day.
 

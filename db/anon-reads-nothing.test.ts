@@ -6,6 +6,7 @@ import {
   persistNewsArticles,
   persistNewsItems,
   recordNewsCoverage,
+  recordNewsSiteRecovery,
 } from "./news";
 import {
   eventAttendances,
@@ -13,6 +14,7 @@ import {
   newsArticles,
   newsItems,
   newsProfileCoverage,
+  newsProfileSiteRecovery,
   profiles,
   swipes,
   userProfiles,
@@ -41,6 +43,7 @@ const TABLES = {
   news_items: newsItems,
   news_articles: newsArticles,
   news_profile_coverage: newsProfileCoverage,
+  news_profile_site_recovery: newsProfileSiteRecovery,
   events,
   event_attendances: eventAttendances,
 };
@@ -82,6 +85,7 @@ beforeAll(async () => {
     ],
   });
   await recordNewsCoverage(scratch.db, [profileId!]);
+  await recordNewsSiteRecovery(scratch.db, [profileId!]);
   await persistEvents(scratch.db, {
     source: "luma",
     events: [
