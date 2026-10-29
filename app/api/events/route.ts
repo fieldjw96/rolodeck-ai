@@ -25,10 +25,9 @@ function toJson(event: DiaryEvent) {
 
 /**
  * The Diary: the startup community's Events, soonest first, with past ones left out unless
- * `include=past`. Read on
- * the server as the signed-in user, per CLAUDE.md, so the RLS policies are underneath the
- * answer as well as the `where` clause. `important` is part of what the query returns; the page
- * only renders it.
+ * `include=past`. Read on the server as the signed-in user, per CLAUDE.md, so the RLS policies
+ * are underneath the answer as well as the `where` clause. `important` is part of what the
+ * query returns; the page only renders it.
  */
 export const GET = authenticated(async (request, user) => {
   const query = diaryQuerySchema.safeParse({
