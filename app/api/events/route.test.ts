@@ -122,6 +122,7 @@ describe("GET /api/events", () => {
           url: "https://example.com/Sprocket%20Summit",
           important: true,
           kept_companies: ["Startup 0"],
+          past: false,
         },
       ],
     });
@@ -137,6 +138,7 @@ describe("GET /api/events", () => {
       "Old Meetup",
       "Sprocket Summit",
     ]);
+    expect(body.events.map((event) => event.past)).toEqual([true, false]);
   });
 
   // The two halves of docs/adr/0019 for the Diary: every User sees the Event, and only the

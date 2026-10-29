@@ -1,4 +1,14 @@
-import { and, asc, desc, eq, inArray, isNull, or, sql, type SQL } from "drizzle-orm";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  inArray,
+  isNull,
+  or,
+  sql,
+  type SQL,
+} from "drizzle-orm";
 import { z } from "zod";
 
 import { citiesInArea } from "../lib/location/bay-area";
@@ -328,7 +338,10 @@ export async function readDiary(
   const sharedFilters = and(
     areaCities.length === 0
       ? undefined
-      : or(isNull(events.location), inArray(eventLocationCity, [...areaCities])),
+      : or(
+          isNull(events.location),
+          inArray(eventLocationCity, [...areaCities]),
+        ),
     or(sql`not (${excludedByTitle})`, sql`exists (${keptAttendees(sql`1`)})`),
   );
 
