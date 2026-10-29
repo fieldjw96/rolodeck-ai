@@ -296,3 +296,57 @@
   font-style: italic;
   color: var(--color-text-muted);
 }
+
+/* The News and Events tabs: a column of items, matching `app/(app)/news` and
+   `app/(app)/diary`'s own list styling so the card and the pages read as one app. */
+.tabItems {
+  display: flex;
+  flex-direction: column;
+  list-style: none;
+  border-top: 1px solid var(--color-border);
+}
+
+.tabItem {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding-block: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tabItem:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.headline {
+  font-size: var(--text-base);
+  font-weight: var(--weight-medium);
+  line-height: var(--leading-snug);
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+  text-decoration: underline;
+  text-decoration-color: var(--color-border-strong);
+  text-underline-offset: var(--space-1);
+  transition: text-decoration-color var(--transition-fast);
+}
+
+.headline:hover {
+  text-decoration-color: var(--color-accent);
+}
+
+.tabItemMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.tabItemWhen {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--color-text-faint);
+}

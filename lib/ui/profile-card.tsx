@@ -20,6 +20,41 @@ function labelOf(
   return Object.hasOwn(labels, value) ? labels[value]! : value;
 }
 
+/** One article for the News tab, as the Watchlist reads it off `GET /api/profiles/:id/news`. */
+export type NewsTabArticle = {
+  id: string;
+  title: string;
+  url: string;
+  /** An ISO instant, same as `published_at` travels on the wire. */
+  publishedAt: string;
+  sourceName: string;
+};
+
+/** One Event for the Events tab, as the Watchlist reads it off
+ * `GET /api/profiles/:id/events`. */
+export type EventsTabEvent = {
+  id: string;
+  name: string;
+  url: string;
+  /** A calendar date, `YYYY-MM-DD`, same as `start_date`/`end_date` travel on the wire. */
+  startDate: string;
+  endDate: string | null;
+  location: string | null;
+};
+
+/** The News tab's state: the card fetches nothing itself, so whoever passes this prop owns
+ * the request and hands the card whichever of these it has reached. */
+export type NewsTabState =
+  | { status: "loading" }
+  | { status: "error" }
+  | { status: "ready"; items: readonly NewsTabArticle[] };
+
+/** The Events tab's state, the same shape `NewsTabState` is for the same reason. */
+export type EventsTabState =
+  | { status: "loading" }
+  | { status: "error" }
+  | { status: "ready"; items: readonly EventsTabEvent[] };
+
 type ProfileCardProps = {
   name: string;
   sector: string;
@@ -43,6 +78,12 @@ type ProfileCardProps = {
   /** The Watchlist's grid variant: the same card, tighter, with a smaller name, and none of
    * the full card's founder strip or tabs. */
   compact?: boolean;
+  /** A News tab after Contact, present exactly when this is passed. The Deck passes neither
+   * this nor `events`, so its card keeps its three tabs; the Watchlist's Dialog passes both. */
+  news?: NewsTabState;
+  /** An Events tab after Contact (and after News, where both are passed), present exactly
+   * when this is passed. */
+  events?: EventsTabState;
 };
 
 /**
@@ -123,12 +164,14 @@ function StageValue({
   );
 }
 
-type Tab = "company" | "team" | "contact";
+type Tab = "company" | "team" | "contact" | "news" | "events";
 
 const TAB_LABELS: Record<Tab, string> = {
   company: "Company",
   team: "Team",
   contact: "Contact",
+  news: "News",
+  events: "Events",
 };
 
 function FullCard({
@@ -141,12 +184,21 @@ function FullCard({
   founders,
   links,
   headingLevel,
+  news,
+  events,
 }: ProfileCardProps) {
   const Heading = headingLevel === 1 ? "h1" : "h2";
   const stated = founders ?? [];
   // A Profile with no founders has no Team tab at all, rather than one that opens on nothing.
-  const tabs: Tab[] =
-    stated.length > 0 ? ["company", "team", "contact"] : ["company", "contact"];
+  // News and Events follow Contact, each present exactly when its prop is passed, per the
+  // Ticket: the Deck passes neither, so its card is unaffected.
+  const tabs: Tab[] = [
+    "company",
+    ...(stated.length > 0 ? (["team"] as const) : []),
+    "contact",
+    ...(news === undefined ? [] : (["news"] as const)),
+    ...(events === undefined ? [] : (["events"] as const)),
+  ];
   const [selected, setSelected] = useState<Tab>("company");
   const id = useId();
   const tabId = (tab: Tab) => `${id}-tab-${tab}`;
@@ -240,8 +292,14 @@ function FullCard({
             />
           ) : tab === "team" ? (
             <TeamPanel founders={stated} />
-          ) : (
+          ) : tab === "contact" ? (
             <ContactPanel website={website} links={links} founders={stated} />
+          ) : tab === "news" ? (
+            // `tabs` only ever includes "news" when `news` is passed.
+            <NewsPanel state={news!} />
+          ) : (
+            // `tabs` only ever includes "events" when `events` is passed.
+            <EventsPanel state={events!} />
           )}
         </div>
       ))}
@@ -408,6 +466,134 @@ function LinkChips({
         </li>
       ))}
     </ul>
+  );
+}
+
+export const LOADING_NEWS_TAB_MESSAGE = "Loading News…";
+export const NEWS_TAB_ERROR_MESSAGE = "Couldn't load News.";
+export const EMPTY_NEWS_TAB_MESSAGE = "No News about this company yet.";
+
+/** Dates in UTC and a fixed locale, matching `app/(app)/news`'s own formatting, so an article's
+ * date reads the same wherever it is shown. */
+const ARTICLE_DATE = new Intl.DateTimeFormat("en-US", {
+  dateStyle: "medium",
+  timeZone: "UTC",
+});
+
+/**
+ * The News tab: this company's articles, in the order the card is handed them — newest first,
+ * per `readNewsForProfile`. The card fetches nothing, so loading and error are states the
+ * caller reached and passed in, not anything this renders a request for.
+ */
+function NewsPanel({ state }: { state: NewsTabState }) {
+  if (state.status === "loading") {
+    return <p className={styles.absent}>{LOADING_NEWS_TAB_MESSAGE}</p>;
+  }
+
+  if (state.status === "error") {
+    return (
+      <p role="alert" className={styles.absent}>
+        {NEWS_TAB_ERROR_MESSAGE}
+      </p>
+    );
+  }
+
+  if (state.items.length === 0) {
+    return <p className={styles.absent}>{EMPTY_NEWS_TAB_MESSAGE}</p>;
+  }
+
+  return (
+    <ol className={styles.tabItems} aria-label="News">
+      {state.items.map((item) => (
+        <li key={item.id} className={styles.tabItem}>
+          <a
+            className={styles.headline}
+            href={item.url}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {item.title}
+          </a>
+          <p className={styles.tabItemMeta}>
+            <span>{item.sourceName}</span>
+            <time dateTime={item.publishedAt}>
+              {ARTICLE_DATE.format(new Date(item.publishedAt))}
+            </time>
+          </p>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+export const LOADING_EVENTS_TAB_MESSAGE = "Loading Events…";
+export const EVENTS_TAB_ERROR_MESSAGE = "Couldn't load Events.";
+export const EMPTY_EVENTS_TAB_MESSAGE = "No upcoming Events for this company.";
+
+/** Event dates are calendar dates, not instants, so they are formatted in UTC, matching
+ * `app/(app)/diary`'s own formatting: formatting `2026-09-15` in the viewer's own zone would
+ * show the 14th anywhere west of Greenwich. */
+const EVENT_DATE = new Intl.DateTimeFormat("en-US", {
+  timeZone: "UTC",
+  weekday: "short",
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+});
+
+const formatEventDate = (isoDate: string): string =>
+  EVENT_DATE.format(new Date(`${isoDate}T00:00:00Z`));
+
+/** The Events tab: this company's upcoming Events, in the order the card is handed them —
+ * soonest first, per `readEventsForProfile`. */
+function EventsPanel({ state }: { state: EventsTabState }) {
+  if (state.status === "loading") {
+    return <p className={styles.absent}>{LOADING_EVENTS_TAB_MESSAGE}</p>;
+  }
+
+  if (state.status === "error") {
+    return (
+      <p role="alert" className={styles.absent}>
+        {EVENTS_TAB_ERROR_MESSAGE}
+      </p>
+    );
+  }
+
+  if (state.items.length === 0) {
+    return <p className={styles.absent}>{EMPTY_EVENTS_TAB_MESSAGE}</p>;
+  }
+
+  return (
+    <ol className={styles.tabItems} aria-label="Events">
+      {state.items.map((item) => (
+        <li key={item.id} className={styles.tabItem}>
+          <p className={styles.tabItemWhen}>
+            <time dateTime={item.startDate}>
+              {formatEventDate(item.startDate)}
+            </time>
+            {item.endDate === null || item.endDate === item.startDate ? null : (
+              <>
+                {" – "}
+                <time dateTime={item.endDate}>
+                  {formatEventDate(item.endDate)}
+                </time>
+              </>
+            )}
+          </p>
+          <a
+            className={styles.headline}
+            href={item.url}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {item.name}
+          </a>
+          {item.location === null ? null : (
+            <p className={styles.tabItemMeta}>{item.location}</p>
+          )}
+        </li>
+      ))}
+    </ol>
   );
 }
 

@@ -10,6 +10,7 @@ import {
   readLatestLaunchHnPublishedAt,
   readNews,
   readNewsCoveredProfileIds,
+  readNewsForProfile,
   readNewsSiteRecoveredProfileIds,
   readStoredNewsArticles,
   recordNewsCoverage,
@@ -715,5 +716,55 @@ describe("readNews for a company two Sources found", () => {
     await scratch.reset();
     expect(await scratch.db.select().from(swipes)).toHaveLength(2);
     expect(await storedRows()).toHaveLength(2);
+  });
+});
+
+/** The Watchlist card's News tab: `readNews`'s own group for one company, picked out by id. */
+describe("readNewsForProfile", () => {
+  it("returns this company's items, same as readNews would group them", async () => {
+    const [id] = await seedProfiles(scratch.db, { count: 1 });
+    await swipe(id!);
+    await persistNewsItems(scratch.db, {
+      candidates: [candidate(id!, 1), candidate(id!, 3)],
+    });
+
+    const items = await readNewsForProfile(scratch.db, {
+      userId: JACK,
+      profileId: id!,
+    });
+
+    expect(items.map((item) => item.title)).toEqual([
+      "Headline 3",
+      "Headline 1",
+    ]);
+  });
+
+  it("returns nothing for a Profile the reader has Passed", async () => {
+    const [id] = await seedProfiles(scratch.db, { count: 1 });
+    await swipe(id!, "pass");
+    await persistNewsItems(scratch.db, { candidates: [candidate(id!, 1)] });
+
+    expect(
+      await readNewsForProfile(scratch.db, { userId: JACK, profileId: id! }),
+    ).toEqual([]);
+  });
+
+  it("returns nothing for a Profile the reader has never swiped", async () => {
+    const [id] = await seedProfiles(scratch.db, { count: 1 });
+    await persistNewsItems(scratch.db, { candidates: [candidate(id!, 1)] });
+
+    expect(
+      await readNewsForProfile(scratch.db, { userId: JACK, profileId: id! }),
+    ).toEqual([]);
+  });
+
+  it("returns nothing for a company only somebody else has Kept", async () => {
+    const [id] = await seedProfiles(scratch.db, { count: 1 });
+    await swipe(id!, "keep", SOMEONE_ELSE);
+    await persistNewsItems(scratch.db, { candidates: [candidate(id!, 1)] });
+
+    expect(
+      await readNewsForProfile(scratch.db, { userId: JACK, profileId: id! }),
+    ).toEqual([]);
   });
 });

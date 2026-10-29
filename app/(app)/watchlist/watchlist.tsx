@@ -4,7 +4,13 @@ import { useEffect, useRef, useState } from "react";
 
 import type { CompanyLinks, Founder } from "../../../db/profile-input";
 import { Dialog } from "../../../lib/ui/dialog";
-import { ProfileCard } from "../../../lib/ui/profile-card";
+import {
+  ProfileCard,
+  type EventsTabEvent,
+  type EventsTabState,
+  type NewsTabArticle,
+  type NewsTabState,
+} from "../../../lib/ui/profile-card";
 import { StateNotice } from "../../../lib/ui/state-notice";
 import styles from "./watchlist.module.css";
 
@@ -65,6 +71,68 @@ async function fetchKept(): Promise<ProfilesPage> {
   }
 
   return (await response.json()) as ProfilesPage;
+}
+
+type NewsItemWire = {
+  id: string;
+  title: string;
+  url: string;
+  published_at: string;
+  source_name: string;
+};
+
+/** The open card's News tab, read through `GET /api/profiles/:id/news` rather than Postgres
+ * directly, per CLAUDE.md. */
+async function fetchProfileNews(profileId: string): Promise<NewsTabArticle[]> {
+  const url = `/api/profiles/${profileId}/news`;
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(`GET ${url} failed with ${response.status}`);
+  }
+
+  const body = (await response.json()) as { items: NewsItemWire[] };
+
+  return body.items.map((item) => ({
+    id: item.id,
+    title: item.title,
+    url: item.url,
+    publishedAt: item.published_at,
+    sourceName: item.source_name,
+  }));
+}
+
+type EventItemWire = {
+  id: string;
+  name: string;
+  url: string;
+  start_date: string;
+  end_date: string | null;
+  location: string | null;
+};
+
+/** The open card's Events tab, read through `GET /api/profiles/:id/events` rather than
+ * Postgres directly, per CLAUDE.md. */
+async function fetchProfileEvents(
+  profileId: string,
+): Promise<EventsTabEvent[]> {
+  const url = `/api/profiles/${profileId}/events`;
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(`GET ${url} failed with ${response.status}`);
+  }
+
+  const body = (await response.json()) as { items: EventItemWire[] };
+
+  return body.items.map((item) => ({
+    id: item.id,
+    name: item.name,
+    url: item.url,
+    startDate: item.start_date,
+    endDate: item.end_date,
+    location: item.location,
+  }));
 }
 
 /** Throws on a non-2xx response, the same contract the Deck's own `recordSwipe` keeps, so a
@@ -274,41 +342,113 @@ export function Watchlist() {
           onClose={() => setOpenId(null)}
         >
           {/* The Deck's card, unchanged, with no Keep: the Watchlist is decisions already
-              made, except that the Pass button below can still take one back. */}
-          <ProfileCard
-            headingLevel={2}
-            name={open.name}
-            description={open.description}
-            sector={open.sector}
-            stage={open.stage}
-            location={open.location}
-            website={open.website}
-            founders={open.founders}
-            links={open.links}
+              made, except that the Pass button below can still take one back. Keyed by
+              Profile id so a different Profile's `OpenCard` is a fresh mount rather than one
+              carrying over the last one's News and Events. */}
+          <OpenCard
+            key={open.id}
+            profile={open}
+            passStatus={passStatuses.get(open.id)}
+            onPass={() => pass(open)}
           />
-          {passStatuses.get(open.id) === "error" ? (
-            <div role="alert" className={styles.passError}>
-              <p>{passErrorMessage(open.name)}</p>
-              <button
-                type="button"
-                className={styles.retry}
-                onClick={() => pass(open)}
-              >
-                Retry
-              </button>
-            </div>
-          ) : (
-            <button
-              type="button"
-              className={styles.pass}
-              disabled={passStatuses.get(open.id) === "pending"}
-              onClick={() => pass(open)}
-            >
-              Pass
-            </button>
-          )}
         </Dialog>
       )}
     </main>
+  );
+}
+
+/**
+ * The open Dialog's card, its News and Events tabs, and its Pass button. Split out from
+ * `Watchlist` so its own `useState` starts fresh at "loading" on every mount rather than
+ * needing an effect to reset it: a new `OpenCard` mounts exactly when a different Profile's
+ * Dialog opens, since the Dialog unmounts entirely while none is open (per CLAUDE.md on the
+ * card fetching nothing itself, this is the caller that does).
+ */
+function OpenCard({
+  profile,
+  passStatus,
+  onPass,
+}: {
+  profile: KeptProfile;
+  passStatus: PassStatus | undefined;
+  onPass: () => void;
+}) {
+  const [newsState, setNewsState] = useState<NewsTabState>({
+    status: "loading",
+  });
+  const [eventsState, setEventsState] = useState<EventsTabState>({
+    status: "loading",
+  });
+
+  // Two small, separate requests rather than one, so a slow or failed one never holds up the
+  // other tab or the Company tab beside them. `current` guards both against a response for a
+  // card the reader has since closed.
+  useEffect(() => {
+    let current = true;
+
+    fetchProfileNews(profile.id)
+      .then((items) => {
+        if (current) {
+          setNewsState({ status: "ready", items });
+        }
+      })
+      .catch((error: unknown) => {
+        console.error(error);
+        if (current) {
+          setNewsState({ status: "error" });
+        }
+      });
+
+    fetchProfileEvents(profile.id)
+      .then((items) => {
+        if (current) {
+          setEventsState({ status: "ready", items });
+        }
+      })
+      .catch((error: unknown) => {
+        console.error(error);
+        if (current) {
+          setEventsState({ status: "error" });
+        }
+      });
+
+    return () => {
+      current = false;
+    };
+  }, [profile.id]);
+
+  return (
+    <>
+      <ProfileCard
+        headingLevel={2}
+        name={profile.name}
+        description={profile.description}
+        sector={profile.sector}
+        stage={profile.stage}
+        location={profile.location}
+        website={profile.website}
+        founders={profile.founders}
+        links={profile.links}
+        news={newsState}
+        events={eventsState}
+      />
+      {passStatus === "error" ? (
+        <div role="alert" className={styles.passError}>
+          <p>{passErrorMessage(profile.name)}</p>
+          <button type="button" className={styles.retry} onClick={onPass}>
+            Retry
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          className={styles.pass}
+          disabled={passStatus === "pending"}
+          onClick={onPass}
+        >
+          Pass
+        </button>
+      )}
+    </>
   );
 }

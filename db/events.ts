@@ -389,3 +389,52 @@ export async function readDiary(
     ...(await upcoming).map((event) => ({ ...event, past: false })),
   ];
 }
+
+/** An Event as the Watchlist card's Events tab shows it: no `important` or `keptCompanies`,
+ * since every Event here is already this one company's own. */
+export type ProfileEvent = {
+  readonly id: string;
+  readonly name: string;
+  readonly startDate: string;
+  readonly endDate: string | null;
+  readonly location: string | null;
+  readonly url: string;
+};
+
+/**
+ * The upcoming Events this one Company Profile has an Attendance at, soonest first, with past
+ * ones left out the same way `readDiary` leaves them out: an Event is past once its last day
+ * (or its first, where it states no end) is before `today`.
+ *
+ * Unlike `readDiary`, not filtered by area: the Watchlist card is about this one company's own
+ * Events, never the reader's Diary, so an Event outside the reader's area still belongs here
+ * if this company attends it. Not Keep-gated either — Events are Catalogue, the same for
+ * every signed-in reader, per docs/adr/0019.
+ *
+ * No sibling join is needed the way `readNewsForProfile` needs one for News: `persistEvents`
+ * already links an Attendance to every Company Profile sharing the attendee's `name_key`, so
+ * each sibling's own row already carries it. See docs/adr/0024.
+ */
+export async function readEventsForProfile(
+  db: Database,
+  { profileId, today }: { profileId: string; today: string },
+): Promise<ProfileEvent[]> {
+  return db
+    .select({
+      id: events.id,
+      name: events.name,
+      startDate: events.startDate,
+      endDate: events.endDate,
+      location: events.location,
+      url: events.url,
+    })
+    .from(events)
+    .innerJoin(eventAttendances, eq(eventAttendances.eventId, events.id))
+    .where(
+      and(
+        eq(eventAttendances.profileId, profileId),
+        sql`coalesce(${events.endDate}, ${events.startDate}) >= ${today}::date`,
+      ),
+    )
+    .orderBy(asc(events.startDate), asc(events.name), asc(events.id));
+}

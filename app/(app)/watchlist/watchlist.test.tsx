@@ -9,6 +9,12 @@ import {
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  EMPTY_EVENTS_TAB_MESSAGE,
+  EMPTY_NEWS_TAB_MESSAGE,
+  EVENTS_TAB_ERROR_MESSAGE,
+  NEWS_TAB_ERROR_MESSAGE,
+} from "../../../lib/ui/profile-card";
+import {
   EMPTY_WATCHLIST_MESSAGE,
   LOAD_ERROR_MESSAGE,
   Watchlist,
@@ -46,7 +52,9 @@ function jsonResponse(body: unknown): Response {
 /**
  * Answers `pages` at once and holds every Pass POST open until the test settles it by URL
  * with a status — the same shape `deck.test.tsx`'s `stubSwipes` uses, so a test can look at
- * the Watchlist with a write still in flight, or retry it.
+ * the Watchlist with a write still in flight, or retry it. A News or Events GET not named in
+ * `pages` answers with no items: most tests here are not about the open card's two new tabs,
+ * and should not have to say so.
  */
 function stubPass(pages: Record<string, unknown>) {
   const open: { url: string; settle: (response: Response) => void }[] = [];
@@ -63,17 +71,22 @@ function stubPass(pages: Record<string, unknown>) {
 
       const body = pages[`GET ${url}`];
 
-      if (body === undefined) {
-        throw new Error(`unexpected fetch: GET ${url}`);
+      if (body !== undefined) {
+        return jsonResponse(body);
       }
 
-      return jsonResponse(body);
+      if (/\/api\/profiles\/[^/]+\/(news|events)$/.test(url)) {
+        return jsonResponse({ items: [] });
+      }
+
+      throw new Error(`unexpected fetch: GET ${url}`);
     },
   );
 
   vi.stubGlobal("fetch", fetchMock);
 
   return {
+    fetchMock,
     posted: () => [...posted],
     pending: () => open.map((request) => request.url),
     answer(url: string, status: number) {
@@ -154,12 +167,12 @@ describe("the Watchlist", () => {
     };
 
     async function renderReady() {
-      vi.stubGlobal(
-        "fetch",
-        vi.fn(async () =>
-          jsonResponse({ profiles: [detailed, globex], next_cursor: null }),
-        ),
-      );
+      stubPass({
+        "GET /api/profiles?filter=kept": {
+          profiles: [detailed, globex],
+          next_cursor: null,
+        },
+      });
       render(<Watchlist />);
       return screen.findByRole("button", { name: "Open Acme" });
     }
@@ -178,7 +191,7 @@ describe("the Watchlist", () => {
         within(dialog)
           .getAllByRole("tab")
           .map((tab) => tab.textContent),
-      ).toEqual(["Company", "Team", "Contact"]);
+      ).toEqual(["Company", "Team", "Contact", "News", "Events"]);
       expect(
         within(dialog).queryByRole("button", { name: "Keep" }),
       ).not.toBeInTheDocument();
@@ -238,14 +251,20 @@ describe("the Watchlist", () => {
     });
 
     it("changes nothing about the Kept list by opening a card", async () => {
-      const fetchMock = vi.fn(async () =>
-        jsonResponse({ profiles: [detailed, globex], next_cursor: null }),
-      );
-      vi.stubGlobal("fetch", fetchMock);
+      const swipes = stubPass({
+        "GET /api/profiles?filter=kept": {
+          profiles: [detailed, globex],
+          next_cursor: null,
+        },
+      });
       render(<Watchlist />);
       fireEvent.click(await screen.findByRole("button", { name: "Open Acme" }));
 
-      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(
+        swipes.fetchMock.mock.calls.filter(
+          ([input]) => input === "/api/profiles?filter=kept",
+        ),
+      ).toHaveLength(1);
     });
   });
 
@@ -377,4 +396,153 @@ describe("the Watchlist", () => {
       );
     });
   });
+});
+
+describe("the open card's News and Events tabs", () => {
+  async function openCard(pages: Record<string, unknown> = {}) {
+    stubPass({
+      "GET /api/profiles?filter=kept": {
+        profiles: [acme, globex],
+        next_cursor: null,
+      },
+      ...pages,
+    });
+    render(<Watchlist />);
+    fireEvent.click(await screen.findByRole("button", { name: "Open Acme" }));
+  }
+
+  it("lists seeded articles and Events, in the order the endpoints send them", async () => {
+    await openCard({
+      [`GET /api/profiles/${acme.id}/news`]: {
+        items: [
+          {
+            id: "n1",
+            title: "Acme raises a seed round",
+            url: "https://news.example/acme-seed",
+            published_at: "2026-09-15T12:00:00.000Z",
+            source_name: "TechCrunch",
+          },
+          {
+            id: "n2",
+            title: "Acme launches a new product",
+            url: "https://news.example/acme-launch",
+            published_at: "2026-08-01T12:00:00.000Z",
+            source_name: "The Example Times",
+          },
+        ],
+      },
+      [`GET /api/profiles/${acme.id}/events`]: {
+        items: [
+          {
+            id: "e1",
+            name: "Hardware Summit",
+            url: "https://example.com/hardware-summit",
+            start_date: "2026-10-01",
+            end_date: null,
+            location: "San Francisco, CA",
+          },
+          {
+            id: "e2",
+            name: "Robotics Meetup",
+            url: "https://example.com/robotics-meetup",
+            start_date: "2026-11-01",
+            end_date: null,
+            location: null,
+          },
+        ],
+      },
+    });
+
+    fireEvent.click(screen.getByRole("tab", { name: "News" }));
+    const newsPanel = screen.getByRole("tabpanel", { name: "News" });
+    await within(newsPanel).findByRole("link", {
+      name: "Acme raises a seed round",
+    });
+    expect(
+      within(newsPanel)
+        .getAllByRole("link")
+        .map((link) => link.textContent),
+    ).toEqual(["Acme raises a seed round", "Acme launches a new product"]);
+
+    fireEvent.click(screen.getByRole("tab", { name: "Events" }));
+    const eventsPanel = screen.getByRole("tabpanel", { name: "Events" });
+    await within(eventsPanel).findByRole("link", { name: "Hardware Summit" });
+    expect(
+      within(eventsPanel)
+        .getAllByRole("link")
+        .map((link) => link.textContent),
+    ).toEqual(["Hardware Summit", "Robotics Meetup"]);
+  });
+
+  it("says plainly when there is no News and no upcoming Events, rather than a blank panel", async () => {
+    await openCard({
+      [`GET /api/profiles/${acme.id}/news`]: { items: [] },
+      [`GET /api/profiles/${acme.id}/events`]: { items: [] },
+    });
+
+    fireEvent.click(screen.getByRole("tab", { name: "News" }));
+    expect(await screen.findByText(EMPTY_NEWS_TAB_MESSAGE)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Events" }));
+    expect(
+      await screen.findByText(EMPTY_EVENTS_TAB_MESSAGE),
+    ).toBeInTheDocument();
+  });
+
+  it.each([
+    [
+      "News",
+      "news",
+      NEWS_TAB_ERROR_MESSAGE,
+      "Events",
+      EMPTY_EVENTS_TAB_MESSAGE,
+    ],
+    [
+      "Events",
+      "events",
+      EVENTS_TAB_ERROR_MESSAGE,
+      "News",
+      EMPTY_NEWS_TAB_MESSAGE,
+    ],
+  ] as const)(
+    "shows an error in the %s tab alone when only that request fails, and leaves the Company tab working",
+    async (failingTab, failingSegment, errorMessage, otherTab, otherEmpty) => {
+      vi.spyOn(console, "error").mockImplementation(() => {});
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async (input: RequestInfo | URL) => {
+          const url = typeof input === "string" ? input : input.toString();
+
+          if (url === "/api/profiles?filter=kept") {
+            return jsonResponse({
+              profiles: [acme, globex],
+              next_cursor: null,
+            });
+          }
+          if (url === `/api/profiles/${acme.id}/${failingSegment}`) {
+            return { ok: false, status: 500 } as Response;
+          }
+          if (/\/api\/profiles\/[^/]+\/(news|events)$/.test(url)) {
+            return jsonResponse({ items: [] });
+          }
+          throw new Error(`unexpected fetch: ${url}`);
+        }),
+      );
+      render(<Watchlist />);
+      fireEvent.click(await screen.findByRole("button", { name: "Open Acme" }));
+      const dialog = screen.getByRole("dialog");
+
+      fireEvent.click(within(dialog).getByRole("tab", { name: failingTab }));
+      expect(await within(dialog).findByRole("alert")).toHaveTextContent(
+        errorMessage,
+      );
+
+      fireEvent.click(within(dialog).getByRole("tab", { name: otherTab }));
+      expect(within(dialog).getByText(otherEmpty)).toBeInTheDocument();
+
+      fireEvent.click(within(dialog).getByRole("tab", { name: "Company" }));
+      expect(within(dialog).getByText("Hardware")).toBeInTheDocument();
+      expect(within(dialog).queryByRole("alert")).not.toBeInTheDocument();
+    },
+  );
 });
