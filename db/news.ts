@@ -518,3 +518,20 @@ export async function readNews(
 
   return groupNewsByCompany(rows);
 }
+
+/**
+ * One Kept company's News for the Watchlist card's News tab: exactly the group `readNews`
+ * would show for `profileId`, or nothing where that Profile is not among the reader's
+ * currently Kept companies — Passed, never swiped, or superseded by a newer decision on a
+ * sibling. See docs/adr/0024: `profileId` is always one of `readNews`'s own group ids where
+ * the company is still Kept, since the Watchlist deals out the same row by the same rule,
+ * `isNewestDecisionForCompany`.
+ */
+export async function readNewsForProfile(
+  db: Database,
+  { userId, profileId }: { userId: string; profileId: string },
+): Promise<readonly NewsEntry[]> {
+  const groups = await readNews(db, userId);
+
+  return groups.find((group) => group.profile.id === profileId)?.items ?? [];
+}

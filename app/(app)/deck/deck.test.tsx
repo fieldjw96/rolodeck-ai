@@ -933,6 +933,27 @@ describe("the card's tabs in the Deck", () => {
     links: null,
   };
 
+  // The Deck's card passes no News or Events prop, per the Ticket, so it keeps exactly the
+  // three tabs it always had.
+  it("shows only Company, Team and Contact: never News or Events", async () => {
+    stubFetch({
+      "GET /api/profiles": {
+        profiles: [withFounders, globex],
+        next_cursor: null,
+      },
+    });
+
+    render(<Deck />);
+
+    await screen.findByRole("heading", { name: "Acme" });
+
+    expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual([
+      "Company",
+      "Team",
+      "Contact",
+    ]);
+  });
+
   it("opens every Profile on Company, whichever tab the last one was left on", async () => {
     stubFetch({
       "GET /api/profiles": {

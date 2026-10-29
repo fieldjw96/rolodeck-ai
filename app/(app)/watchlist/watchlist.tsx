@@ -4,7 +4,13 @@ import { useEffect, useRef, useState } from "react";
 
 import type { CompanyLinks, Founder } from "../../../db/profile-input";
 import { Dialog } from "../../../lib/ui/dialog";
-import { ProfileCard } from "../../../lib/ui/profile-card";
+import {
+  ProfileCard,
+  type EventsTabEvent,
+  type EventsTabState,
+  type NewsTabArticle,
+  type NewsTabState,
+} from "../../../lib/ui/profile-card";
 import { StateNotice } from "../../../lib/ui/state-notice";
 import styles from "./watchlist.module.css";
 
@@ -67,6 +73,68 @@ async function fetchKept(): Promise<ProfilesPage> {
   return (await response.json()) as ProfilesPage;
 }
 
+type NewsItemWire = {
+  id: string;
+  title: string;
+  url: string;
+  published_at: string;
+  source_name: string;
+};
+
+/** The open card's News tab, read through `GET /api/profiles/:id/news` rather than Postgres
+ * directly, per CLAUDE.md. */
+async function fetchProfileNews(profileId: string): Promise<NewsTabArticle[]> {
+  const url = `/api/profiles/${profileId}/news`;
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(`GET ${url} failed with ${response.status}`);
+  }
+
+  const body = (await response.json()) as { items: NewsItemWire[] };
+
+  return body.items.map((item) => ({
+    id: item.id,
+    title: item.title,
+    url: item.url,
+    publishedAt: item.published_at,
+    sourceName: item.source_name,
+  }));
+}
+
+type EventItemWire = {
+  id: string;
+  name: string;
+  url: string;
+  start_date: string;
+  end_date: string | null;
+  location: string | null;
+};
+
+/** The open card's Events tab, read through `GET /api/profiles/:id/events` rather than
+ * Postgres directly, per CLAUDE.md. */
+async function fetchProfileEvents(
+  profileId: string,
+): Promise<EventsTabEvent[]> {
+  const url = `/api/profiles/${profileId}/events`;
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(`GET ${url} failed with ${response.status}`);
+  }
+
+  const body = (await response.json()) as { items: EventItemWire[] };
+
+  return body.items.map((item) => ({
+    id: item.id,
+    name: item.name,
+    url: item.url,
+    startDate: item.start_date,
+    endDate: item.end_date,
+    location: item.location,
+  }));
+}
+
 /** Throws on a non-2xx response, the same contract the Deck's own `recordSwipe` keeps, so a
  * Pass that failed server-side is never mistaken for one that was recorded. */
 async function recordPass(id: string): Promise<void> {
@@ -106,9 +174,62 @@ export function Watchlist() {
   // `openId` itself is stale inside that closure: a late response must act on the Dialog that
   // is open when it lands, not the one that was open when the request was sent.
   const openIdRef = useRef(openId);
+  // The open card's News and Events tabs. The card itself fetches nothing (`ProfileCard`'s own
+  // contract), so the Watchlist owns these two requests and hands down whichever state they
+  // have reached. Starting each at "loading" means the tab appears from the Dialog's first
+  // render rather than popping in once the effect below has run.
+  const [newsState, setNewsState] = useState<NewsTabState>({
+    status: "loading",
+  });
+  const [eventsState, setEventsState] = useState<EventsTabState>({
+    status: "loading",
+  });
 
   useEffect(() => {
     openIdRef.current = openId;
+  }, [openId]);
+
+  // Fetched per open card rather than once for the whole Watchlist: each is a small, separate
+  // request, so a slow or failed one never holds up the other tab or the Company tab beside
+  // them. `current` guards both against a response for a card the reader has since closed.
+  useEffect(() => {
+    if (openId === null) {
+      return;
+    }
+
+    let current = true;
+    setNewsState({ status: "loading" });
+    setEventsState({ status: "loading" });
+
+    fetchProfileNews(openId)
+      .then((items) => {
+        if (current) {
+          setNewsState({ status: "ready", items });
+        }
+      })
+      .catch((error: unknown) => {
+        console.error(error);
+        if (current) {
+          setNewsState({ status: "error" });
+        }
+      });
+
+    fetchProfileEvents(openId)
+      .then((items) => {
+        if (current) {
+          setEventsState({ status: "ready", items });
+        }
+      })
+      .catch((error: unknown) => {
+        console.error(error);
+        if (current) {
+          setEventsState({ status: "error" });
+        }
+      });
+
+    return () => {
+      current = false;
+    };
   }, [openId]);
 
   useEffect(() => {
@@ -285,6 +406,8 @@ export function Watchlist() {
             website={open.website}
             founders={open.founders}
             links={open.links}
+            news={newsState}
+            events={eventsState}
           />
           {passStatuses.get(open.id) === "error" ? (
             <div role="alert" className={styles.passError}>

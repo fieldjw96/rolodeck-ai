@@ -9,6 +9,7 @@ import {
   diaryToday,
   persistEvents,
   readDiary,
+  readEventsForProfile,
 } from "./events";
 import { recordSwipe } from "./deck";
 import { asUser } from "./rls";
@@ -688,5 +689,68 @@ describe("row level security under the Diary", () => {
 
     await scratch.reset();
     expect(await eventRowCount()).toBe(1);
+  });
+});
+
+/** The Watchlist card's Events tab: this one Company Profile's own upcoming Events. */
+describe("readEventsForProfile", () => {
+  it("lists this company's upcoming Events, soonest first, past ones left out", async () => {
+    const sprocket = await company("Sprocket");
+    await persistEvents(scratch.db, {
+      source: "luma",
+      events: [
+        SUMMIT,
+        MEETUP,
+        {
+          externalId: "old-meetup@example.com",
+          name: "Old Sprocket Meetup",
+          startDate: "2026-01-01",
+          url: "https://example.com/old-meetup",
+          attendees: ["Sprocket"],
+        },
+      ],
+    });
+
+    const items = await readEventsForProfile(scratch.db, {
+      profileId: sprocket,
+      today: TODAY,
+    });
+
+    expect(items.map((item) => item.name)).toEqual([
+      "Robotics Meetup",
+      "Sprocket Summit",
+    ]);
+  });
+
+  it("returns nothing for a company with no Attendance", async () => {
+    const quietCo = await company("Quiet Co");
+    await persistEvents(scratch.db, { source: "luma", events: [MEETUP] });
+
+    expect(
+      await readEventsForProfile(scratch.db, {
+        profileId: quietCo,
+        today: TODAY,
+      }),
+    ).toEqual([]);
+  });
+
+  // `persistEvents` already links the Attendance to every sibling a Source's attendee name
+  // matched, so this needs no sibling join of its own. See docs/adr/0024.
+  it("lists the Event for every sibling a Source's attendee name matched", async () => {
+    const showHn = await company("Sprocket", { source: "show-hn" });
+    const secFormD = await company("Sprocket", { source: "sec-form-d" });
+    await persistEvents(scratch.db, { source: "luma", events: [MEETUP] });
+
+    const forShowHn = await readEventsForProfile(scratch.db, {
+      profileId: showHn,
+      today: TODAY,
+    });
+    const forSecFormD = await readEventsForProfile(scratch.db, {
+      profileId: secFormD,
+      today: TODAY,
+    });
+
+    expect(forShowHn.map((item) => item.name)).toEqual(["Robotics Meetup"]);
+    expect(forSecFormD.map((item) => item.name)).toEqual(["Robotics Meetup"]);
   });
 });

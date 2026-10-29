@@ -11,7 +11,17 @@ import {
 import { afterEach, describe, expect, it } from "vitest";
 
 import type { Founder } from "../../db/profile-input";
-import { firstSentence, initialsOf, ProfileCard } from "./profile-card";
+import {
+  EMPTY_EVENTS_TAB_MESSAGE,
+  EMPTY_NEWS_TAB_MESSAGE,
+  EVENTS_TAB_ERROR_MESSAGE,
+  firstSentence,
+  initialsOf,
+  NEWS_TAB_ERROR_MESSAGE,
+  ProfileCard,
+  type EventsTabEvent,
+  type NewsTabArticle,
+} from "./profile-card";
 
 afterEach(cleanup);
 
@@ -485,6 +495,128 @@ describe("the full card", () => {
     const { container } = renderFull();
 
     expect(container.querySelector("img")).toBeNull();
+  });
+});
+
+const sampleNews: NewsTabArticle[] = [
+  {
+    id: "n1",
+    title: "Versive raises a seed round",
+    url: "https://news.example/versive-seed",
+    publishedAt: "2026-09-15T12:00:00.000Z",
+    sourceName: "TechCrunch",
+  },
+  {
+    id: "n2",
+    title: "Versive launches a new product",
+    url: "https://news.example/versive-launch",
+    publishedAt: "2026-08-01T12:00:00.000Z",
+    sourceName: "The Example Times",
+  },
+];
+
+const sampleEvents: EventsTabEvent[] = [
+  {
+    id: "e1",
+    name: "Security Summit",
+    url: "https://example.com/security-summit",
+    startDate: "2026-10-01",
+    endDate: "2026-10-02",
+    location: "San Francisco, CA",
+  },
+  {
+    id: "e2",
+    name: "Analytics Meetup",
+    url: "https://example.com/analytics-meetup",
+    startDate: "2026-11-01",
+    endDate: null,
+    location: null,
+  },
+];
+
+describe("the News and Events tabs", () => {
+  it("adds News and Events tabs after Contact exactly when the props are passed", () => {
+    renderFull({
+      news: { status: "ready", items: [] },
+      events: { status: "ready", items: [] },
+    });
+
+    expect(tabNames()).toEqual([
+      "Company",
+      "Team",
+      "Contact",
+      "News",
+      "Events",
+    ]);
+  });
+
+  it("lists each article's title linked to its URL, its source and its date", () => {
+    renderFull({ news: { status: "ready", items: sampleNews } });
+
+    fireEvent.click(screen.getByRole("tab", { name: "News" }));
+    const panel = screen.getByRole("tabpanel", { name: "News" });
+    const [first] = within(panel).getAllByRole("listitem");
+
+    expect(
+      within(first!).getByRole("link", {
+        name: "Versive raises a seed round",
+      }),
+    ).toHaveAttribute("href", "https://news.example/versive-seed");
+    expect(within(first!).getByText("TechCrunch")).toBeInTheDocument();
+    expect(within(first!).getByText("Sep 15, 2026")).toBeInTheDocument();
+  });
+
+  it("lists each Event's name linked to its URL, its dates and its location", () => {
+    renderFull({ events: { status: "ready", items: sampleEvents } });
+
+    fireEvent.click(screen.getByRole("tab", { name: "Events" }));
+    const panel = screen.getByRole("tabpanel", { name: "Events" });
+    const [first, second] = within(panel).getAllByRole("listitem");
+
+    expect(
+      within(first!).getByRole("link", { name: "Security Summit" }),
+    ).toHaveAttribute("href", "https://example.com/security-summit");
+    expect(within(first!).getByText("Thu, Oct 1, 2026")).toBeInTheDocument();
+    expect(within(first!).getByText("Fri, Oct 2, 2026")).toBeInTheDocument();
+    expect(within(first!).getByText("San Francisco, CA")).toBeInTheDocument();
+
+    // A single-day Event states its date once, not as a range of the same day twice.
+    expect(within(second!).getByText("Sun, Nov 1, 2026")).toBeInTheDocument();
+    expect(within(second!).queryAllByText("Sun, Nov 1, 2026")).toHaveLength(1);
+  });
+
+  it("says plainly when there is no News or no upcoming Events, rather than a blank panel", () => {
+    renderFull({
+      news: { status: "ready", items: [] },
+      events: { status: "ready", items: [] },
+    });
+
+    fireEvent.click(screen.getByRole("tab", { name: "News" }));
+    expect(screen.getByText(EMPTY_NEWS_TAB_MESSAGE)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Events" }));
+    expect(screen.getByText(EMPTY_EVENTS_TAB_MESSAGE)).toBeInTheDocument();
+  });
+
+  it("shows an error in the News or Events tab alone, leaving the Company tab working", () => {
+    renderFull({
+      news: { status: "error" },
+      events: { status: "error" },
+    });
+
+    fireEvent.click(screen.getByRole("tab", { name: "News" }));
+    expect(screen.getByRole("alert")).toHaveTextContent(NEWS_TAB_ERROR_MESSAGE);
+
+    fireEvent.click(screen.getByRole("tab", { name: "Events" }));
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      EVENTS_TAB_ERROR_MESSAGE,
+    );
+
+    fireEvent.click(screen.getByRole("tab", { name: "Company" }));
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Versive" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 });
 
