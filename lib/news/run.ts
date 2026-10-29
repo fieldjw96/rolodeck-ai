@@ -5,16 +5,20 @@ import {
   readCatalogueCompaniesForNews,
   readLatestLaunchHnPublishedAt,
   readNewsCoveredProfileIds,
+  readNewsSiteRecoveredProfileIds,
   readStoredNewsArticles,
   recordNewsCoverage,
+  recordNewsSiteRecovery,
   type NewsArticleInput,
   type NewsCandidate,
   type NewsCompany,
 } from "../../db/news";
 import type { IngestRejection } from "../../db/profile-input";
+import { ownSiteConfidence } from "./company-news";
 import type { NewsFeedClient } from "./feed-fetch";
 import { parseNewsFeed, type NewsArticle, type NewsFeed } from "./feeds";
 import {
+  companyDomain,
   historyQueries,
   HISTORY_SEARCHES_PER_RUN,
   HISTORY_WINDOW_DAYS,
@@ -63,6 +67,16 @@ export type NewsLaunchHnOutcome =
     }
   | { readonly failure: string };
 
+/** What this run's own-site re-searches did, per docs/adr/0024. */
+export type NewsReSearchCounts = {
+  /** Re-searched and recorded, so never re-searched again. */
+  readonly done: number;
+  /** Re-searched and failed, so recorded as nothing and retried on a later run. */
+  readonly failed: number;
+  /** Covered Company Profiles with a searchable website still waiting for theirs. */
+  readonly waiting: number;
+};
+
 /** What became of one Company Profile's history search: what it found, or why nothing. */
 export type NewsSearchOutcome =
   | {
@@ -108,17 +122,33 @@ export type NewsRunReport = {
     /** Articles skipped on the way into `news_articles` for a field that did not validate. */
     readonly rejections: readonly IngestRejection[];
   };
-  /** One per Company Profile searched for this run, in the order they were searched. */
+  /** One per Company Profile searched for the first time this run, in the order searched. */
   readonly searches: readonly NewsSearchOutcome[];
   /** Company Profiles still waiting for a first search, past this run's cap. */
   readonly waiting: number;
+  /**
+   * The own-site searches re-run for Company Profiles already covered, on whatever was left of
+   * this run's cap after the first searches. See docs/adr/0024.
+   */
+  readonly reSearches: NewsReSearchCounts;
   /** How many Company Profiles this run recorded as covered. */
   readonly covered: number;
+  /** The articles the searches stored, kept whatever they scored. See docs/adr/0024. */
+  readonly searchArticles: {
+    readonly stored: number;
+    readonly fresh: number;
+    /** Articles skipped on the way into `news_articles` for a field that did not validate. */
+    readonly rejections: readonly IngestRejection[];
+  };
   /** This run's new feed articles against every Company Profile in the Catalogue. */
   readonly fromFeeds: NewsPathScores;
   /** Articles read on earlier runs, against each Company Profile News had not seen before. */
   readonly fromStored: NewsPathScores;
-  /** Each search's articles against the Company Profile it searched for. */
+  /**
+   * Each search's articles against the Company Profile it searched for, first searches and
+   * own-site re-searches together: both are a search scored against its one subject, and
+   * splitting them would make two half-distributions of what is one rule's output.
+   */
   readonly fromSearches: NewsPathScores;
   /**
    * Feed articles that cleared `NEWS_DISPLAY_THRESHOLD` against more than one Company Profile in
@@ -176,6 +206,7 @@ const unattributedIn = (scores: NewsPathScores): number =>
 function candidate(
   profile: NewsCompany,
   article: NewsArticleInput,
+  confidence = scoreNewsMatch(profile, article),
 ): NewsCandidate {
   return {
     profileId: profile.id,
@@ -184,8 +215,35 @@ function candidate(
     url: article.url,
     publishedAt: article.publishedAt,
     sourceName: article.sourceName,
-    confidence: scoreNewsMatch(profile, article),
+    confidence,
   };
+}
+
+/**
+ * One hit, and which of a company's two queries found it. A hit both queries returned is a
+ * `site` hit, because `historyQueries` puts the site query first: the host having been checked
+ * to be the company's own is the stronger fact of the two, and the one the confidence below
+ * turns on.
+ */
+type SearchHit = {
+  readonly article: NewsArticle;
+  readonly kind: HistoryQuery["kind"];
+};
+
+/**
+ * What one search hit is worth against the Company Profile it was searched for. A `title` hit is
+ * scored exactly as a feed article is, by `scoreNewsMatch` and nothing else. A `site` hit is
+ * judged by the news-only rule in `company-news.ts`, which is the whole of docs/adr/0024's
+ * change to scoring.
+ */
+function searchCandidate(profile: NewsCompany, hit: SearchHit): NewsCandidate {
+  return candidate(
+    profile,
+    hit.article,
+    hit.kind === "site"
+      ? ownSiteConfidence(profile, hit.article)
+      : scoreNewsMatch(profile, hit.article),
+  );
 }
 
 /**
@@ -199,6 +257,12 @@ function candidate(
  *
  * `shownByUrl` counts, per article, how many companies it cleared the display threshold against,
  * which is what the run summary reports as an article on several companies.
+ *
+ * An article a history search found is scored against the one Company Profile it was searched
+ * for and skipped for every other, however many runs later this reads it back out of
+ * `news_articles`. That is docs/adr/0018's rule, and keeping it is the condition on which
+ * docs/adr/0024 stores search results here at all. A skipped pair is not scored, so it is not in
+ * the distribution either: there is no number to report for a pair the rule never formed.
  */
 function scoreEvery(
   companies: readonly NewsCompany[],
@@ -212,6 +276,12 @@ function scoreEvery(
 
   for (const article of articles) {
     for (const company of companies) {
+      const searchedFor = article.searchedForProfileId;
+
+      if (searchedFor != null && searchedFor !== company.id) {
+        continue;
+      }
+
       const scored = candidate(company, article);
       scores.push(scored.confidence);
 
@@ -352,13 +422,13 @@ async function searchCompany(
   now: Date,
 ): Promise<
   | {
-      articles: NewsArticle[];
+      hits: SearchHit[];
       rejections: IngestRejection[];
       tooCommonTitles: number | null;
     }
   | { failure: string }
 > {
-  const byUrl = new Map<string, NewsArticle>();
+  const byUrl = new Map<string, SearchHit>();
   const rejections: IngestRejection[] = [];
   let hits = 0;
   let tooCommonTitles: number | null = null;
@@ -387,10 +457,11 @@ async function searchCompany(
       tooCommonTitles = parsed.hits;
     }
 
-    // The two queries overlap whenever a company's own post has its name in the title.
+    // The two queries overlap whenever a company's own post has its name in the title. The site
+    // query runs first, so such a hit is kept as a site hit; see `SearchHit`.
     for (const article of parsed.articles) {
       if (!byUrl.has(article.url)) {
-        byUrl.set(article.url, article);
+        byUrl.set(article.url, { article, kind: query.kind });
       }
     }
   }
@@ -406,7 +477,7 @@ async function searchCompany(
     };
   }
 
-  return { articles: [...byUrl.values()], rejections, tooCommonTitles };
+  return { hits: [...byUrl.values()], rejections, tooCommonTitles };
 }
 
 /**
@@ -418,8 +489,8 @@ async function searchCompany(
  * Four paths, in order:
  *
  * 1. **The feeds.** Every feed is read and every article stored once in `news_articles`, matched
- *    or not, per docs/adr/0022. The articles this run had never read are scored against every
- *    Company Profile in the Catalogue.
+ *    or not, per docs/adr/0022, with no Profile against its name: a feed article is Catalogue.
+ *    The articles this run had never read are scored against every Company Profile in it.
  * 2. **Launch HN.** A widening Hacker News search (docs/adr/0023), read and stored and scored
  *    exactly as the feeds are, since it answers who Launch HN posts about no better than a feed
  *    does: `since` is the later of the newest Launch HN post already stored and
@@ -429,11 +500,18 @@ async function searchCompany(
  *    against the whole Catalogue, and a pair scored twice is only a pair counted twice — so a
  *    company that entered the Catalogue after an article was published still gets it.
  * 4. **The history search.** Two years of Hacker News for each of those same Profiles, capped at
- *    `HISTORY_SEARCHES_PER_RUN` a run, oldest-created first. Every result is scored against the
- *    Company Profile it was searched for and no other, per docs/adr/0018.
+ *    `HISTORY_SEARCHES_PER_RUN` a run, oldest-created first. Every result is stored in
+ *    `news_articles` carrying the Profile it was searched for, and scored against that Profile
+ *    and no other, per docs/adr/0018 and docs/adr/0024. A hit from the `site` query — whose host
+ *    is the company's own — is judged by the news-only rule in `company-news.ts` rather than by
+ *    the matcher alone.
+ * 5. **The recovery pass.** For a Company Profile already covered whose `site` query ran under
+ *    the old rule, that one query again, on whatever the first searches left of the cap, once
+ *    ever, recorded in `news_profile_site_recovery`. See docs/adr/0024.
  *
  * A Profile is recorded in `news_profile_coverage` only when its search succeeded and the write
- * that followed did too, so a failed search or a spent cap means it is tried again next run.
+ * that followed did too, so a failed search or a spent cap means it is tried again next run. A
+ * re-search is recorded in `news_profile_site_recovery` on the same terms.
  *
  * Only a pair scoring above zero becomes a `news_items` row, and re-running stores nothing twice:
  * that table's unique index on `(profile_id, url)` is the key, as `news_articles`' on `url` is.
@@ -514,6 +592,31 @@ export async function fetchNewsForTheCatalogue(
   const searches: NewsSearchOutcome[] = [];
   const searchScores: number[] = [];
   const searched: string[] = [];
+  /** Every hit every search found, to be stored whatever it scored. See docs/adr/0024. */
+  const searchArticleInputs: NewsArticleInput[] = [];
+
+  /**
+   * Scores one search's hits against the Company Profile it was searched for, and keeps the
+   * articles themselves. Against this Profile alone, so not through `scoreEvery`'s cross
+   * product.
+   */
+  const takeSearchHits = (
+    profile: NewsCompany,
+    hits: readonly SearchHit[],
+  ): void => {
+    for (const hit of hits) {
+      const scored = searchCandidate(profile, hit);
+      searchScores.push(scored.confidence);
+      searchArticleInputs.push({
+        ...hit.article,
+        searchedForProfileId: profile.id,
+      });
+
+      if (scored.confidence > 0) {
+        attributed.push(scored);
+      }
+    }
+  };
 
   for (const profile of firstRuns) {
     const found = await searchCompany(
@@ -529,29 +632,63 @@ export async function fetchNewsForTheCatalogue(
 
     searches.push({
       company: profile.name,
-      articles: found.articles.length,
+      articles: found.hits.length,
       tooCommonTitles: found.tooCommonTitles,
       rejections: found.rejections,
     });
     searched.push(profile.id);
+    takeSearchHits(profile, found.hits);
+  }
 
-    // Against this Company Profile alone, so not through `scoreEvery`'s cross product.
-    for (const article of found.articles) {
-      const scored = candidate(profile, article);
-      searchScores.push(scored.confidence);
+  // The recovery pass: a Company Profile already covered, whose site query ran under the old
+  // rule and whose results were thrown away, gets that one query run again. Only on what the
+  // first searches left of this run's cap, so a Catalogue with new Profiles in it never spends
+  // its searches on old ones — docs/adr/0024.
+  const recovered = await readNewsSiteRecoveredProfileIds(db);
+  const awaitingReSearch = catalogue.filter(
+    (company) =>
+      covered.has(company.id) &&
+      !recovered.has(company.id) &&
+      companyDomain(company.website) !== null,
+  );
+  const reSearching = awaitingReSearch.slice(
+    0,
+    HISTORY_SEARCHES_PER_RUN - firstRuns.length,
+  );
+  const reSearched: string[] = [];
+  let reSearchesFailed = 0;
 
-      if (scored.confidence > 0) {
-        attributed.push(scored);
-      }
+  for (const profile of reSearching) {
+    // The site query alone: the title query's results were kept all along, and re-running it
+    // would be a second search for nothing. `awaitingReSearch` is filtered on `companyDomain`,
+    // so there is always one query here.
+    const found = await searchCompany(
+      historyQueries(profile, now).filter((query) => query.kind === "site"),
+      search,
+      now,
+    );
+
+    if ("failure" in found) {
+      reSearchesFailed += 1;
+      continue;
     }
+
+    reSearched.push(profile.id);
+    takeSearchHits(profile, found.hits);
   }
 
   const fromSearches = pathScores(searchScores);
+  // Before the attributions and the records below, so a failed write leaves the Profile
+  // uncovered and un-recovered, and both are tried again rather than lost.
+  const searchArticles = await persistNewsArticles(db, {
+    articles: searchArticleInputs,
+  });
   const stored = await persistNewsItems(db, { candidates: attributed });
 
   // Last, and only for the Profiles whose search succeeded: a row here says both halves of a
   // first run happened and were written. A throw above leaves every Profile uncovered.
   const covering = await recordNewsCoverage(db, searched);
+  const recovering = await recordNewsSiteRecovery(db, reSearched);
 
   return {
     companies: catalogue.length,
@@ -564,7 +701,17 @@ export async function fetchNewsForTheCatalogue(
     },
     searches,
     waiting: unseen.length - firstRuns.length,
+    reSearches: {
+      done: recovering,
+      failed: reSearchesFailed,
+      waiting: awaitingReSearch.length - reSearching.length,
+    },
     covered: covering,
+    searchArticles: {
+      stored: searchArticles.inserted + searchArticles.updated,
+      fresh: searchArticles.inserted,
+      rejections: searchArticles.rejections,
+    },
     fromFeeds,
     fromStored,
     fromSearches,
@@ -603,6 +750,10 @@ export async function fetchNewsForTheCatalogue(
  *
  * Launch HN has no rule of its own, by design: see docs/adr/0023. A failed Launch HN search is
  * always named in the summary, and never on its own reason enough to fail the run.
+ *
+ * Nor do the own-site re-searches, for a related reason: a re-search repairs a Profile that is
+ * already covered, so one that failed has cost this run nothing it had before, and the next run
+ * runs it again. The count of them is in the summary. See docs/adr/0024.
  */
 export function newsRunFailures(report: NewsRunReport): string[] {
   const failures: string[] = [];
@@ -712,9 +863,21 @@ export function summariseNewsRun(report: NewsRunReport): string {
   }
 
   lines.push(
+    `Re-searched the site query for ${report.reSearches.done} Company ` +
+      `${plural(report.reSearches.done, "Profile", "Profiles")} already covered, ` +
+      `${report.reSearches.failed} failed, with ${report.reSearches.waiting} still waiting.`,
+    `Stored ${report.searchArticles.stored} ${plural(report.searchArticles.stored, "article", "articles")} from searches, ` +
+      `${report.searchArticles.fresh} new to the Catalogue.`,
+  );
+
+  for (const rejection of report.searchArticles.rejections) {
+    lines.push(`  rejected on ${rejection.field}: ${rejection.reason}`);
+  }
+
+  lines.push(
     describePath("From feeds and Launch HN", report.fromFeeds),
     describePath("From stored articles", report.fromStored),
-    describePath("From searches", report.fromSearches),
+    describePath("From searches and re-searches", report.fromSearches),
     `${report.onSeveralCompanies} ${plural(report.onSeveralCompanies, "article", "articles")} from feeds or Launch HN ` +
       `cleared the threshold against more than one Company Profile.`,
     `Stored ${report.inserted} new and updated ${report.updated}; ` +
