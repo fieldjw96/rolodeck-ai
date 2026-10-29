@@ -100,9 +100,16 @@ _Avoid_: provider, river, stream
 
 **History search**:
 News's other path: a search of the last two years of Hacker News for one Company Profile, run
-once ever, the first News run that sees it, and capped per run. Its results are scored against
-that Profile alone. See `docs/adr/0018` and `docs/adr/0022`.
+once ever, the first News run that sees it, and capped per run — plus one re-run of its own-site
+half for a Profile covered before the news rule existed. Every article it finds is kept, and
+scored against that Profile alone. See `docs/adr/0018`, `docs/adr/0022` and `docs/adr/0024`.
 _Avoid_: backfill, lookup
+
+**Own-site post**:
+A post the history search found on a Company Profile's own domain, so written by the company
+about itself. Shown only when it is news — an announcement that something happened — and stored
+but hidden when it is an essay, an opinion piece or a tutorial. See `docs/adr/0024`.
+_Avoid_: blog post, content, thought leadership
 
 **Confidence**:
 How sure News is that an article is about the Company Profile it is attributed to, from 0 to 1.

@@ -96,9 +96,11 @@ tables it writes, and nowhere else.
 migration `0008_ingest_role`. See `docs/adr/0013` for why it exists and how it is scoped.
 
 **What it may do:** select, insert and update `profiles`, `news_items`, `news_articles`,
-`news_profile_coverage`, `events` and `event_attendances`, bypassing RLS on those six tables;
-and delete from `event_attendances`, which `persistEvents` replaces on every run. It may not
-update `news_profile_coverage` at all, nor an article's `url`, nor any row's `id`.
+`news_profile_coverage`, `news_profile_site_recovery`, `events` and `event_attendances`,
+bypassing RLS on those seven tables; and delete from `event_attendances`, which `persistEvents`
+replaces on every run. It may not update `news_profile_coverage` or
+`news_profile_site_recovery` at all, nor an article's `url` or `searched_for_profile_id`, nor
+any row's `id`.
 
 **What it may not:** read or write `swipes`, `user_profiles`, or anything in the `auth` schema;
 execute any function at all — `ingest.kept_profile_ids` was the one, and `docs/adr/0022` dropped
@@ -272,6 +274,16 @@ together are recorded in `news_profile_coverage`, so it is never searched for ag
 nothing is a legitimate answer, not a reason to look daily. The searching is capped at
 `HISTORY_SEARCHES_PER_RUN` Profiles a run, oldest-created first, and the summary says how many
 are still waiting.
+
+Every article a search finds is stored in `news_articles` too, whatever it scored, carrying the
+Company Profile it was searched for in `searched_for_profile_id` — so nothing ever scores it
+against another company, which is `docs/adr/0018`'s rule and the condition on which it is stored
+at all. A hit from the `site` query, whose host is the company's own domain, is judged by
+`isCompanyNews` in `lib/news/company-news.ts` rather than by the matcher alone: an announcement
+is lifted to `NEWS_DISPLAY_THRESHOLD` and shown, and an essay, opinion piece or tutorial is
+capped just below it, so it is stored and never on the page. And a Company Profile covered
+before that rule existed gets its `site` query run once more, on whatever cap the first searches
+leave, recorded in `news_profile_site_recovery`. See `docs/adr/0024`.
 
 Each feed is parsed through a Zod schema keyed by RSS's own element names, offline and tested
 against its capture in `db/fixtures/`, so a feed that changes shape is rejected naming the feed

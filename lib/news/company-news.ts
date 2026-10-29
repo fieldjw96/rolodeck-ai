@@ -94,6 +94,7 @@ const NOT_NEWS_TERMS: readonly string[] = [
   "deep dive",
   "deep-dive",
   "tutorial",
+  "how-?to",
   "walkthrough",
   "best practices",
   "anti-?patterns?",
@@ -183,8 +184,13 @@ const termPatterns = (terms: readonly string[]): readonly RegExp[] =>
 
 const NEWS_PATTERNS = termPatterns(NEWS_TERMS);
 const NOT_NEWS_PATTERNS = termPatterns(NOT_NEWS_TERMS);
+/**
+ * A hyphen counts as part of the opening word here, although `WORD_CHAR` does not include one:
+ * "On-prem is here" opens with a product name, not with the preposition that makes "On
+ * abstraction" an essay.
+ */
 const NOT_NEWS_OPENER_PATTERNS = NOT_NEWS_OPENERS.map(
-  (opener) => new RegExp(`^(?:${opener})(?!${WORD_CHAR})`, "iu"),
+  (opener) => new RegExp(`^(?:${opener})(?!${WORD_CHAR}|-)`, "iu"),
 );
 
 const matchesAny = (patterns: readonly RegExp[], text: string): boolean =>

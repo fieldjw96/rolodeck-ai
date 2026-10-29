@@ -95,6 +95,12 @@ describe("isCompanyNews", () => {
     expect(isCompanyNews(post("Our 2026 pricing"))).toBe(false);
   });
 
+  it("reads an opening word and not merely the letters it starts with", () => {
+    // "On" opens an essay; "On-prem" opens a product name.
+    expect(isCompanyNews(post("On the shape of agent memory"))).toBe(false);
+    expect(isCompanyNews(post("On-prem Acme is here"))).toBe(true);
+  });
+
   it("answers for a url that does not parse, reading the headline alone", () => {
     expect(isCompanyNews({ title: "Announcing our seed round", url: "" })).toBe(
       true,

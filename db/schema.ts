@@ -364,7 +364,7 @@ export type UserProfileRow = typeof userProfiles.$inferSelect;
 export type NewUserProfileRow = typeof userProfiles.$inferInsert;
 
 /**
- * Every feed article News has read, stored once whoever it turns out to be about.
+ * Every article News has read, stored once whoever it turns out to be about.
  *
  * The articles and the attributions are apart, per docs/adr/0022. This table is the article: one
  * row per `url`, written whether or not it matches a single Company Profile. `news_items` below
