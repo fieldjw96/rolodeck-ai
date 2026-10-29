@@ -51,8 +51,8 @@ BEGIN
     RAISE EXCEPTION 'rolodeck_ingest may hold no privilege beyond its seven tables, but can reach %', broader;
   END IF;
 
-  -- Neither DELETE nor TRUNCATE on the new table, and no UPDATE of any column of it: the three
-  -- things the grant above deliberately does not include. TRUNCATE does not consult RLS at all.
+  -- Nothing on the new table beyond the select and insert granted above: no DELETE, no UPDATE of
+  -- any column, and no TRUNCATE, which does not consult RLS at all.
   IF has_table_privilege(ingest_role, 'public.news_profile_site_recovery', 'DELETE, TRUNCATE, UPDATE, REFERENCES, TRIGGER')
     OR has_any_column_privilege(ingest_role, 'public.news_profile_site_recovery', 'UPDATE, REFERENCES')
   THEN
