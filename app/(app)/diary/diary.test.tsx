@@ -13,7 +13,9 @@ import {
   EMPTY_DIARY_WITH_PAST_MESSAGE,
   KEPT_ATTENDING_LABEL,
   LOAD_ERROR_MESSAGE,
+  PAST_EVENTS_HEADING,
   SHOW_PAST_LABEL,
+  UPCOMING_EVENTS_HEADING,
   type DiaryEntry,
 } from "./diary";
 
@@ -26,6 +28,7 @@ const SUMMIT: DiaryEntry = {
   url: "https://example.com/summit",
   important: true,
   kept_companies: ["Quiet Co", "Sprocket"],
+  past: false,
 };
 
 const DEMO_DAY: DiaryEntry = {
@@ -37,6 +40,19 @@ const DEMO_DAY: DiaryEntry = {
   url: "https://example.com/demo-day",
   important: false,
   kept_companies: [],
+  past: false,
+};
+
+const OLD_MIXER: DiaryEntry = {
+  id: "33333333-3333-3333-3333-333333333333",
+  name: "Old Founders Mixer",
+  start_date: "2026-01-01",
+  end_date: null,
+  location: null,
+  url: "https://example.com/old-mixer",
+  important: false,
+  kept_companies: [],
+  past: true,
 };
 
 function jsonResponse(body: unknown): Response {
@@ -136,6 +152,34 @@ describe("the Diary", () => {
     ).toBeInTheDocument();
     expect(fetchMock).toHaveBeenLastCalledWith("/api/events?include=past");
     expect(toggle).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("groups Events under 'Past' and 'Upcoming' headings once past Events are shown, and renders no headings otherwise", async () => {
+    const fetchMock = vi.fn(async (url: string) =>
+      jsonResponse({
+        events: url.includes("include=past")
+          ? [OLD_MIXER, SUMMIT, DEMO_DAY]
+          : [SUMMIT, DEMO_DAY],
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<Diary />);
+
+    await screen.findByRole("heading", { level: 2, name: "Demo Day" });
+    expect(screen.queryByText(PAST_EVENTS_HEADING)).toBeNull();
+    expect(screen.queryByText(UPCOMING_EVENTS_HEADING)).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: SHOW_PAST_LABEL }));
+
+    const headings = await screen.findAllByRole("heading", { level: 2 });
+    expect(headings.map((heading) => heading.textContent)).toEqual([
+      PAST_EVENTS_HEADING,
+      "Old Founders Mixer",
+      UPCOMING_EVENTS_HEADING,
+      "Sprocket Summit",
+      "Demo Day",
+    ]);
   });
 
   it("shows an explicit error when the fetch fails, rather than staying on loading forever", async () => {
