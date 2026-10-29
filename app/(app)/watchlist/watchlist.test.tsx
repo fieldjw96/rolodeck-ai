@@ -529,21 +529,20 @@ describe("the open card's News and Events tabs", () => {
         }),
       );
       render(<Watchlist />);
-      fireEvent.click(
-        await screen.findByRole("button", { name: "Open Acme" }),
-      );
+      fireEvent.click(await screen.findByRole("button", { name: "Open Acme" }));
+      const dialog = screen.getByRole("dialog");
 
-      fireEvent.click(screen.getByRole("tab", { name: failingTab }));
-      expect(await screen.findByRole("alert")).toHaveTextContent(
+      fireEvent.click(within(dialog).getByRole("tab", { name: failingTab }));
+      expect(await within(dialog).findByRole("alert")).toHaveTextContent(
         errorMessage,
       );
 
-      fireEvent.click(screen.getByRole("tab", { name: otherTab }));
-      expect(screen.getByText(otherEmpty)).toBeInTheDocument();
+      fireEvent.click(within(dialog).getByRole("tab", { name: otherTab }));
+      expect(within(dialog).getByText(otherEmpty)).toBeInTheDocument();
 
-      fireEvent.click(screen.getByRole("tab", { name: "Company" }));
-      expect(screen.getByText("Hardware")).toBeInTheDocument();
-      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+      fireEvent.click(within(dialog).getByRole("tab", { name: "Company" }));
+      expect(within(dialog).getByText("Hardware")).toBeInTheDocument();
+      expect(within(dialog).queryByRole("alert")).not.toBeInTheDocument();
     },
   );
 });

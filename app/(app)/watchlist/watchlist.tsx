@@ -174,62 +174,9 @@ export function Watchlist() {
   // `openId` itself is stale inside that closure: a late response must act on the Dialog that
   // is open when it lands, not the one that was open when the request was sent.
   const openIdRef = useRef(openId);
-  // The open card's News and Events tabs. The card itself fetches nothing (`ProfileCard`'s own
-  // contract), so the Watchlist owns these two requests and hands down whichever state they
-  // have reached. Starting each at "loading" means the tab appears from the Dialog's first
-  // render rather than popping in once the effect below has run.
-  const [newsState, setNewsState] = useState<NewsTabState>({
-    status: "loading",
-  });
-  const [eventsState, setEventsState] = useState<EventsTabState>({
-    status: "loading",
-  });
 
   useEffect(() => {
     openIdRef.current = openId;
-  }, [openId]);
-
-  // Fetched per open card rather than once for the whole Watchlist: each is a small, separate
-  // request, so a slow or failed one never holds up the other tab or the Company tab beside
-  // them. `current` guards both against a response for a card the reader has since closed.
-  useEffect(() => {
-    if (openId === null) {
-      return;
-    }
-
-    let current = true;
-    setNewsState({ status: "loading" });
-    setEventsState({ status: "loading" });
-
-    fetchProfileNews(openId)
-      .then((items) => {
-        if (current) {
-          setNewsState({ status: "ready", items });
-        }
-      })
-      .catch((error: unknown) => {
-        console.error(error);
-        if (current) {
-          setNewsState({ status: "error" });
-        }
-      });
-
-    fetchProfileEvents(openId)
-      .then((items) => {
-        if (current) {
-          setEventsState({ status: "ready", items });
-        }
-      })
-      .catch((error: unknown) => {
-        console.error(error);
-        if (current) {
-          setEventsState({ status: "error" });
-        }
-      });
-
-    return () => {
-      current = false;
-    };
   }, [openId]);
 
   useEffect(() => {
@@ -395,43 +342,113 @@ export function Watchlist() {
           onClose={() => setOpenId(null)}
         >
           {/* The Deck's card, unchanged, with no Keep: the Watchlist is decisions already
-              made, except that the Pass button below can still take one back. */}
-          <ProfileCard
-            headingLevel={2}
-            name={open.name}
-            description={open.description}
-            sector={open.sector}
-            stage={open.stage}
-            location={open.location}
-            website={open.website}
-            founders={open.founders}
-            links={open.links}
-            news={newsState}
-            events={eventsState}
+              made, except that the Pass button below can still take one back. Keyed by
+              Profile id so a different Profile's `OpenCard` is a fresh mount rather than one
+              carrying over the last one's News and Events. */}
+          <OpenCard
+            key={open.id}
+            profile={open}
+            passStatus={passStatuses.get(open.id)}
+            onPass={() => pass(open)}
           />
-          {passStatuses.get(open.id) === "error" ? (
-            <div role="alert" className={styles.passError}>
-              <p>{passErrorMessage(open.name)}</p>
-              <button
-                type="button"
-                className={styles.retry}
-                onClick={() => pass(open)}
-              >
-                Retry
-              </button>
-            </div>
-          ) : (
-            <button
-              type="button"
-              className={styles.pass}
-              disabled={passStatuses.get(open.id) === "pending"}
-              onClick={() => pass(open)}
-            >
-              Pass
-            </button>
-          )}
         </Dialog>
       )}
     </main>
+  );
+}
+
+/**
+ * The open Dialog's card, its News and Events tabs, and its Pass button. Split out from
+ * `Watchlist` so its own `useState` starts fresh at "loading" on every mount rather than
+ * needing an effect to reset it: a new `OpenCard` mounts exactly when a different Profile's
+ * Dialog opens, since the Dialog unmounts entirely while none is open (per CLAUDE.md on the
+ * card fetching nothing itself, this is the caller that does).
+ */
+function OpenCard({
+  profile,
+  passStatus,
+  onPass,
+}: {
+  profile: KeptProfile;
+  passStatus: PassStatus | undefined;
+  onPass: () => void;
+}) {
+  const [newsState, setNewsState] = useState<NewsTabState>({
+    status: "loading",
+  });
+  const [eventsState, setEventsState] = useState<EventsTabState>({
+    status: "loading",
+  });
+
+  // Two small, separate requests rather than one, so a slow or failed one never holds up the
+  // other tab or the Company tab beside them. `current` guards both against a response for a
+  // card the reader has since closed.
+  useEffect(() => {
+    let current = true;
+
+    fetchProfileNews(profile.id)
+      .then((items) => {
+        if (current) {
+          setNewsState({ status: "ready", items });
+        }
+      })
+      .catch((error: unknown) => {
+        console.error(error);
+        if (current) {
+          setNewsState({ status: "error" });
+        }
+      });
+
+    fetchProfileEvents(profile.id)
+      .then((items) => {
+        if (current) {
+          setEventsState({ status: "ready", items });
+        }
+      })
+      .catch((error: unknown) => {
+        console.error(error);
+        if (current) {
+          setEventsState({ status: "error" });
+        }
+      });
+
+    return () => {
+      current = false;
+    };
+  }, [profile.id]);
+
+  return (
+    <>
+      <ProfileCard
+        headingLevel={2}
+        name={profile.name}
+        description={profile.description}
+        sector={profile.sector}
+        stage={profile.stage}
+        location={profile.location}
+        website={profile.website}
+        founders={profile.founders}
+        links={profile.links}
+        news={newsState}
+        events={eventsState}
+      />
+      {passStatus === "error" ? (
+        <div role="alert" className={styles.passError}>
+          <p>{passErrorMessage(profile.name)}</p>
+          <button type="button" className={styles.retry} onClick={onPass}>
+            Retry
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          className={styles.pass}
+          disabled={passStatus === "pending"}
+          onClick={onPass}
+        >
+          Pass
+        </button>
+      )}
+    </>
   );
 }

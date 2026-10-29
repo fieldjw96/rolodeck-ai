@@ -140,7 +140,9 @@ describe("GET /api/profiles/:id/news", () => {
 
   it("answers with no items for a Profile the reader has never swiped", async () => {
     const [id] = await harness.seed(1);
-    await persistNewsItems(harness.scratch.db, { candidates: [candidate(id!)] });
+    await persistNewsItems(harness.scratch.db, {
+      candidates: [candidate(id!)],
+    });
 
     await expect(readOk(id!)).resolves.toEqual({ items: [] });
   });
@@ -150,7 +152,9 @@ describe("GET /api/profiles/:id/news", () => {
     await harness.scratch.db
       .insert(swipes)
       .values({ userId: harness.user.id, profileId: id!, decision: "pass" });
-    await persistNewsItems(harness.scratch.db, { candidates: [candidate(id!)] });
+    await persistNewsItems(harness.scratch.db, {
+      candidates: [candidate(id!)],
+    });
 
     await expect(readOk(id!)).resolves.toEqual({ items: [] });
   });
@@ -162,7 +166,9 @@ describe("GET /api/profiles/:id/news", () => {
       profileId: id!,
       decision: "keep",
     });
-    await persistNewsItems(harness.scratch.db, { candidates: [candidate(id!)] });
+    await persistNewsItems(harness.scratch.db, {
+      candidates: [candidate(id!)],
+    });
 
     await expect(readOk(id!)).resolves.toEqual({ items: [] });
   });
