@@ -93,6 +93,9 @@ describe("isCompanyNews", () => {
   it("is quiet by default: a headline with no signal either way is not news", () => {
     expect(isCompanyNews(post("Agent OS"))).toBe(false);
     expect(isCompanyNews(post("Our 2026 pricing"))).toBe(false);
+    // The word, not the act. "Open-sourcing Agent OS" is the announcement.
+    expect(isCompanyNews(post("Our open source strategy"))).toBe(false);
+    expect(isCompanyNews(post("Open-sourcing Agent OS"))).toBe(true);
   });
 
   it("reads an opening word and not merely the letters it starts with", () => {

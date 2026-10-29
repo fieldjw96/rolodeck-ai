@@ -65,8 +65,14 @@ const NEWS_TERMS: readonly string[] = [
   "releas(?:e|es|ed|ing)",
   "ships?",
   "shipped",
-  "open(?:s|ed|ing)? (?:up|its|our)?\\s*(?:office|offices|waitlist|beta|source)",
+  // The act, not the state: "open-sourcing Agent OS" is an announcement, "open source" on its
+  // own is a word every engineering blog uses. An office or a waitlist opening is caught by the
+  // "announcing" and "introducing" most such headlines carry, and not guessed at here.
+  "open[- ]?sourcing",
+  "now open",
   "milestone",
+  // A compliance certification a company has just earned, which is the one kind of thing it
+  // writes about itself that is unambiguously an event.
   "soc ?2",
   "hipaa",
   "iso ?27001",
