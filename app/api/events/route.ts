@@ -20,14 +20,18 @@ function toJson(event: DiaryEvent) {
     url: event.url,
     important: event.important,
     kept_companies: event.keptCompanies,
+    past: event.past,
   };
 }
 
 /**
- * The Diary: the startup community's Events, soonest first, with past ones left out unless
- * `include=past`. Read on the server as the signed-in user, per CLAUDE.md, so the RLS policies
- * are underneath the answer as well as the `where` clause. `important` is part of what the
- * query returns; the page only renders it.
+ * The Diary: the startup community's Events, with past ones left out unless `include=past`.
+ * Without `include=past`, every Event is upcoming, soonest first. With it, at most
+ * `DIARY_PAST_LIMIT` past Events come first, newest first, followed by every upcoming Event in
+ * that same soonest-first order; `past` on each Event says which group it is in. Read on the
+ * server as the signed-in user, per CLAUDE.md, so the RLS policies are underneath the answer as
+ * well as the `where` clause. `important` is part of what the query returns; the page only
+ * renders it.
  */
 export const GET = authenticated(async (request, user) => {
   const query = diaryQuerySchema.safeParse({

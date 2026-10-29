@@ -6,6 +6,7 @@ import { citiesInArea, eventCityOf } from "../lib/location/bay-area";
 import type { EventInput } from "./event-input";
 import {
   DIARY_EXCLUDED_TITLE_PATTERNS,
+  DIARY_PAST_LIMIT,
   diaryQuerySchema,
   diaryToday,
   persistEvents,
@@ -468,6 +469,7 @@ describe("reading the Diary", () => {
         url: "https://example.com/demo-day",
         important: false,
         keptCompanies: [],
+        past: false,
       },
     ]);
   });
@@ -588,6 +590,100 @@ describe("reading the Diary", () => {
     );
     expect(theirs.map((event) => event.important)).toEqual([false]);
     expect((await diary()).map((event) => event.important)).toEqual([true]);
+  });
+});
+
+describe("the Diary's past group", () => {
+  const daysBefore = (days: number): string => {
+    const date = new Date(`${TODAY}T00:00:00Z`);
+    date.setUTCDate(date.getUTCDate() - days);
+    return date.toISOString().slice(0, 10);
+  };
+
+  const daysAfter = (days: number): string => {
+    const date = new Date(`${TODAY}T00:00:00Z`);
+    date.setUTCDate(date.getUTCDate() + days);
+    return date.toISOString().slice(0, 10);
+  };
+
+  // 35 past Events, one per day, each older than the last.
+  const PAST: EventInput[] = Array.from({ length: 35 }, (_, index) => {
+    const daysAgo = index + 1;
+    return {
+      externalId: `past-${daysAgo}@example.com`,
+      name: `Past Event ${daysAgo}`,
+      startDate: daysBefore(daysAgo),
+      url: `https://example.com/past-${daysAgo}`,
+      attendees: [],
+    };
+  });
+
+  const UPCOMING_SOON: EventInput = {
+    externalId: "upcoming-soon@example.com",
+    name: "Upcoming Soon",
+    startDate: daysAfter(1),
+    url: "https://example.com/upcoming-soon",
+    attendees: [],
+  };
+
+  const UPCOMING_LATER: EventInput = {
+    externalId: "upcoming-later@example.com",
+    name: "Upcoming Later",
+    startDate: daysAfter(10),
+    url: "https://example.com/upcoming-later",
+    attendees: [],
+  };
+
+  it("returns at most DIARY_PAST_LIMIT past Events, newest first, ahead of every upcoming Event", async () => {
+    await persistEvents(scratch.db, {
+      source: "techmeme-events",
+      events: [...PAST, UPCOMING_SOON, UPCOMING_LATER],
+    });
+
+    const read = await diary({ includePast: true });
+
+    expect(read).toHaveLength(DIARY_PAST_LIMIT + 2);
+    // The most recently ended past Event comes first.
+    expect(read[0]).toMatchObject({ name: "Past Event 1", past: true });
+    // The 30th most recent is the last of the past group.
+    expect(read[DIARY_PAST_LIMIT - 1]).toMatchObject({
+      name: "Past Event 30",
+      past: true,
+    });
+    // The upcoming Events follow, soonest first.
+    expect(read[DIARY_PAST_LIMIT]).toMatchObject({
+      name: "Upcoming Soon",
+      past: false,
+    });
+    expect(read[DIARY_PAST_LIMIT + 1]).toMatchObject({
+      name: "Upcoming Later",
+      past: false,
+    });
+  });
+
+  it("returns only the upcoming Events, soonest first, without includePast", async () => {
+    await persistEvents(scratch.db, {
+      source: "techmeme-events",
+      events: [...PAST, UPCOMING_SOON, UPCOMING_LATER],
+    });
+
+    const read = await diary();
+
+    expect(read).toEqual([
+      expect.objectContaining({ name: "Upcoming Soon", past: false }),
+      expect.objectContaining({ name: "Upcoming Later", past: false }),
+    ]);
+  });
+
+  it("counts an Event that started before today and ends on or after it as upcoming, not past", async () => {
+    await persistEvents(scratch.db, {
+      source: "techmeme-events",
+      events: [{ ...SUMMIT, startDate: daysBefore(1), endDate: TODAY }],
+    });
+
+    const [summit] = await diary({ includePast: true });
+
+    expect(summit).toMatchObject({ name: "Sprocket Summit", past: false });
   });
 });
 
