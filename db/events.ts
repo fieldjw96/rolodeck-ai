@@ -218,6 +218,28 @@ export type DiaryEvent = {
 const eventLocationCity = sql`lower(regexp_replace(split_part(${events.location}, ',', 1), '^[[:space:]]+|[[:space:]]+$', '', 'g'))`;
 
 /**
+ * Titles the Diary leaves out unless a Kept Company Profile attends — Techmeme states no
+ * `location` for either, so the area filter never catches them on its own. Each pattern is
+ * matched case-insensitively against an Event's `name`, in Postgres (`~*`) as well as in the
+ * unit test below, so the syntax has to mean the same thing in both: no `\b`, which Postgres's
+ * own regex engine reads as a literal backspace character rather than a word boundary.
+ */
+export const DIARY_EXCLUDED_TITLE_PATTERNS: readonly RegExp[] = [
+  // Earnings calls: Techmeme titles every one "Earnings: TICKER, TICKER, ...".
+  /^Earnings:/i,
+  // Public-company product keynotes: Apple's, Snap's and the like, each titled with "media
+  // event" as its own two words rather than as part of a longer one such as "multimedia event".
+  /(^|[^a-z])media event([^a-z]|$)/i,
+];
+
+/** Whether an Event's `name` matches any of `DIARY_EXCLUDED_TITLE_PATTERNS`, in Postgres. */
+const excludedByTitle = or(
+  ...DIARY_EXCLUDED_TITLE_PATTERNS.map(
+    (pattern) => sql`${events.name} ~* ${pattern.source}`,
+  ),
+)!;
+
+/**
  * The area the Diary filters by for a User who has stated none. Not a statement by that User —
  * `user_profiles.area` is null for them — but the Diary's own answer to "near where?", which it
  * has to have one of: an unfiltered Diary is every startup event on earth, which is less useful
@@ -255,8 +277,12 @@ export const DIARY_DEFAULT_AREA = "Bay Area";
  * another continent is not something the reader can do anything about, so the Diary filters
  * instead.
  *
- * Every Event that survives the area filter is returned whether or not anyone is known to
- * attend it: attendance only ever marks an Event, it never decides whether one is shown.
+ * An Event that survives the area filter is left out anyway when its `name` matches
+ * `DIARY_EXCLUDED_TITLE_PATTERNS` — today, an earnings call or a public-company media event.
+ * The one exception is attendance: an excluded Event is shown, and marked important as any
+ * Kept Event is, once a Company Profile the reader has Kept is stated to attend it. Attendance
+ * can therefore bring an excluded Event back, but it still never hides one of its own accord —
+ * a Kept company's absence is never, by itself, a reason an Event disappears.
  *
  * The reader is written into the swipe join as well as being carried by RLS underneath — see
  * CLAUDE.md on RLS as a backstop, never the only control. There is no owner to write into the
@@ -305,6 +331,10 @@ export async function readDiary(
               isNull(events.location),
               inArray(eventLocationCity, [...areaCities]),
             ),
+        or(
+          sql`not (${excludedByTitle})`,
+          sql`exists (${keptAttendees(sql`1`)})`,
+        ),
       ),
     )
     .orderBy(asc(events.startDate), asc(events.name), asc(events.id));

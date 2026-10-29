@@ -128,7 +128,8 @@ only those at or above the display threshold are shown. See `docs/adr/0010` and 
 _Avoid_: relevance, score, match quality
 
 **Diary**:
-The calendar of Events.
+The calendar of startup Events in the reader's area. It leaves out earnings calls and
+public-company media events, and always shows an Event a Kept company attends.
 _Avoid_: calendar, agenda
 
 **Event**:
