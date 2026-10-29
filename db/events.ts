@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, isNull, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, or, sql, type SQL } from "drizzle-orm";
 import { z } from "zod";
 
 import { citiesInArea } from "../lib/location/bay-area";
@@ -205,6 +205,12 @@ export type DiaryEvent = {
   important: boolean;
   /** The Kept companies attending, by name, alphabetically. Empty when `important` is false. */
   keptCompanies: string[];
+  /**
+   * True when `coalesce(endDate, startDate)` is before `today` — the same boundary the
+   * upcoming view has always used. Always false where `readDiary` is called without
+   * `includePast`.
+   */
+  past: boolean;
 };
 
 /**
@@ -249,9 +255,24 @@ const excludedByTitle = or(
 export const DIARY_DEFAULT_AREA = "Bay Area";
 
 /**
- * The Events in the reader's area, in date order, soonest first, with past ones left out
- * unless asked for. An Event is past once its last day is before `today`, so a three-day
- * conference stays in the Diary until it is over.
+ * How many past Events `readDiary` returns with `includePast`. The Ticket's own choice: about
+ * a fortnight of Events at the current rate, which answers "what did I just miss" without
+ * returning the whole archive.
+ */
+export const DIARY_PAST_LIMIT = 30;
+
+/**
+ * The Events in the reader's area, with past ones left out unless asked for. An Event is past
+ * once its last day is before `today`, so a three-day conference stays in the Diary until it
+ * is over; every `DiaryEvent` carries that same boundary back as `past`.
+ *
+ * Without `includePast`, the result is every upcoming Event, soonest first, exactly as before.
+ * With `includePast`, the result is two groups in one list: first at most
+ * `DIARY_PAST_LIMIT` past Events, newest first — by `coalesce(endDate, startDate)` descending,
+ * then `startDate` descending, `name` and `id` — and then every upcoming Event, in the same
+ * order and with the same filters as without `includePast`. Both groups obey the same area
+ * filter and title relevance rule below; the limit applies to the past group only, since the
+ * Ticket does not ask for one on the upcoming view.
  *
  * Every signed-in User reads the same Events: they are Catalogue, per docs/adr/0019. What
  * differs between two Users reading the same Diary is which of those Events is `important`,
@@ -304,38 +325,54 @@ export async function readDiary(
   const userProfile = await readUserProfile(db, userId);
   const areaCities = citiesInArea(userProfile.area ?? DIARY_DEFAULT_AREA);
 
-  return db
-    .select({
-      id: events.id,
-      name: events.name,
-      startDate: events.startDate,
-      endDate: events.endDate,
-      location: events.location,
-      url: events.url,
-      important: sql<boolean>`exists (${keptAttendees(sql`1`)})`,
-      // `distinct` because a company two Sources both found is two Company Profiles with one
-      // name (docs/adr/0008), and the Diary should name it once.
-      keptCompanies: sql<
-        string[]
-      >`array(${keptAttendees(sql`distinct ${profiles.name}`)} order by 1)`,
-    })
+  const sharedFilters = and(
+    areaCities.length === 0
+      ? undefined
+      : or(isNull(events.location), inArray(eventLocationCity, [...areaCities])),
+    or(sql`not (${excludedByTitle})`, sql`exists (${keptAttendees(sql`1`)})`),
+  );
+
+  const coalescedEnd = sql`coalesce(${events.endDate}, ${events.startDate})`;
+
+  const columns = {
+    id: events.id,
+    name: events.name,
+    startDate: events.startDate,
+    endDate: events.endDate,
+    location: events.location,
+    url: events.url,
+    important: sql<boolean>`exists (${keptAttendees(sql`1`)})`,
+    // `distinct` because a company two Sources both found is two Company Profiles with one
+    // name (docs/adr/0008), and the Diary should name it once.
+    keptCompanies: sql<
+      string[]
+    >`array(${keptAttendees(sql`distinct ${profiles.name}`)} order by 1)`,
+  };
+
+  const upcoming = db
+    .select(columns)
     .from(events)
-    .where(
-      and(
-        includePast
-          ? undefined
-          : sql`coalesce(${events.endDate}, ${events.startDate}) >= ${today}::date`,
-        areaCities.length === 0
-          ? undefined
-          : or(
-              isNull(events.location),
-              inArray(eventLocationCity, [...areaCities]),
-            ),
-        or(
-          sql`not (${excludedByTitle})`,
-          sql`exists (${keptAttendees(sql`1`)})`,
-        ),
-      ),
-    )
+    .where(and(sql`${coalescedEnd} >= ${today}::date`, sharedFilters))
     .orderBy(asc(events.startDate), asc(events.name), asc(events.id));
+
+  if (!includePast) {
+    return (await upcoming).map((event) => ({ ...event, past: false }));
+  }
+
+  const past = await db
+    .select(columns)
+    .from(events)
+    .where(and(sql`${coalescedEnd} < ${today}::date`, sharedFilters))
+    .orderBy(
+      desc(coalescedEnd),
+      desc(events.startDate),
+      asc(events.name),
+      asc(events.id),
+    )
+    .limit(DIARY_PAST_LIMIT);
+
+  return [
+    ...past.map((event) => ({ ...event, past: true })),
+    ...(await upcoming).map((event) => ({ ...event, past: false })),
+  ];
 }

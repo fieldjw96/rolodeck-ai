@@ -15,6 +15,7 @@ export type DiaryEntry = {
   url: string;
   important: boolean;
   kept_companies: string[];
+  past: boolean;
 };
 
 type DiaryPage = {
@@ -38,6 +39,10 @@ export const LOADING_DIARY_MESSAGE = "Loading the Diary…";
 export const KEPT_ATTENDING_LABEL = "Kept company attending";
 
 export const SHOW_PAST_LABEL = "Show past Events";
+
+/** The headings the past and upcoming Events are grouped under, once the toggle is on. */
+export const PAST_EVENTS_HEADING = "Past";
+export const UPCOMING_EVENTS_HEADING = "Upcoming";
 
 // The second line of each designed state, as in the Deck: what it means, or what to do next.
 const LOADING_DIARY_DETAIL = "Reading the calendar of startup Events.";
@@ -119,6 +124,18 @@ function EventItem({ event }: { event: DiaryEntry }) {
   );
 }
 
+function EventList({ events }: { events: DiaryEntry[] }) {
+  return (
+    <ol className={styles.list}>
+      {events.map((event) => (
+        <li key={event.id}>
+          <EventItem event={event} />
+        </li>
+      ))}
+    </ol>
+  );
+}
+
 /**
  * The calendar of startup Events, read through `GET /api/events` rather than Postgres
  * directly, per CLAUDE.md. Whether an Event is important arrives with it: this component
@@ -127,6 +144,11 @@ function EventItem({ event }: { event: DiaryEntry }) {
  * Every Event is listed, soonest first. An important one is marked three ways, so it reads as
  * important to someone who cannot tell the accent from the rest of the page: a heavier rule
  * down its edge, a star, and the words naming the Kept companies attending.
+ *
+ * With the toggle on, the Events arrive already split into a past group and an upcoming group,
+ * each in its own order; this component groups them under a "Past" and an "Upcoming" heading
+ * rather than resorting them, and does not recompute which group an Event is in — `past` says
+ * that. With the toggle off, the page renders the one list it always has, with no headings.
  */
 export function Diary() {
   const [includePast, setIncludePast] = useState(false);
@@ -187,16 +209,24 @@ export function Diary() {
     ) : (
       <StateNotice title={EMPTY_DIARY_MESSAGE} body={EMPTY_DIARY_DETAIL} />
     );
-  } else {
+  } else if (includePast) {
+    const past = state.events.filter((event) => event.past);
+    const upcoming = state.events.filter((event) => !event.past);
+
     body = (
-      <ol className={styles.list}>
-        {state.events.map((event) => (
-          <li key={event.id}>
-            <EventItem event={event} />
-          </li>
-        ))}
-      </ol>
+      <>
+        <section>
+          <h2 className={styles.sectionHeading}>{PAST_EVENTS_HEADING}</h2>
+          <EventList events={past} />
+        </section>
+        <section>
+          <h2 className={styles.sectionHeading}>{UPCOMING_EVENTS_HEADING}</h2>
+          <EventList events={upcoming} />
+        </section>
+      </>
     );
+  } else {
+    body = <EventList events={state.events} />;
   }
 
   const count = state.status === "ready" ? state.events.length : null;

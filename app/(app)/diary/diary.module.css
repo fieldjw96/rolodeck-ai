@@ -63,6 +63,15 @@
   list-style: none;
 }
 
+.sectionHeading {
+  margin-bottom: var(--space-3);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--color-text-faint);
+}
+
 .event {
   display: flex;
   flex-direction: column;
