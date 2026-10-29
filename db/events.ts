@@ -331,7 +331,10 @@ export async function readDiary(
               isNull(events.location),
               inArray(eventLocationCity, [...areaCities]),
             ),
-        or(sql`not (${excludedByTitle})`, sql`exists (${keptAttendees(sql`1`)})`),
+        or(
+          sql`not (${excludedByTitle})`,
+          sql`exists (${keptAttendees(sql`1`)})`,
+        ),
       ),
     )
     .orderBy(asc(events.startDate), asc(events.name), asc(events.id));
