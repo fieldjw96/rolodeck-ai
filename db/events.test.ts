@@ -5,6 +5,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { citiesInArea, eventCityOf } from "../lib/location/bay-area";
 import type { EventInput } from "./event-input";
 import {
+  DIARY_EXCLUDED_TITLE_PATTERNS,
   diaryQuerySchema,
   diaryToday,
   persistEvents,
@@ -86,6 +87,95 @@ const AUSTIN_MIXER: EventInput = {
   url: "https://example.com/austin-mixer",
   attendees: [],
 };
+
+/** The four real Techmeme titles the Diary leaves out by default — see Ticket #256. */
+const EARNINGS_GOOG: EventInput = {
+  externalId: "earnings-goog@example.com",
+  name: "Earnings: GOOG, MSFT, EBAY, LG Electronics",
+  startDate: "2026-09-20",
+  url: "https://example.com/earnings-goog",
+  attendees: ["Google"],
+};
+
+const EARNINGS_AMZN: EventInput = {
+  externalId: "earnings-amzn@example.com",
+  name: "Earnings: AMZN, INTC, COIN, Samsung Electronics, TWLO, PIN",
+  startDate: "2026-09-21",
+  url: "https://example.com/earnings-amzn",
+  attendees: [],
+};
+
+const APPLE_MEDIA_EVENT: EventInput = {
+  externalId: "apple-media-event@example.com",
+  name: 'Apple "Pro and tell" media event',
+  startDate: "2026-09-22",
+  url: "https://example.com/apple-media-event",
+  attendees: [],
+};
+
+const SNAP_MEDIA_EVENT: EventInput = {
+  externalId: "snap-media-event@example.com",
+  name: 'Snap "See for Yourself" SPECS Launch media event',
+  startDate: "2026-09-23",
+  url: "https://example.com/snap-media-event",
+  attendees: [],
+};
+
+const DIARY_EXCLUDED_FIXTURES = [
+  EARNINGS_GOOG,
+  EARNINGS_AMZN,
+  APPLE_MEDIA_EVENT,
+  SNAP_MEDIA_EVENT,
+];
+
+/** The five real Techmeme and Luma titles the Diary keeps — see Ticket #256. */
+const YC_DEMO_DAY: EventInput = {
+  externalId: "yc-demo-day@example.com",
+  name: "YC Fall 2026 Demo Day",
+  startDate: "2026-09-24",
+  url: "https://example.com/yc-demo-day",
+  attendees: [],
+};
+
+const TECHCRUNCH_DISRUPT: EventInput = {
+  externalId: "techcrunch-disrupt@example.com",
+  name: "TechCrunch Disrupt",
+  startDate: "2026-09-25",
+  url: "https://example.com/techcrunch-disrupt",
+  attendees: [],
+};
+
+const SF_TECH_WEEK: EventInput = {
+  externalId: "sf-tech-week@example.com",
+  name: "SF Tech Week",
+  startDate: "2026-09-26",
+  url: "https://example.com/sf-tech-week",
+  attendees: [],
+};
+
+const CEREBRAL_VALLEY_AI_SUMMIT: EventInput = {
+  externalId: "cerebral-valley-ai-summit@example.com",
+  name: "Cerebral Valley AI Summit",
+  startDate: "2026-09-27",
+  url: "https://example.com/cerebral-valley-ai-summit",
+  attendees: [],
+};
+
+const ANTLER_AFTER_DARK: EventInput = {
+  externalId: "antler-after-dark@example.com",
+  name: "Antler SF After Dark",
+  startDate: "2026-09-28",
+  url: "https://example.com/antler-after-dark",
+  attendees: [],
+};
+
+const DIARY_SHOWN_FIXTURES = [
+  YC_DEMO_DAY,
+  TECHCRUNCH_DISRUPT,
+  SF_TECH_WEEK,
+  CEREBRAL_VALLEY_AI_SUMMIT,
+  ANTLER_AFTER_DARK,
+];
 
 let scratch: ScratchDb;
 
@@ -498,6 +588,67 @@ describe("reading the Diary", () => {
     );
     expect(theirs.map((event) => event.important)).toEqual([false]);
     expect((await diary()).map((event) => event.important)).toEqual([true]);
+  });
+});
+
+describe("DIARY_EXCLUDED_TITLE_PATTERNS", () => {
+  const excludedTitles = DIARY_EXCLUDED_FIXTURES.map((event) => event.name);
+  const shownTitles = DIARY_SHOWN_FIXTURES.map((event) => event.name);
+
+  it.each(DIARY_EXCLUDED_TITLE_PATTERNS)(
+    "%s matches an excluded title and none of the shown titles",
+    (pattern) => {
+      expect(excludedTitles.some((title) => pattern.test(title))).toBe(true);
+      expect(shownTitles.some((title) => pattern.test(title))).toBe(false);
+    },
+  );
+});
+
+describe("leaving earnings calls and media events out of the Diary", () => {
+  it("shows the startup community's Events and leaves the rest out", async () => {
+    await persistEvents(scratch.db, {
+      source: "techmeme-events",
+      events: [...DIARY_EXCLUDED_FIXTURES, ...DIARY_SHOWN_FIXTURES],
+    });
+
+    const read = await diary();
+
+    expect(read.map((event) => event.name)).toEqual(
+      DIARY_SHOWN_FIXTURES.map((event) => event.name),
+    );
+  });
+
+  it("shows an excluded Event anyway, marked important, once a Kept company attends it", async () => {
+    const google = await company("Google");
+    await persistEvents(scratch.db, {
+      source: "techmeme-events",
+      events: [EARNINGS_GOOG, ...DIARY_SHOWN_FIXTURES],
+    });
+    await keep(google);
+
+    const read = await diary();
+
+    expect(read.map((event) => event.name)).toEqual(
+      [EARNINGS_GOOG, ...DIARY_SHOWN_FIXTURES].map((event) => event.name),
+    );
+    const earnings = read.find((event) => event.name === EARNINGS_GOOG.name);
+    expect(earnings?.important).toBe(true);
+    expect(earnings?.keptCompanies).toEqual(["Google"]);
+  });
+
+  it("does not show that Event to a second User who has not Kept the attending company", async () => {
+    const google = await company("Google");
+    await persistEvents(scratch.db, {
+      source: "techmeme-events",
+      events: [EARNINGS_GOOG],
+    });
+    await keep(google, JACK);
+
+    const theirs = await asUser(scratch.db, SOMEONE_ELSE, (tx) =>
+      readDiary(tx, { userId: SOMEONE_ELSE, today: TODAY }),
+    );
+
+    expect(theirs).toEqual([]);
   });
 });
 
