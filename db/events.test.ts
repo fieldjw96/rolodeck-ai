@@ -645,9 +645,9 @@ describe("the Diary's newest decision about a company", () => {
     const summit = read.find((event) => event.name === SPROCKET_SUMMIT.name);
     expect(summit?.important).toBe(false);
     expect(summit?.keptCompanies).toEqual([]);
-    expect(
-      read.some((event) => event.name === SPROCKET_EARNINGS.name),
-    ).toBe(false);
+    expect(read.some((event) => event.name === SPROCKET_EARNINGS.name)).toBe(
+      false,
+    );
   });
 
   it("counts a Keep that is newer than a Pass on a sibling", async () => {
