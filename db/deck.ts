@@ -20,7 +20,7 @@ import {
   type CompanyLinks,
   type Founder,
 } from "./profile-input";
-import type { ProfileProvenance } from "./provenance";
+import type { NullableField, ProfileProvenance } from "./provenance";
 import { profiles, swipes, type Profile, type SwipeDecision } from "./schema";
 import {
   EMPTY_USER_PROFILE,
@@ -197,7 +197,7 @@ function filled<T>(
  */
 function filledProvenance(
   db: Database,
-  field: "website" | "location" | "founders" | "links",
+  field: NullableField,
   fillerColumn: AnyPgColumn,
 ): SQL<string | null> {
   const ownProvenance = sql<string | null>`${profiles.provenance} ->> ${field}`;

@@ -16,9 +16,9 @@ import type { Founder } from "./profile-input";
 import { profiles } from "./schema";
 
 /**
- * A Profile's Siblings: the rows sharing its `name_key`, read here only to check whether one
- * of them already states `founders` — see `selectTeamPageCandidates` below. Not merged, and
- * not the same alias `db/deck.ts` builds for the fill rule: see docs/adr/0008 and docs/adr/0024.
+ * A Profile's Siblings: the rows sharing its `name_key` — one company more than one Source
+ * found, per docs/adr/0008. Read here only to check whether one of them already states
+ * `founders`; see `selectTeamPageCandidates` below. Nothing here merges a Sibling's row.
  */
 const sibling = alias(profiles, "sibling");
 
