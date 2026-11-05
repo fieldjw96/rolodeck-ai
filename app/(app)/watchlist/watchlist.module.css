@@ -20,7 +20,8 @@
 }
 
 .title {
-  font-size: var(--text-2xl);
+  font-size: var(--text-3xl);
+  color: var(--color-on-canvas);
 }
 
 .count {
@@ -28,7 +29,7 @@
   font-size: var(--text-xs);
   letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
-  color: var(--color-text-faint);
+  color: var(--color-on-canvas-muted);
 }
 
 /* `min(16rem, 100%)` rather than a bare `16rem`: on a 390px phone the column tracks down to
@@ -51,7 +52,7 @@
   inset: 0;
   background: transparent;
   border: 0;
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
 }
 
 .openLabel {
@@ -63,21 +64,22 @@
   white-space: nowrap;
 }
 
-/* Below the open card in its Dialog. Styled after the Deck's own Pass, outlined rather than
-   filled: taking back a Keep is a correction, not the primary action of this screen. */
+/* Below the open card in its Dialog. Styled after the Deck's own Pass, cream and outlined rather
+   than tomato: taking back a Keep is a correction, not the primary action of this screen. */
 .pass {
+  /* No focus swap: this stands on the canvas and its ring is drawn out there, so it stays butter. */
   display: inline-flex;
   align-self: flex-start;
   min-height: var(--space-8);
   align-items: center;
   justify-content: center;
-  padding: var(--space-3) var(--space-4);
-  border: 1px solid var(--color-border-strong);
+  padding: var(--space-3) var(--space-5);
+  border: var(--outline-width) solid var(--color-border-strong);
   border-radius: var(--radius-pill);
-  background: transparent;
+  background: var(--color-surface);
   color: var(--color-text);
   font-size: var(--text-base);
-  font-weight: var(--weight-medium);
+  font-weight: var(--weight-heavy);
 }
 
 .pass:hover:not(:disabled) {
@@ -87,21 +89,23 @@
 /* A Pass that did not save, named with a way to retry it. Same danger styling as the Deck's
    own unsaved notice, in place of the Pass button while it is showing. */
 .passError {
+  --color-focus: var(--color-focus-surface);
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
   padding: var(--space-3) var(--space-4);
-  border: 1px solid var(--color-danger-border);
-  border-radius: var(--radius-sm);
+  border: var(--outline-width) solid var(--color-danger-border);
+  border-radius: var(--radius-md);
   background: var(--color-danger-soft);
+  color: var(--color-text);
   font-size: var(--text-sm);
 }
 
 .retry {
   flex: none;
   padding: var(--space-1) var(--space-3);
-  border: 1px solid var(--color-border-strong);
+  border: var(--outline-width) solid var(--color-border-strong);
   border-radius: var(--radius-pill);
   background: transparent;
   color: var(--color-text);

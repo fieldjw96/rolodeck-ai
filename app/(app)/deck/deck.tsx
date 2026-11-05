@@ -792,27 +792,30 @@ export function Deck() {
        * left on, and a committed swipe replaces this element, so the Profile behind it starts
        * at rest rather than sliding in from wherever the last one was let go of.
        */}
-      <div
-        key={profile.id}
-        className={`${styles.swipe} ${dragX === null ? styles.resting : styles.dragging}`}
-        style={
-          dragX === null
-            ? undefined
-            : { transform: `translateX(${String(dragX)}px)` }
-        }
-        onPointerDown={startGesture}
-      >
-        <ProfileCard
-          headingLevel={1}
-          name={profile.name}
-          description={profile.description}
-          sector={profile.sector}
-          stage={profile.stage}
-          location={profile.location}
-          website={profile.website}
-          founders={profile.founders}
-          links={profile.links}
-        />
+      <div className={styles.stack}>
+        {/* The wrapper draws the fanned stack, so it stays put while the card is dragged. */}
+        <div
+          key={profile.id}
+          className={`${styles.swipe} ${dragX === null ? styles.resting : styles.dragging}`}
+          style={
+            dragX === null
+              ? undefined
+              : { transform: `translateX(${String(dragX)}px)` }
+          }
+          onPointerDown={startGesture}
+        >
+          <ProfileCard
+            headingLevel={1}
+            name={profile.name}
+            description={profile.description}
+            sector={profile.sector}
+            stage={profile.stage}
+            location={profile.location}
+            website={profile.website}
+            founders={profile.founders}
+            links={profile.links}
+          />
+        </div>
       </div>
 
       {/*
@@ -869,7 +872,7 @@ function CrossIcon() {
         d="M4.5 4.5l7 7m0-7l-7 7"
         fill="none"
         stroke="currentColor"
-        strokeWidth="1.75"
+        strokeWidth="2"
         strokeLinecap="round"
       />
     </svg>
@@ -888,7 +891,7 @@ function TickIcon() {
         d="M3.5 8.5l3 3 6-6.5"
         fill="none"
         stroke="currentColor"
-        strokeWidth="1.75"
+        strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
       />

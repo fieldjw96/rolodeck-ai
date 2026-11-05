@@ -2,6 +2,7 @@
    for all three so an exhausted Deck and an empty Watchlist read as the same product. */
 
 .notice {
+  --color-focus: var(--color-focus-surface);
   display: flex;
   max-width: var(--measure);
   margin-inline: auto;
@@ -11,8 +12,9 @@
   padding: var(--space-8) var(--space-5);
   text-align: center;
   background: var(--color-surface);
-  border: 1px dashed var(--color-border);
+  border: var(--outline-width) dashed var(--color-border-strong);
   border-radius: var(--radius-lg);
+  color: var(--color-text);
 }
 
 .danger {
@@ -24,8 +26,8 @@
 /* Carries the state without carrying any meaning of its own: the title below always says it
    in words, so this is decoration and is hidden from assistive tech. */
 .mark {
-  width: var(--space-3);
-  height: var(--space-3);
+  width: var(--space-4);
+  height: var(--space-4);
   margin-bottom: var(--space-2);
   border-radius: var(--radius-pill);
   background: var(--color-accent);
@@ -53,8 +55,8 @@
 }
 
 .title {
-  font-size: var(--text-lg);
-  font-weight: var(--weight-semibold);
+  font-size: var(--text-xl);
+  font-weight: var(--weight-heavy);
   line-height: var(--leading-snug);
   letter-spacing: var(--tracking-tight);
 }
