@@ -18,6 +18,7 @@ import {
 import { GET } from "../route";
 import { POST as keep } from "./keep/route";
 import { POST as pass } from "./pass/route";
+import { DELETE as undo } from "./swipe/route";
 
 let harness: RouteHarness;
 
@@ -38,6 +39,14 @@ const swipe = (route: typeof keep, id: string): Promise<Response> =>
   route(
     new NextRequest(`http://localhost/api/profiles/${id}/keep`, {
       method: "POST",
+    }),
+    { params: Promise.resolve({ id }) },
+  );
+
+const undoSwipeRequest = (id: string): Promise<Response> =>
+  undo(
+    new NextRequest(`http://localhost/api/profiles/${id}/swipe`, {
+      method: "DELETE",
     }),
     { params: Promise.resolve({ id }) },
   );
@@ -165,5 +174,75 @@ describe("swiping the same Profile twice", () => {
     expect(recorded).toHaveLength(1);
     expect(recorded[0]?.decision).toBe("pass");
     await expect(dealtNames()).resolves.toEqual([]);
+  });
+});
+
+describe("DELETE /api/profiles/:id/swipe", () => {
+  it("answers 401 rather than redirecting when there is no session", async () => {
+    const [only] = await harness.seed(1);
+    await swipe(pass, only!);
+    harness.signOut();
+
+    const response = await undoSwipeRequest(only!);
+
+    expect(response.status).toBe(401);
+    await expect(response.json()).resolves.toEqual({ error: "not signed in" });
+  });
+
+  it("answers 204 and deals the Company Profile again once a Pass is undone", async () => {
+    const [only] = await harness.seed(1);
+    await swipe(pass, only!);
+    await expect(dealtNames()).resolves.toEqual([]);
+
+    const response = await undoSwipeRequest(only!);
+
+    expect(response.status).toBe(204);
+    await expect(response.text()).resolves.toBe("");
+
+    await expect(harness.scratch.db.select().from(swipes)).resolves.toEqual([]);
+    await expect(dealtNames()).resolves.toEqual(["Startup 0"]);
+  });
+
+  it("answers 404 when the reader has no decision to take back", async () => {
+    const [only] = await harness.seed(1);
+
+    const response = await undoSwipeRequest(only!);
+
+    expect(response.status).toBe(404);
+    await expect(response.json()).resolves.toEqual({ error: "not found" });
+  });
+
+  it("answers 404 for a Profile that does not exist", async () => {
+    const response = await undoSwipeRequest(NO_SUCH_PROFILE);
+
+    expect(response.status).toBe(404);
+  });
+
+  it("answers 422 naming id when the id is not a Profile id", async () => {
+    const response = await undoSwipeRequest("not-a-uuid");
+
+    expect(response.status).toBe(422);
+    await expect(response.json()).resolves.toMatchObject({
+      error: "invalid request",
+      field: "id",
+    });
+  });
+
+  // The Catalogue is shared, so two Users can both have swiped one Company Profile. An Undo is
+  // about the reader's own decision and cannot reach the other one. See docs/adr/0019.
+  it("answers 404 and leaves another User's decision alone", async () => {
+    const [shared] = await harness.seed(1);
+    await harness.scratch.db.insert(swipes).values({
+      userId: harness.strangerId,
+      profileId: shared!,
+      decision: "keep",
+    });
+
+    const response = await undoSwipeRequest(shared!);
+
+    expect(response.status).toBe(404);
+    await expect(
+      harness.scratch.db.select().from(swipes),
+    ).resolves.toHaveLength(1);
   });
 });
