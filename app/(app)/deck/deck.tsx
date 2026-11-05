@@ -253,7 +253,9 @@ function stateAfterAdvancing(current: ReadyState): DeckState {
  * already decided (see `stateAfter`), and a decision that emptied the Deck left "empty" or
  * "dealing" behind it with no hand at all. There the Profile the Undo control was holding goes
  * back on its own, in front of whatever is left, and the Deck keeps what it already knew about
- * the next page so the rest of the Deck still follows.
+ * the next page so the rest of the Deck still follows. An error state knows no cursor to keep,
+ * so there the card comes back and the Deck ends behind it — the reader has already been told
+ * to reload, and one card they asked for beats the error they were looking at.
  */
 function stateAfterUndoing(current: DeckState, profile: Profile): DeckState {
   if (
@@ -314,6 +316,7 @@ export function Deck() {
   const [undoable, setUndoable] = useState<UndoTarget | null>(null);
   const [undoing, setUndoing] = useState(false);
   const [undoError, setUndoError] = useState<string | null>(null);
+  const undoingRef = useRef(false);
 
   // Every state change goes through here, and the ref is written first. An effect would have
   // been a render behind: React flushes a passive effect in a task *after* the commit that
@@ -503,12 +506,21 @@ export function Deck() {
    */
   const undo = useCallback(
     (target: UndoTarget) => {
-      if (undoing) {
+      // A ref rather than `undoing` itself, for the same reason `savingRef` is one: the button
+      // is disabled while a delete is out, but a second press in the same tick as the first —
+      // Enter held down on it — reaches this before React has re-rendered it disabled.
+      if (undoingRef.current) {
         return;
       }
 
+      undoingRef.current = true;
       setUndoing(true);
       setUndoError(null);
+
+      const settle = () => {
+        undoingRef.current = false;
+        setUndoing(false);
+      };
 
       const pending =
         writesRef.current.get(target.profile.id) ?? Promise.resolve();
@@ -519,20 +531,29 @@ export function Deck() {
           () => {
             // Undecided again, so the Deck may deal this Profile and `decide` may take it.
             decidedRef.current.delete(target.profile.id);
-            setUndoing(false);
+            settle();
             setUndoable(null);
+            // A decision that has been taken back is not one to go on offering to save: the
+            // row is gone, and retrying the write would record the Pass the reader just undid.
+            setUnsaved((list) => {
+              const others = list.filter(
+                (swipe) => swipe.profile.id !== target.profile.id,
+              );
+
+              return others.length === list.length ? list : others;
+            });
             commit(stateAfterUndoing(stateRef.current, target.profile));
           },
           (error: unknown) => {
             console.error(error);
-            setUndoing(false);
+            settle();
             setUndoError(
               undoErrorMessage(target.profile.name, target.decision),
             );
           },
         );
     },
-    [commit, undoing],
+    [commit],
   );
 
   // The drag under way, if any, and how far the card has been pulled from its resting place.

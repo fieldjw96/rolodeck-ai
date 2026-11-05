@@ -17,6 +17,7 @@ import {
   PREFETCH_AT_REMAINING,
   SWIPE_COMMIT_FRACTION,
   undoErrorMessage,
+  undoLabel,
   unsavedMessage,
 } from "./deck";
 
@@ -731,8 +732,11 @@ describe("the Deck", () => {
  * server refused leaves the decision standing rather than dealing a card the Deck has lost.
  */
 describe("undoing the decision just made", () => {
-  const undoOf = (name: string) =>
-    screen.getByRole("button", { name: `Undo ${name}` });
+  /** The Undo control by the accessible name the Deck gives it, which names the company. */
+  const undoOf = (profile: Profile, decision: "keep" | "pass") =>
+    screen.getByRole("button", {
+      name: undoLabel(profile.name, decision),
+    });
 
   it("offers no Undo until a decision has been made", async () => {
     stubFetch({
@@ -758,7 +762,7 @@ describe("undoing the decision just made", () => {
     fireEvent.click(screen.getByRole("button", { name: "Pass" }));
     await screen.findByRole("heading", { name: "Globex" });
 
-    const undo = undoOf("Pass on Acme");
+    const undo = undoOf(acme, "pass");
     // A real button, so it is in the tab order and answers Enter and Space on its own.
     expect(undo.tagName).toBe("BUTTON");
     expect(undo).not.toHaveAttribute("tabindex");
@@ -794,7 +798,7 @@ describe("undoing the decision just made", () => {
     fireEvent.click(screen.getByRole("button", { name: "Pass" }));
     await screen.findByRole("heading", { name: "Globex" });
     await act(async () => {
-      fireEvent.click(undoOf("Pass on Acme"));
+      fireEvent.click(undoOf(acme, "pass"));
     });
 
     fireEvent.click(screen.getByRole("button", { name: "Keep" }));
@@ -825,7 +829,7 @@ describe("undoing the decision just made", () => {
     await screen.findByRole("heading", { name: "Globex" });
 
     await act(async () => {
-      fireEvent.click(undoOf("Keep on Acme"));
+      fireEvent.click(undoOf(acme, "keep"));
     });
 
     expect(fetchMock).toHaveBeenCalledWith(
@@ -853,9 +857,9 @@ describe("undoing the decision just made", () => {
     fireEvent.click(screen.getByRole("button", { name: "Keep" }));
     await screen.findByRole("heading", { name: "Initech" });
 
-    expect(undoOf("Keep on Globex")).toBeInTheDocument();
+    expect(undoOf(globex, "keep")).toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: "Undo Pass on Acme" }),
+      screen.queryByRole("button", { name: undoLabel(acme.name, "pass") }),
     ).toBeNull();
     expect(screen.getAllByRole("button", { name: /^Undo/ })).toHaveLength(1);
   });
@@ -874,7 +878,7 @@ describe("undoing the decision just made", () => {
     expect(screen.getByText(EMPTY_DECK_MESSAGE)).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.click(undoOf("Pass on Acme"));
+      fireEvent.click(undoOf(acme, "pass"));
     });
 
     expect(screen.getByRole("heading", { name: "Acme" })).toBeInTheDocument();
@@ -894,7 +898,7 @@ describe("undoing the decision just made", () => {
     fireEvent.click(screen.getByRole("button", { name: "Pass" }));
     await act(async () => swipes.answer(`/api/profiles/${acme.id}/pass`, 200));
 
-    fireEvent.click(undoOf("Pass on Acme"));
+    fireEvent.click(undoOf(acme, "pass"));
     await act(async () => {});
     await act(async () => swipes.answer(`/api/profiles/${acme.id}/swipe`, 500));
 
@@ -904,7 +908,7 @@ describe("undoing the decision just made", () => {
     // The decision stands: the reader is where they had moved on to, and the card is not back.
     expect(screen.getByRole("heading", { name: "Globex" })).toBeInTheDocument();
     // And they can try again.
-    expect(undoOf("Pass on Acme")).toBeEnabled();
+    expect(undoOf(acme, "pass")).toBeEnabled();
   });
 
   it("waits for the swipe's own write before deleting it, however fast the Undo is", async () => {
@@ -918,7 +922,7 @@ describe("undoing the decision just made", () => {
     fireEvent.click(screen.getByRole("button", { name: "Pass" }));
 
     // Undone inside the round trip that records it, which is a window a reader can hit.
-    fireEvent.click(undoOf("Pass on Acme"));
+    fireEvent.click(undoOf(acme, "pass"));
     await act(async () => {});
 
     // No DELETE yet: one that overtook the POST would be answered 404, and the Pass would
@@ -935,6 +939,35 @@ describe("undoing the decision just made", () => {
     expect(screen.getByRole("heading", { name: "Acme" })).toBeInTheDocument();
   });
 
+  // A write can fail after the row was written — a 500 on the way back out. Undoing then
+  // succeeds, and what must not be left behind is a Retry offering to save the decision again.
+  it("stops offering to retry a failed write once its decision is Undone", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const swipes = stubSwipes({
+      "GET /api/profiles": { profiles: [acme, globex], next_cursor: null },
+    });
+
+    render(<Deck />);
+
+    await screen.findByRole("heading", { name: "Acme" });
+    fireEvent.click(screen.getByRole("button", { name: "Pass" }));
+    await act(async () => swipes.answer(`/api/profiles/${acme.id}/pass`, 500));
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      unsavedMessage("Acme", "pass"),
+    );
+
+    fireEvent.click(undoOf(acme, "pass"));
+    await act(async () => {});
+    await act(async () => swipes.answer(`/api/profiles/${acme.id}/swipe`, 204));
+
+    expect(
+      screen.queryByRole("button", { name: "Retry Pass on Acme" }),
+    ).toBeNull();
+    expect(screen.getByRole("heading", { name: "Acme" })).toBeInTheDocument();
+  });
+
   it("sends one DELETE for an Undo pressed twice", async () => {
     const swipes = stubSwipes({
       "GET /api/profiles": { profiles: [acme, globex], next_cursor: null },
@@ -946,7 +979,7 @@ describe("undoing the decision just made", () => {
     fireEvent.click(screen.getByRole("button", { name: "Pass" }));
     await act(async () => swipes.answer(`/api/profiles/${acme.id}/pass`, 200));
 
-    const undo = undoOf("Pass on Acme");
+    const undo = undoOf(acme, "pass");
     fireEvent.click(undo);
     fireEvent.click(undo);
     await act(async () => {});
