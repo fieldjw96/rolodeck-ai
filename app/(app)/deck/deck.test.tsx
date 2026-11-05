@@ -16,6 +16,7 @@ import {
   LOADING_DECK_MESSAGE,
   PREFETCH_AT_REMAINING,
   SWIPE_COMMIT_FRACTION,
+  undoErrorMessage,
   unsavedMessage,
 } from "./deck";
 
@@ -93,8 +94,10 @@ function stubFetch(answers: Record<string, unknown>): ReturnType<typeof vi.fn> {
 
 /**
  * Answers GETs from `pages` at once, except those whose URL is in `held`, and holds every
- * swipe POST open until the test answers it by URL with a status. That is what lets a test
- * look at the Deck with a write still in flight, or finish writes in whatever order it likes.
+ * write — a swipe's POST, an Undo's DELETE — open until the test answers it by URL with a
+ * status. That is what lets a test look at the Deck with a write still in flight, or finish
+ * writes in whatever order it likes. By URL rather than by method, which is unambiguous: the
+ * two kinds of write are at `/keep`, `/pass` and `/swipe`.
  */
 function stubSwipes(pages: Record<string, unknown>, held: string[] = []) {
   const open: { url: string; settle: (response: Response) => void }[] = [];
@@ -106,7 +109,7 @@ function stubSwipes(pages: Record<string, unknown>, held: string[] = []) {
     vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = typeof input === "string" ? input : input.toString();
 
-      if ((init?.method ?? "GET") === "POST") {
+      if ((init?.method ?? "GET") !== "GET") {
         posted.push(url);
         return new Promise<Response>((settle) => open.push({ url, settle }));
       }
@@ -718,6 +721,240 @@ describe("the Deck", () => {
     expect(pass.textContent).toContain("Pass");
     expect(keep.textContent).toContain("Keep");
     expect(pass.textContent).not.toBe(keep.textContent);
+  });
+});
+
+/**
+ * Ticket #272. A Pass commits on a quarter of the card's width, so one can happen by accident
+ * and nothing in the app listed them or took one back. What these pin is that the decision
+ * just made can be taken back, that it is the only one that can be, and that an Undo the
+ * server refused leaves the decision standing rather than dealing a card the Deck has lost.
+ */
+describe("undoing the decision just made", () => {
+  const undoOf = (name: string) =>
+    screen.getByRole("button", { name: `Undo ${name}` });
+
+  it("offers no Undo until a decision has been made", async () => {
+    stubFetch({
+      "GET /api/profiles": { profiles: [acme], next_cursor: null },
+    });
+
+    render(<Deck />);
+
+    await screen.findByRole("heading", { name: "Acme" });
+    expect(screen.queryByRole("button", { name: /^Undo/ })).toBeNull();
+  });
+
+  it("puts the card back on top after a Pass, without refetching the page", async () => {
+    const fetchMock = stubFetch({
+      "GET /api/profiles": { profiles: [acme, globex], next_cursor: null },
+      [`POST /api/profiles/${acme.id}/pass`]: {},
+      [`DELETE /api/profiles/${acme.id}/swipe`]: {},
+    });
+
+    render(<Deck />);
+
+    await screen.findByRole("heading", { name: "Acme" });
+    fireEvent.click(screen.getByRole("button", { name: "Pass" }));
+    await screen.findByRole("heading", { name: "Globex" });
+
+    const undo = undoOf("Pass on Acme");
+    // A real button, so it is in the tab order and answers Enter and Space on its own.
+    expect(undo.tagName).toBe("BUTTON");
+    expect(undo).not.toHaveAttribute("tabindex");
+
+    await act(async () => {
+      fireEvent.click(undo);
+    });
+
+    expect(screen.getByRole("heading", { name: "Acme" })).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith(
+      `/api/profiles/${acme.id}/swipe`,
+      expect.objectContaining({ method: "DELETE" }),
+    );
+    // The card came from the hand the Deck was already holding: one GET, the first one.
+    expect(
+      fetchMock.mock.calls.filter(([url]) => url === "/api/profiles"),
+    ).toHaveLength(1);
+    // Spent: there is no decision left to take back.
+    expect(screen.queryByRole("button", { name: /^Undo/ })).toBeNull();
+  });
+
+  it("deals the Profile again, and takes a second decision about it", async () => {
+    const fetchMock = stubFetch({
+      "GET /api/profiles": { profiles: [acme, globex], next_cursor: null },
+      [`POST /api/profiles/${acme.id}/pass`]: {},
+      [`POST /api/profiles/${acme.id}/keep`]: {},
+      [`DELETE /api/profiles/${acme.id}/swipe`]: {},
+    });
+
+    render(<Deck />);
+
+    await screen.findByRole("heading", { name: "Acme" });
+    fireEvent.click(screen.getByRole("button", { name: "Pass" }));
+    await screen.findByRole("heading", { name: "Globex" });
+    await act(async () => {
+      fireEvent.click(undoOf("Pass on Acme"));
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Keep" }));
+
+    expect(
+      await screen.findByRole("heading", { name: "Globex" }),
+    ).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith(
+      `/api/profiles/${acme.id}/keep`,
+      expect.objectContaining({ method: "POST" }),
+    );
+  });
+
+  // Undoing a Keep is what takes the company back off the Watchlist, because the Watchlist is
+  // the reader's Keeps and this deletes the row that was one. `db/deck.test.ts` asserts that
+  // half against Postgres; what the Deck owes is the DELETE.
+  it("sends the DELETE that takes a Kept company back off the Watchlist", async () => {
+    const fetchMock = stubFetch({
+      "GET /api/profiles": { profiles: [acme, globex], next_cursor: null },
+      [`POST /api/profiles/${acme.id}/keep`]: {},
+      [`DELETE /api/profiles/${acme.id}/swipe`]: {},
+    });
+
+    render(<Deck />);
+
+    await screen.findByRole("heading", { name: "Acme" });
+    fireEvent.click(screen.getByRole("button", { name: "Keep" }));
+    await screen.findByRole("heading", { name: "Globex" });
+
+    await act(async () => {
+      fireEvent.click(undoOf("Keep on Acme"));
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      `/api/profiles/${acme.id}/swipe`,
+      expect.objectContaining({ method: "DELETE" }),
+    );
+    expect(screen.getByRole("heading", { name: "Acme" })).toBeInTheDocument();
+  });
+
+  it("offers an Undo of the most recent decision only", async () => {
+    stubFetch({
+      "GET /api/profiles": {
+        profiles: [acme, globex, initech],
+        next_cursor: null,
+      },
+      [`POST /api/profiles/${acme.id}/pass`]: {},
+      [`POST /api/profiles/${globex.id}/keep`]: {},
+    });
+
+    render(<Deck />);
+
+    await screen.findByRole("heading", { name: "Acme" });
+    fireEvent.click(screen.getByRole("button", { name: "Pass" }));
+    await screen.findByRole("heading", { name: "Globex" });
+    fireEvent.click(screen.getByRole("button", { name: "Keep" }));
+    await screen.findByRole("heading", { name: "Initech" });
+
+    expect(undoOf("Keep on Globex")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Undo Pass on Acme" }),
+    ).toBeNull();
+    expect(screen.getAllByRole("button", { name: /^Undo/ })).toHaveLength(1);
+  });
+
+  it("brings back the card whose Pass emptied the Deck", async () => {
+    stubFetch({
+      "GET /api/profiles": { profiles: [acme], next_cursor: null },
+      [`POST /api/profiles/${acme.id}/pass`]: {},
+      [`DELETE /api/profiles/${acme.id}/swipe`]: {},
+    });
+
+    render(<Deck />);
+
+    await screen.findByRole("heading", { name: "Acme" });
+    fireEvent.click(screen.getByRole("button", { name: "Pass" }));
+    expect(screen.getByText(EMPTY_DECK_MESSAGE)).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(undoOf("Pass on Acme"));
+    });
+
+    expect(screen.getByRole("heading", { name: "Acme" })).toBeInTheDocument();
+    expect(screen.queryByText(EMPTY_DECK_MESSAGE)).toBeNull();
+  });
+
+  it("names the company and leaves the decision standing when the Undo fails", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const swipes = stubSwipes({
+      "GET /api/profiles": { profiles: [acme, globex], next_cursor: null },
+    });
+
+    render(<Deck />);
+
+    await screen.findByRole("heading", { name: "Acme" });
+    fireEvent.click(screen.getByRole("button", { name: "Pass" }));
+    await act(async () => swipes.answer(`/api/profiles/${acme.id}/pass`, 200));
+
+    fireEvent.click(undoOf("Pass on Acme"));
+    await act(async () => {});
+    await act(async () => swipes.answer(`/api/profiles/${acme.id}/swipe`, 500));
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      undoErrorMessage("Acme", "pass"),
+    );
+    // The decision stands: the reader is where they had moved on to, and the card is not back.
+    expect(screen.getByRole("heading", { name: "Globex" })).toBeInTheDocument();
+    // And they can try again.
+    expect(undoOf("Pass on Acme")).toBeEnabled();
+  });
+
+  it("waits for the swipe's own write before deleting it, however fast the Undo is", async () => {
+    const swipes = stubSwipes({
+      "GET /api/profiles": { profiles: [acme, globex], next_cursor: null },
+    });
+
+    render(<Deck />);
+
+    await screen.findByRole("heading", { name: "Acme" });
+    fireEvent.click(screen.getByRole("button", { name: "Pass" }));
+
+    // Undone inside the round trip that records it, which is a window a reader can hit.
+    fireEvent.click(undoOf("Pass on Acme"));
+    await act(async () => {});
+
+    // No DELETE yet: one that overtook the POST would be answered 404, and the Pass would
+    // land behind it and stand.
+    expect(swipes.pending()).toEqual([`/api/profiles/${acme.id}/pass`]);
+
+    await act(async () => swipes.answer(`/api/profiles/${acme.id}/pass`, 200));
+    await waitFor(() =>
+      expect(swipes.pending()).toEqual([`/api/profiles/${acme.id}/swipe`]),
+    );
+
+    await act(async () => swipes.answer(`/api/profiles/${acme.id}/swipe`, 204));
+
+    expect(screen.getByRole("heading", { name: "Acme" })).toBeInTheDocument();
+  });
+
+  it("sends one DELETE for an Undo pressed twice", async () => {
+    const swipes = stubSwipes({
+      "GET /api/profiles": { profiles: [acme, globex], next_cursor: null },
+    });
+
+    render(<Deck />);
+
+    await screen.findByRole("heading", { name: "Acme" });
+    fireEvent.click(screen.getByRole("button", { name: "Pass" }));
+    await act(async () => swipes.answer(`/api/profiles/${acme.id}/pass`, 200));
+
+    const undo = undoOf("Pass on Acme");
+    fireEvent.click(undo);
+    fireEvent.click(undo);
+    await act(async () => {});
+
+    expect(swipes.posted()).toEqual([
+      `/api/profiles/${acme.id}/pass`,
+      `/api/profiles/${acme.id}/swipe`,
+    ]);
   });
 });
 
