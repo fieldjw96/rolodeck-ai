@@ -188,7 +188,7 @@
   background: var(--color-surface-muted);
 }
 
-/* Ink rather than tomato: tomato is kept for Keep alone. */
+/* Ink rather than a colour, so a selected tab never reads as a decision. */
 .tab[aria-selected="true"] {
   background: var(--color-text);
   color: var(--color-surface);

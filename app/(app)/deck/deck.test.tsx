@@ -723,6 +723,60 @@ describe("the Deck", () => {
     expect(keep.textContent).toContain("Keep");
     expect(pass.textContent).not.toBe(keep.textContent);
   });
+
+  it("throws the decided card off as a copy nothing can read, focus or click, then removes it", async () => {
+    stubFetch({
+      "GET /api/profiles": { profiles: [acme, globex], next_cursor: null },
+      [`POST /api/profiles/${acme.id}/keep`]: {},
+    });
+    // jsdom has no `matchMedia`, which the Deck reads as "no motion"; a browser that allows it.
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: false,
+      media: query,
+    }));
+
+    const { container } = render(<Deck />);
+
+    await screen.findByRole("heading", { name: "Acme" });
+    fireEvent.click(screen.getByRole("button", { name: "Keep" }));
+
+    // The Deck has already moved on: the only card anything can reach is the next one.
+    expect(
+      await screen.findByRole("heading", { name: "Globex" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Acme" })).toBeNull();
+
+    const copy = container.querySelector('[aria-hidden="true"][inert]');
+    expect(copy?.textContent).toContain("Acme");
+
+    // React listens for `webkitAnimationEnd` where `AnimationEvent` is missing, as it is in
+    // jsdom, and for `animationend` in a browser. Both are fired so this passes in either.
+    act(() => {
+      fireEvent.animationEnd(copy!);
+      copy!.dispatchEvent(new Event("webkitAnimationEnd", { bubbles: true }));
+    });
+
+    expect(container.querySelector("[inert]")).toBeNull();
+  });
+
+  it("decides without a flying copy when the reader prefers reduced motion", async () => {
+    stubFetch({
+      "GET /api/profiles": { profiles: [acme, globex], next_cursor: null },
+      [`POST /api/profiles/${acme.id}/keep`]: {},
+    });
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: query.includes("reduce"),
+      media: query,
+    }));
+
+    const { container } = render(<Deck />);
+
+    await screen.findByRole("heading", { name: "Acme" });
+    fireEvent.click(screen.getByRole("button", { name: "Keep" }));
+    await screen.findByRole("heading", { name: "Globex" });
+
+    expect(container.querySelector("[inert]")).toBeNull();
+  });
 });
 
 /**
@@ -782,6 +836,33 @@ describe("undoing the decision just made", () => {
     ).toHaveLength(1);
     // Spent: there is no decision left to take back.
     expect(screen.queryByRole("button", { name: /^Undo/ })).toBeNull();
+  });
+
+  it("drops the flying copy of a card an Undo puts back before its throw has finished", async () => {
+    stubFetch({
+      "GET /api/profiles": { profiles: [acme, globex], next_cursor: null },
+      [`POST /api/profiles/${acme.id}/pass`]: {},
+      [`DELETE /api/profiles/${acme.id}/swipe`]: {},
+    });
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: false,
+      media: query,
+    }));
+
+    const { container } = render(<Deck />);
+
+    await screen.findByRole("heading", { name: "Acme" });
+    fireEvent.click(screen.getByRole("button", { name: "Pass" }));
+    await screen.findByRole("heading", { name: "Globex" });
+    expect(container.querySelector("[inert]")).not.toBeNull();
+
+    // No `animationend`: the Undo lands while the copy is still on its way off.
+    await act(async () => {
+      fireEvent.click(undoOf(acme, "pass"));
+    });
+
+    expect(screen.getByRole("heading", { name: "Acme" })).toBeInTheDocument();
+    expect(container.querySelector("[inert]")).toBeNull();
   });
 
   it("deals the Profile again, and takes a second decision about it", async () => {

@@ -56,6 +56,30 @@ type UnsavedSwipe = {
 };
 
 /**
+ * The card just decided, on its way off the table. `key` restarts the animation when a second
+ * decision lands before the first card has gone; `fromX` is where a swipe let go of it.
+ */
+type LeavingCard = {
+  key: number;
+  profile: Profile;
+  decision: Decision;
+  fromX: number;
+};
+
+/**
+ * Whether to animate a decided card away. Never under `prefers-reduced-motion`, and never
+ * where `matchMedia` does not exist (jsdom), since without a browser to run the animation its
+ * `animationend` would never come and the copy would never be removed.
+ */
+function motionAllowed(): boolean {
+  return (
+    typeof window !== "undefined" &&
+    typeof window.matchMedia === "function" &&
+    !window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
+}
+
+/**
  * The decision the reader made most recently, which the Undo control takes back. Exactly one,
  * or none: a Pass is final and can happen by accident — a quarter of the card's width commits,
  * so a thumb drifting left removes a company from this reader's Deck for good — and the answer
@@ -311,6 +335,11 @@ export function Deck() {
   const stateRef = useRef(state);
   const [unsaved, setUnsaved] = useState<UnsavedSwipe[]>([]);
 
+  // The card just decided, drawn once more on its way off the table. Decoration only: the Deck
+  // has already advanced by the time this renders, and it is removed when its animation ends.
+  const [leaving, setLeaving] = useState<LeavingCard | null>(null);
+  const leavingKeyRef = useRef(0);
+
   // The decision the Undo control is offering to take back, the one in flight, and the error
   // from one that did not. Only ever the most recent decision: `decide` replaces it.
   const [undoable, setUndoable] = useState<UndoTarget | null>(null);
@@ -466,7 +495,9 @@ export function Deck() {
   // across renders and the keydown listener below does not need to be torn down and rebuilt
   // on every Keep or Pass.
   const decide = useCallback(
-    (decision: Decision) => {
+    // `fromX` is where a swipe let go of the card, so it leaves from there rather than
+    // jumping back to the middle first. Buttons and arrow keys decide from rest.
+    (decision: Decision, fromX = 0) => {
       const current = stateRef.current;
 
       if (current.status !== "ready") {
@@ -494,6 +525,11 @@ export function Deck() {
       // next Profile, which is what the reader asked for, rather than being swallowed.
       commit(stateAfterAdvancing(current));
       save(profile, decision);
+
+      if (motionAllowed()) {
+        leavingKeyRef.current += 1;
+        setLeaving({ key: leavingKeyRef.current, profile, decision, fromX });
+      }
     },
     [commit, save],
   );
@@ -542,6 +578,11 @@ export function Deck() {
 
               return others.length === list.length ? list : others;
             });
+            // An Undo quick enough to land mid-throw would otherwise show the card twice: back
+            // on top at rest, and its copy still flying off over it.
+            setLeaving((current) =>
+              current?.profile.id === target.profile.id ? null : current,
+            );
             commit(stateAfterUndoing(stateRef.current, target.profile));
           },
           (error: unknown) => {
@@ -647,7 +688,7 @@ export function Deck() {
         endGesture();
 
         if (committed) {
-          decide(dx > 0 ? "keep" : "pass");
+          decide(dx > 0 ? "keep" : "pass", dx);
         }
       }
 
@@ -816,6 +857,38 @@ export function Deck() {
             links={profile.links}
           />
         </div>
+
+        {/*
+         * The card just decided, flying off towards its decision while the next one is dealt
+         * underneath. A copy for the eye alone: hidden from assistive tech and inert, so the
+         * only card anything can read, focus or click is the one dealt.
+         */}
+        {leaving !== null && (
+          <div
+            key={leaving.key}
+            className={`${styles.leaving} ${leaving.decision === "keep" ? styles.leavingKeep : styles.leavingPass}`}
+            style={{ translate: `${String(leaving.fromX)}px 0` }}
+            aria-hidden="true"
+            inert
+            onAnimationEnd={() =>
+              setLeaving((current) =>
+                current?.key === leaving.key ? null : current,
+              )
+            }
+          >
+            <ProfileCard
+              headingLevel={1}
+              name={leaving.profile.name}
+              description={leaving.profile.description}
+              sector={leaving.profile.sector}
+              stage={leaving.profile.stage}
+              location={leaving.profile.location}
+              website={leaving.profile.website}
+              founders={leaving.profile.founders}
+              links={leaving.profile.links}
+            />
+          </div>
+        )}
       </div>
 
       {/*
