@@ -203,7 +203,9 @@ function filledProvenance(
   const ownProvenance = sql<string | null>`${profiles.provenance} ->> ${field}`;
   const fillerProvenance = sql<string>`${filler.provenance} ->> ${field}`;
 
-  return sql<string | null>`coalesce(${ownProvenance}, ${newestSiblingStating<string>(db, fillerProvenance, fillerColumn)})`;
+  return sql<
+    string | null
+  >`coalesce(${ownProvenance}, ${newestSiblingStating<string>(db, fillerProvenance, fillerColumn)})`;
 }
 
 /**
@@ -233,15 +235,14 @@ const deckColumns = (db: Database) => ({
   location: filled<string | null>(db, profiles.location, filler.location).as(
     "location",
   ),
-  founders: filled<Founder[] | null>(
-    db,
-    profiles.founders,
-    filler.founders,
-  ).as("founders"),
+  founders: filled<Founder[] | null>(db, profiles.founders, filler.founders).as(
+    "founders",
+  ),
   links: filled<CompanyLinks | null>(db, profiles.links, filler.links).as(
     "links",
   ),
-  provenance: sql<ProfileProvenance>`${profiles.provenance} || jsonb_build_object(
+  provenance:
+    sql<ProfileProvenance>`${profiles.provenance} || jsonb_build_object(
     'website', ${filledProvenance(db, "website", filler.website)},
     'location', ${filledProvenance(db, "location", filler.location)},
     'founders', ${filledProvenance(db, "founders", filler.founders)},

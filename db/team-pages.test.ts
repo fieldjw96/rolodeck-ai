@@ -164,9 +164,7 @@ describe("selectTeamPageCandidates", () => {
       now: NOW,
     });
 
-    expect(candidates.map((candidate) => candidate.profileId)).toEqual([
-      lone,
-    ]);
+    expect(candidates.map((candidate) => candidate.profileId)).toEqual([lone]);
     expect(candidates.map((candidate) => candidate.profileId)).not.toContain(
       hasSiblingWithFounders,
     );
