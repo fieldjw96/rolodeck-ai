@@ -28,7 +28,8 @@ The Company Profiles sharing one `name_key` — one company that more than one S
 which `(source, name_key)` keeps as one row per Source. Siblings are peers: nothing merges
 them or decides which Source is right. The Deck deals one of them, and the Watchlist and the
 News page name the company once, by collapsing them where they are read. See `docs/adr/0008`
-and `docs/adr/0024`.
+and `docs/adr/0024`. The dealt card also fills a field its own row leaves blank from a Sibling
+that states it, and never overwrites a field its own row states.
 _Avoid_: duplicate, copy, match, the merged company
 
 **Founder**:

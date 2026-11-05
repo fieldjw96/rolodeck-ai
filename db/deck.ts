@@ -3,17 +3,24 @@ import {
   desc,
   eq,
   inArray,
+  isNotNull,
+  ne,
   notExists,
   notInArray,
   sql,
   type SQL,
 } from "drizzle-orm";
-import { alias } from "drizzle-orm/pg-core";
+import { alias, type AnyPgColumn } from "drizzle-orm/pg-core";
 import { z } from "zod";
 
 import { citiesInArea } from "../lib/location/bay-area";
 import type { Database } from "./connection";
-import { STATED_STAGE_VALUES } from "./profile-input";
+import {
+  STATED_STAGE_VALUES,
+  type CompanyLinks,
+  type Founder,
+} from "./profile-input";
+import type { ProfileProvenance } from "./provenance";
 import { profiles, swipes, type Profile, type SwipeDecision } from "./schema";
 import {
   EMPTY_USER_PROFILE,
@@ -135,24 +142,113 @@ export const pagingQuerySchema = z.object({
 });
 
 /**
+ * A second alias for `profiles`, distinct from `sibling` below: `deckColumns` builds its own
+ * correlated subqueries per nullable field, and those subqueries sit inside the same `dealable`
+ * subquery `readDeckPage` builds from `undecidedBy`'s. Reusing `sibling` for both would have
+ * the two collide; `filler` never appears outside this fill rule.
+ */
+const filler = alias(profiles, "filler");
+
+/**
+ * The newest Sibling by `created_at`, the higher `id` breaking a tie, whose own `fillerColumn`
+ * states a value — read as `selected`, filtered and ordered on `fillerColumn` regardless, so a
+ * value subquery and a provenance subquery for the same field always agree on which Sibling
+ * won. One subquery per nullable field, so `website` may come from one Sibling and `founders`
+ * from another.
+ */
+function newestSiblingStating<T>(
+  db: Database,
+  selected: SQL<T> | AnyPgColumn,
+  fillerColumn: AnyPgColumn,
+): SQL<T> {
+  return sql<T>`(${db
+    .select({ value: selected })
+    .from(filler)
+    .where(
+      and(
+        eq(filler.nameKey, profiles.nameKey),
+        ne(filler.id, profiles.id),
+        isNotNull(fillerColumn),
+      ),
+    )
+    .orderBy(desc(filler.createdAt), desc(filler.id))
+    .limit(1)})`;
+}
+
+/**
+ * `own` as dealt when the row states it, or the newest Sibling's value otherwise. A dealt row's
+ * own non-null value is never replaced: `coalesce` evaluates the Sibling subquery only once
+ * `own` is null. See docs/adr/0008 and docs/adr/0024 — this reads a Sibling's value and merges
+ * nothing.
+ */
+function filled<T>(
+  db: Database,
+  own: AnyPgColumn,
+  fillerColumn: AnyPgColumn,
+): SQL<T> {
+  return sql<T>`coalesce(${own}, ${newestSiblingStating<T>(db, fillerColumn, fillerColumn)})`;
+}
+
+/**
+ * The provenance to deal alongside `filled`'s value for the same nullable `field`: this row's
+ * own provenance where it states one, else whichever Sibling's value won — never null once a
+ * Sibling fills the field, since the check constraint `profiles_provenance_covers_every_field`
+ * guarantees a non-null field carries a non-null provenance for it.
+ */
+function filledProvenance(
+  db: Database,
+  field: "website" | "location" | "founders" | "links",
+  fillerColumn: AnyPgColumn,
+): SQL<string | null> {
+  const ownProvenance = sql<string | null>`${profiles.provenance} ->> ${field}`;
+  const fillerProvenance = sql<string>`${filler.provenance} ->> ${field}`;
+
+  return sql<string | null>`coalesce(${ownProvenance}, ${newestSiblingStating<string>(db, fillerProvenance, fillerColumn)})`;
+}
+
+/**
  * The Profile as the Deck deals it. `source` and `name_key` are left out because they are
  * ingest's bookkeeping — which pipeline wrote the row and what it deduplicates on — and say
- * nothing about the company on the card. `founders` and `links` are dealt as stored, null
- * where the Source stated none, for the card's Team and Contact tabs.
+ * nothing about the company on the card.
+ *
+ * `website`, `location`, `founders` and `links` are each dealt as the row's own value when it
+ * is non-null, and otherwise as the value a Sibling (same `name_key`, a different `id`) states
+ * for that field, the newest Sibling winning and the higher `id` breaking a tie. That fill is
+ * decided per field, so `website` may come from one Sibling while `founders` comes from
+ * another, and `provenance` is dealt to match — the provenance the filling Sibling records for
+ * that field, never null once it is filled. A row's own non-null value is never replaced, so
+ * two Sources that disagree are never reconciled; that stays deferred by docs/adr/0008 and
+ * docs/adr/0024. `deckScore` below ranks on the row's own `sector`, `stage` and `location`
+ * rather than this filled view, so a filled location never moves a card.
  */
-const deckColumns = {
+const deckColumns = (db: Database) => ({
   id: profiles.id,
   name: profiles.name,
   description: profiles.description,
   sector: profiles.sector,
   stage: profiles.stage,
-  website: profiles.website,
-  location: profiles.location,
-  founders: profiles.founders,
-  links: profiles.links,
-  provenance: profiles.provenance,
+  website: filled<string | null>(db, profiles.website, filler.website).as(
+    "website",
+  ),
+  location: filled<string | null>(db, profiles.location, filler.location).as(
+    "location",
+  ),
+  founders: filled<Founder[] | null>(
+    db,
+    profiles.founders,
+    filler.founders,
+  ).as("founders"),
+  links: filled<CompanyLinks | null>(db, profiles.links, filler.links).as(
+    "links",
+  ),
+  provenance: sql<ProfileProvenance>`${profiles.provenance} || jsonb_build_object(
+    'website', ${filledProvenance(db, "website", filler.website)},
+    'location', ${filledProvenance(db, "location", filler.location)},
+    'founders', ${filledProvenance(db, "founders", filler.founders)},
+    'links', ${filledProvenance(db, "links", filler.links)}
+  )`.as("provenance"),
   createdAt: profiles.createdAt,
-};
+});
 
 // `foundersSoughtAt` records what ingest did, not anything about the company, so the Deck
 // neither reads nor shows it. See docs/adr/0016.
@@ -301,7 +397,7 @@ export async function readDeckPage(
       // Nested, so the page below hands the whole card back out without naming its columns a
       // second time. `name_key` is not among them and is not selected here either: the window
       // partitions by it directly, and no caller may see it. See `deckColumns`.
-      profile: deckColumns,
+      profile: deckColumns(db),
       score: score.as("score"),
       siblingRank:
         sql<number>`row_number() over (partition by ${profiles.nameKey} order by ${score} desc, ${profiles.createdAt} desc, ${profiles.id} desc)`.as(
@@ -399,7 +495,7 @@ export async function readKeptProfiles(
   userId: string,
 ): Promise<DeckProfile[]> {
   return db
-    .select(deckColumns)
+    .select(deckColumns(db))
     .from(profiles)
     .innerJoin(
       swipes,

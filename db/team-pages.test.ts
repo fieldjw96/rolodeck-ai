@@ -38,6 +38,7 @@ let scratch: ScratchDb;
 
 type Arranged = {
   name: string;
+  source?: string;
   website?: string | null;
   founders?: { name: string }[];
   soughtAt?: Date;
@@ -47,6 +48,7 @@ type Arranged = {
 /** Arranged as the superuser, which bypasses RLS: a test's fixtures are not under test. */
 async function profile({
   name,
+  source = "angelpad",
   website = `https://${name.toLowerCase()}.dev`,
   founders,
   soughtAt,
@@ -56,7 +58,7 @@ async function profile({
   const [row] = await scratch.db
     .insert(profiles)
     .values({
-      source: "angelpad",
+      source,
       name,
       description: `${name}, for the team-page tests.`,
       sector: "developer-tools",
@@ -142,6 +144,32 @@ describe("selectTeamPageCandidates", () => {
 
     expect(candidates).toHaveLength(1);
     expect(candidates[0]!.name).not.toBe("Yesterday");
+  });
+
+  it("skips a Profile whose Sibling already states founders, and still takes a lone one", async () => {
+    const hasSiblingWithFounders = await profile({
+      name: "Sprocket",
+      source: "sec-form-d",
+    });
+    await profile({
+      name: "Sprocket",
+      source: "ycombinator",
+      founders: [{ name: "Ada Lovelace" }],
+    });
+    const lone = await profile({ name: "Lone" });
+
+    await scratch.as("rolodeck_ingest");
+    const candidates = await selectTeamPageCandidates(scratch.db, {
+      limit: 10,
+      now: NOW,
+    });
+
+    expect(candidates.map((candidate) => candidate.profileId)).toEqual([
+      lone,
+    ]);
+    expect(candidates.map((candidate) => candidate.profileId)).not.toContain(
+      hasSiblingWithFounders,
+    );
   });
 });
 
