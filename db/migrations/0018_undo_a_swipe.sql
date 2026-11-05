@@ -1,0 +1,1 @@
+CREATE POLICY "swipes_delete_own" ON "swipes" AS PERMISSIVE FOR DELETE TO "authenticated" USING ((select auth.uid()) = "swipes"."user_id");

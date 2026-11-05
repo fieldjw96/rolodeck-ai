@@ -127,6 +127,13 @@
       "when": 1793234754959,
       "tag": "0017_news_keeps_every_search_result",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1793902241100,
+      "tag": "0018_undo_a_swipe",
+      "breakpoints": true
     }
   ]
 }

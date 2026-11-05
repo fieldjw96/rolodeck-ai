@@ -56,6 +56,14 @@ type UnsavedSwipe = {
 };
 
 /**
+ * The decision the reader made most recently, which the Undo control takes back. Exactly one,
+ * or none: a Pass is final and can happen by accident — a quarter of the card's width commits,
+ * so a thumb drifting left removes a company from this reader's Deck for good — and the answer
+ * to that is taking back the decision just made, not a list of every past one.
+ */
+type UndoTarget = { profile: Profile; decision: Decision };
+
+/**
  * How many Profiles may be left in hand, counting the one on screen, before the next page is
  * fetched. Fetching a page is one round trip, measured at about 100 ms to production before
  * auth and the query are added, and a reader deciding as fast as they can read a name still
@@ -121,6 +129,20 @@ export function unsavedMessage(name: string, decision: Decision): string {
   return `Couldn't save your ${DECISION_LABEL[decision]} on ${name}.`;
 }
 
+/**
+ * The Undo control's accessible name, which names the company and the decision rather than
+ * saying only "Undo": a reader on a screen reader, or looking at a list of the page's
+ * controls, is told what it would take back before they press it.
+ */
+export function undoLabel(name: string, decision: Decision): string {
+  return `Undo ${DECISION_LABEL[decision]} on ${name}`;
+}
+
+/** Names the company, so the reader knows which decision is still standing. */
+export function undoErrorMessage(name: string, decision: Decision): string {
+  return `Couldn't undo your ${DECISION_LABEL[decision]} on ${name}. It still stands.`;
+}
+
 // The second line of each designed state: what it means, or what to do next. Not exported,
 // because the line a test pins a state on is the title above it.
 const LOADING_DECK_DETAIL = "Fetching the Profiles you have not judged yet.";
@@ -154,6 +176,20 @@ async function recordSwipe(id: string, decision: Decision): Promise<void> {
 
   if (!response.ok) {
     throw new Error(`POST ${url} failed with ${response.status}`);
+  }
+}
+
+/**
+ * Deletes this reader's decision about one Company Profile. Throws on anything but a 2xx, a
+ * 404 included: no decision to take back is as much a reason to leave the card where it is as
+ * a 500 is, since either way the Deck cannot say the reader's decision is gone.
+ */
+async function undoSwipe(id: string): Promise<void> {
+  const url = `/api/profiles/${id}/swipe`;
+  const response = await fetch(url, { method: "DELETE" });
+
+  if (!response.ok) {
+    throw new Error(`DELETE ${url} failed with ${response.status}`);
   }
 }
 
@@ -206,6 +242,43 @@ function stateAfterAdvancing(current: ReadyState): DeckState {
     : { status: "dealing", nextCursor: current.nextCursor };
 }
 
+/**
+ * Puts `profile` back on top, the decision about it having been taken back.
+ *
+ * The ordinary case is the first branch: `decide` only moved the index on, so the card is
+ * still in hand one behind the one on screen and stepping back is the whole of the undo. No
+ * page is fetched either way — the Deck deals what it is already holding.
+ *
+ * Any other state has lost the card from its hand: a page dealt in since drops the Profiles
+ * already decided (see `stateAfter`), and a decision that emptied the Deck left "empty" or
+ * "dealing" behind it with no hand at all. There the Profile the Undo control was holding goes
+ * back on its own, in front of whatever is left, and the Deck keeps what it already knew about
+ * the next page so the rest of the Deck still follows. An error state knows no cursor to keep,
+ * so there the card comes back and the Deck ends behind it — the reader has already been told
+ * to reload, and one card they asked for beats the error they were looking at.
+ */
+function stateAfterUndoing(current: DeckState, profile: Profile): DeckState {
+  if (
+    current.status === "ready" &&
+    current.profiles[current.index - 1]?.id === profile.id
+  ) {
+    return { ...current, index: current.index - 1 };
+  }
+
+  return {
+    status: "ready",
+    profiles:
+      current.status === "ready"
+        ? [profile, ...current.profiles.slice(current.index)]
+        : [profile],
+    index: 0,
+    nextCursor:
+      current.status === "ready" || current.status === "dealing"
+        ? current.nextCursor
+        : null,
+  };
+}
+
 /** The cursor of the page the Deck needs fetched now, or null if it has enough in hand. */
 function cursorToFetch(state: DeckState): string | null {
   if (state.status === "dealing") {
@@ -238,6 +311,13 @@ export function Deck() {
   const stateRef = useRef(state);
   const [unsaved, setUnsaved] = useState<UnsavedSwipe[]>([]);
 
+  // The decision the Undo control is offering to take back, the one in flight, and the error
+  // from one that did not. Only ever the most recent decision: `decide` replaces it.
+  const [undoable, setUndoable] = useState<UndoTarget | null>(null);
+  const [undoing, setUndoing] = useState(false);
+  const [undoError, setUndoError] = useState<string | null>(null);
+  const undoingRef = useRef(false);
+
   // Every state change goes through here, and the ref is written first. An effect would have
   // been a render behind: React flushes a passive effect in a task *after* the commit that
   // painted the new Profile, so a Keep clicked in that window read a stale `stateRef` — still
@@ -257,6 +337,12 @@ export function Deck() {
   // The Profiles with a write in flight, so a retry clicked twice, or clicked while the first
   // write is still out, cannot record the same Profile twice.
   const savingRef = useRef(new Set<string>());
+
+  // The write in flight for each of them, settled either way, so an Undo can wait for the
+  // decision it is taking back to have been recorded before it deletes it. A reader can press
+  // Undo inside the round trip that records the swipe, and a DELETE that overtook the POST
+  // would answer 404 and leave the decision standing behind it.
+  const writesRef = useRef(new Map<string, Promise<void>>());
 
   // The cursor of the page being fetched, so a re-render does not fetch it a second time.
   const fetchingRef = useRef<string | null>(null);
@@ -343,13 +429,23 @@ export function Deck() {
       });
     };
 
-    recordSwipe(profile.id, decision).then(
+    const write = recordSwipe(profile.id, decision).then(
       () => settle(false),
       (error: unknown) => {
         console.error(error);
         settle(true);
       },
     );
+
+    writesRef.current.set(profile.id, write);
+
+    // Forgotten once it has settled, but only if no later write for the same Profile has
+    // replaced it — a Profile Undone and decided again is written twice.
+    void write.then(() => {
+      if (writesRef.current.get(profile.id) === write) {
+        writesRef.current.delete(profile.id);
+      }
+    });
   }, []);
 
   const retry = useCallback(
@@ -387,6 +483,12 @@ export function Deck() {
 
       decidedRef.current.add(profile.id);
 
+      // This decision is now the one Undo takes back, in place of whatever the last one was:
+      // one decision can be taken back, and it is always the most recent. An error from an
+      // Undo of the decision before it is no longer about anything the control offers.
+      setUndoable({ profile, decision });
+      setUndoError(null);
+
       // Advance first, then record. A second decision fired before React re-renders (a fast
       // double click, arrow-key auto-repeat) reads the advanced `stateRef` and decides the
       // next Profile, which is what the reader asked for, rather than being swallowed.
@@ -394,6 +496,64 @@ export function Deck() {
       save(profile, decision);
     },
     [commit, save],
+  );
+
+  /**
+   * Takes back the decision the reader just made and puts its card back on top. The write is
+   * waited on first, for the reason `writesRef` gives, and the Deck only moves once the delete
+   * has actually landed: an Undo the server refused has to leave the decision standing, since
+   * dealing the card again would be showing the reader a company their Deck no longer holds.
+   */
+  const undo = useCallback(
+    (target: UndoTarget) => {
+      // A ref rather than `undoing` itself, for the same reason `savingRef` is one: the button
+      // is disabled while a delete is out, but a second press in the same tick as the first —
+      // Enter held down on it — reaches this before React has re-rendered it disabled.
+      if (undoingRef.current) {
+        return;
+      }
+
+      undoingRef.current = true;
+      setUndoing(true);
+      setUndoError(null);
+
+      const settle = () => {
+        undoingRef.current = false;
+        setUndoing(false);
+      };
+
+      const pending =
+        writesRef.current.get(target.profile.id) ?? Promise.resolve();
+
+      void pending
+        .then(() => undoSwipe(target.profile.id))
+        .then(
+          () => {
+            // Undecided again, so the Deck may deal this Profile and `decide` may take it.
+            decidedRef.current.delete(target.profile.id);
+            settle();
+            setUndoable(null);
+            // A decision that has been taken back is not one to go on offering to save: the
+            // row is gone, and retrying the write would record the Pass the reader just undid.
+            setUnsaved((list) => {
+              const others = list.filter(
+                (swipe) => swipe.profile.id !== target.profile.id,
+              );
+
+              return others.length === list.length ? list : others;
+            });
+            commit(stateAfterUndoing(stateRef.current, target.profile));
+          },
+          (error: unknown) => {
+            console.error(error);
+            settle();
+            setUndoError(
+              undoErrorMessage(target.profile.name, target.decision),
+            );
+          },
+        );
+    },
+    [commit],
   );
 
   // The drag under way, if any, and how far the card has been pulled from its resting place.
@@ -553,6 +713,32 @@ export function Deck() {
       </div>
     );
 
+  /**
+   * The way back from the decision just made, shown under the actions in every state the Deck
+   * can be in after one: a Pass that emptied the Deck, or that landed while the next page was
+   * still on its way, is exactly the kind a reader wants back. A real button, so it is in the
+   * tab order and answers Enter and Space without any of that being written here.
+   */
+  const undoControl =
+    undoable === null ? null : (
+      <div className={styles.undo}>
+        <button
+          type="button"
+          className={styles.undoAction}
+          disabled={undoing}
+          aria-label={undoLabel(undoable.profile.name, undoable.decision)}
+          onClick={() => undo(undoable)}
+        >
+          {undoing ? "Undoing…" : "Undo"}
+        </button>
+        {undoError === null ? null : (
+          <p role="alert" className={styles.undoError}>
+            {undoError}
+          </p>
+        )}
+      </div>
+    );
+
   if (state.status === "loading" || state.status === "dealing") {
     return (
       <main className={styles.deck}>
@@ -562,6 +748,7 @@ export function Deck() {
           title={LOADING_DECK_MESSAGE}
           body={LOADING_DECK_DETAIL}
         />
+        {undoControl}
       </main>
     );
   }
@@ -576,6 +763,7 @@ export function Deck() {
           title={state.message}
           body={state.detail}
         />
+        {undoControl}
       </main>
     );
   }
@@ -585,6 +773,7 @@ export function Deck() {
       <main className={styles.deck}>
         {unsavedNotice}
         <StateNotice title={EMPTY_DECK_MESSAGE} body={EMPTY_DECK_DETAIL} />
+        {undoControl}
       </main>
     );
   }
@@ -659,6 +848,8 @@ export function Deck() {
           </kbd>
         </button>
       </div>
+
+      {undoControl}
     </main>
   );
 }

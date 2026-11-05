@@ -562,3 +562,34 @@ export async function recordSwipe(
   // The insert either returns its row or raises; a policy that refused it would have thrown.
   return recorded ?? null;
 }
+
+/**
+ * Takes back this reader's decision about one Company Profile, and says whether there was one
+ * to take back. The Deck's Undo, which is the whole of what this is for: the reader has just
+ * Kept or Passed a card and meant not to.
+ *
+ * `recordSwipe` upserts on `(user_id, profile_id)`, so there is at most one row here and
+ * deleting it leaves the reader with no decision about that Company Profile at all — the state
+ * they were in before they swiped, not a third kind of decision.
+ *
+ * One row, about the one Company Profile swiped: its Siblings' swipes are left alone, as
+ * `recordSwipe` leaves them alone. There is nothing to clear up, because `undecidedBy` is what
+ * dealt the card in the first place — the Deck deals a company only while no Sibling of it has
+ * a decision, so the swipe just made is that company's only one, and deleting it makes the
+ * company dealable again. See docs/adr/0024.
+ *
+ * `userId` is written into the `where` rather than left to `swipes_delete_own`: per CLAUDE.md
+ * the RLS policies are a backstop and never the only control. Without it this would be a
+ * delete of whoever's row matched the id, and correct only for as long as the policy was.
+ */
+export async function undoSwipe(
+  db: Database,
+  { userId, profileId }: { userId: string; profileId: string },
+): Promise<boolean> {
+  const deleted = await db
+    .delete(swipes)
+    .where(and(eq(swipes.userId, userId), eq(swipes.profileId, profileId)))
+    .returning({ profileId: swipes.profileId });
+
+  return deleted.length > 0;
+}

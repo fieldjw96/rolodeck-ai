@@ -11,19 +11,26 @@ import { notFound, unprocessable } from "../../../../lib/api/responses";
  * The dynamic segment is external input like anything else: whatever sat in that part of the
  * URL arrives here as a string, so an id that is not a Profile id has to be turned away by
  * name rather than reach Postgres and come back as a driver-level type error.
+ *
+ * Exported because `swipe/route.ts`, the Undo, validates the same segment: a third endpoint
+ * about the same id should answer a bad one in the same words rather than in its own.
  */
-const paramsSchema = z.object({ id: z.guid("must be a Profile id") });
+export const swipeParamsSchema = z.object({
+  id: z.guid("must be a Profile id"),
+});
 
-type SwipeContext = { params: Promise<{ id: string }> };
+export type SwipeContext = { params: Promise<{ id: string }> };
 
 /**
- * Both swipe endpoints, which differ only in the decision they record. Keeping them one
- * function means Keep and Pass cannot drift apart in their validation, their 401 or their
- * 404 — the two `route.ts` files are the URLs, and this is the behaviour.
+ * Both swipe endpoints that record a decision, which differ only in the decision they record.
+ * Keeping them one function means Keep and Pass cannot drift apart in their validation, their
+ * 401 or their 404 — the two `route.ts` files are the URLs, and this is the behaviour. The
+ * third, `swipe/route.ts`, takes a decision back rather than recording one, so it is a handler
+ * of its own and shares the schema above instead.
  */
 export function swipeRoute(decision: SwipeDecision) {
   return authenticated<SwipeContext>(async (_request, user, context) => {
-    const params = paramsSchema.safeParse(await context.params);
+    const params = swipeParamsSchema.safeParse(await context.params);
 
     if (!params.success) {
       return unprocessable(params.error);
