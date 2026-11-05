@@ -142,8 +142,8 @@ function EventList({ events }: { events: DiaryEntry[] }) {
  * renders `important`, and never works it out.
  *
  * Every Event is listed, soonest first. An important one is marked three ways, so it reads as
- * important to someone who cannot tell the accent from the rest of the page: a heavier rule
- * down its edge, a star, and the words naming the Kept companies attending.
+ * important to someone who cannot tell the accent from the rest of the page: the card lifted
+ * on a shadow with a larger name, a star, and the words naming the Kept companies attending.
  *
  * With the toggle on, the Events arrive already split into a past group and an upcoming group,
  * each in its own order; this component groups them under a "Past" and an "Upcoming" heading

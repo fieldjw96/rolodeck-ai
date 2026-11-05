@@ -51,30 +51,31 @@ function rgb(name: string, tokens: Tokens): Rgb {
 
 /**
  * Every pairing the design actually puts on screen, with the WCAG 2.1 AA minimum that applies
- * to it: 4.5 for text, and 3 for the two non-text boundaries that carry meaning of their own —
- * the outlined Pass button and the focus ring.
+ * to it: 4.5 for text, and 3 for the non-text boundaries that carry meaning of their own, the
+ * card outline and the focus ring. Two grounds, so text is checked against the ground it can
+ * actually appear on.
  */
 const PAIRINGS: [foreground: string, background: string, minimum: number][] = [
-  ["--color-text", "--color-canvas", 4.5],
+  ["--color-on-canvas", "--color-canvas", 4.5],
+  ["--color-on-canvas-muted", "--color-canvas", 4.5],
   ["--color-text", "--color-surface", 4.5],
   ["--color-text", "--color-surface-muted", 4.5],
   ["--color-text", "--color-accent-soft", 4.5],
   ["--color-text", "--color-danger-soft", 4.5],
-  ["--color-text-muted", "--color-canvas", 4.5],
+  ["--color-text", "--color-highlight", 4.5],
+  ["--color-text", "--color-highlight-alt", 4.5],
   ["--color-text-muted", "--color-surface", 4.5],
   ["--color-text-muted", "--color-surface-muted", 4.5],
-  ["--color-text-faint", "--color-canvas", 4.5],
   ["--color-text-faint", "--color-surface", 4.5],
-  ["--color-accent", "--color-canvas", 4.5],
-  ["--color-accent", "--color-surface", 4.5],
-  ["--color-accent-contrast", "--color-accent", 4.5],
-  ["--color-accent-contrast", "--color-accent-hover", 4.5],
+  ["--color-accent-ink", "--color-surface", 4.5],
+  ["--color-accent-ink", "--color-accent-soft", 4.5],
   ["--color-danger", "--color-surface", 4.5],
   ["--color-danger", "--color-danger-soft", 4.5],
-  ["--color-border-strong", "--color-canvas", 3],
+  ["--color-accent-contrast", "--color-accent", 4.5],
+  ["--color-accent-contrast", "--color-accent-hover", 4.5],
   ["--color-border-strong", "--color-surface", 3],
   ["--color-focus", "--color-canvas", 3],
-  ["--color-focus", "--color-surface", 3],
+  ["--color-focus-surface", "--color-surface", 3],
 ];
 
 /** The pairings that fall short, named and measured, so a failure says which and by how much. */
@@ -93,6 +94,18 @@ function illegiblePairings(tokens: Tokens): string[] {
   });
 }
 
+/** A card has to read as a card: either its fill or its outline clears 3:1 against the canvas. */
+function cardStandsOut(tokens: Tokens): boolean {
+  const canvas = rgb("--color-canvas", tokens);
+
+  return (
+    Math.max(
+      contrastRatio(rgb("--color-surface", tokens), canvas),
+      contrastRatio(rgb("--color-border-strong", tokens), canvas),
+    ) >= 3
+  );
+}
+
 describe("the design system", () => {
   it("defines the same colour tokens in both schemes, so neither is half-finished", () => {
     expect(colorNames(dark)).toEqual(colorNames(light));
@@ -100,8 +113,8 @@ describe("the design system", () => {
 
   it("derives every accent colour from one hue, so moving the accent is a single edit", () => {
     for (const scheme of [light, dark]) {
-      const accents = colorNames(scheme).filter(
-        (name) => name.startsWith("--color-accent") || name === "--color-focus",
+      const accents = colorNames(scheme).filter((name) =>
+        name.startsWith("--color-accent"),
       );
 
       expect(accents.length).toBeGreaterThan(0);
@@ -123,9 +136,14 @@ describe("the design system", () => {
     expect(illegiblePairings(dark)).toEqual([]);
   });
 
+  it("keeps a card distinct from the canvas in both schemes", () => {
+    expect(cardStandsOut(light)).toBe(true);
+    expect(cardStandsOut(dark)).toBe(true);
+  });
+
   it("renders the faces the root layout loads, and no longer asks for Arial", () => {
-    expect(light["--font-sans"]).toContain("var(--font-geist-sans)");
-    expect(light["--font-mono"]).toContain("var(--font-geist-mono)");
+    expect(light["--font-sans"]).toContain("var(--font-bricolage)");
+    expect(light["--font-mono"]).toContain("var(--font-dm-mono)");
     expect(css).not.toMatch(/arial/i);
   });
 });

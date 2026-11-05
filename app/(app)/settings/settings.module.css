@@ -13,15 +13,24 @@
 }
 
 .title {
-  font-size: var(--text-2xl);
+  font-size: var(--text-3xl);
+  color: var(--color-on-canvas);
 }
 
+/* A card on the canvas, so the form reads as the same object as the Deck's Profile. */
 .form {
+  --color-focus: var(--color-focus-surface);
   display: flex;
   width: 100%;
   max-width: var(--measure);
   flex-direction: column;
   gap: var(--space-5);
+  padding: var(--space-6);
+  background: var(--color-surface);
+  border: var(--outline-width) solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  color: var(--color-text);
 }
 
 .fieldset {
@@ -29,7 +38,7 @@
   flex-direction: column;
   gap: var(--space-3);
   padding: var(--space-4);
-  border: 1px solid var(--color-border);
+  border: var(--outline-width) solid var(--color-border);
   border-radius: var(--radius-md);
 }
 
@@ -70,24 +79,26 @@
 }
 
 .input {
-  padding: var(--space-3);
-  background: var(--color-canvas);
-  border: 1px solid var(--color-border-strong);
+  --color-focus: var(--color-focus-surface);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface);
+  border: var(--outline-width) solid var(--color-border-strong);
   border-radius: var(--radius-md);
   font-size: var(--text-base);
+  color: var(--color-text);
   transition:
     border-color var(--transition-fast),
     background-color var(--transition-fast);
 }
 
 .input:hover {
-  background: var(--color-surface);
+  background: var(--color-surface-muted);
 }
 
 .error {
   padding: var(--space-3);
   background: var(--color-danger-soft);
-  border: 1px solid var(--color-danger-border);
+  border: var(--outline-width) solid var(--color-danger-border);
   border-radius: var(--radius-md);
   font-size: var(--text-sm);
   color: var(--color-danger);
@@ -96,10 +107,11 @@
 .saved {
   padding: var(--space-3);
   background: var(--color-accent-soft);
-  border: 1px solid var(--color-accent-border);
+  border: var(--outline-width) solid var(--color-accent-border);
   border-radius: var(--radius-md);
   font-size: var(--text-sm);
-  color: var(--color-accent);
+  font-weight: var(--weight-semibold);
+  color: var(--color-accent-ink);
 }
 
 .submit {
@@ -107,10 +119,11 @@
   min-height: var(--space-8);
   padding: var(--space-3) var(--space-5);
   background: var(--color-accent);
-  border: 1px solid transparent;
+  border: var(--outline-width) solid var(--color-border-strong);
   border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-press);
   font-size: var(--text-base);
-  font-weight: var(--weight-semibold);
+  font-weight: var(--weight-heavy);
   color: var(--color-accent-contrast);
   transition: background-color var(--transition-fast);
 }
@@ -120,6 +133,8 @@
 }
 
 .submit:disabled {
-  background: var(--color-border-strong);
+  background: var(--color-surface-muted);
+  box-shadow: none;
+  color: var(--color-text-muted);
   cursor: default;
 }

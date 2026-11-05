@@ -9,8 +9,34 @@
   margin-inline: auto;
   flex-direction: column;
   justify-content: center;
-  gap: var(--space-6);
+  gap: var(--space-7);
   padding: var(--space-6) var(--space-4) var(--space-8);
+}
+
+/* Decoration only: the butter and sky cards fanned out behind the Deck's card. */
+.stack {
+  position: relative;
+  isolation: isolate;
+}
+
+.stack::before,
+.stack::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  border-radius: var(--radius-lg);
+}
+
+.stack::before {
+  inset: var(--space-6) var(--space-2) calc(var(--space-5) * -1);
+  background: var(--color-highlight-alt);
+  transform: rotate(-1.25deg);
+}
+
+.stack::after {
+  inset: var(--space-4) var(--space-1) calc(var(--space-3) * -1);
+  background: var(--color-highlight);
+  transform: rotate(0.75deg);
 }
 
 /* The card is the swipe surface: a horizontal pointer drag across it is a Keep or a Pass.
@@ -46,58 +72,65 @@
 .action {
   display: inline-flex;
   min-width: 0;
-  min-height: var(--space-8);
+  min-height: var(--space-9);
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
   padding: var(--space-3) var(--space-4);
-  border: 1px solid transparent;
+  border: var(--outline-width) solid var(--color-border-strong);
   border-radius: var(--radius-pill);
-  font-size: var(--text-base);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-heavy);
   line-height: var(--leading-tight);
+  color: var(--color-text);
   transition:
     background-color var(--transition-fast),
-    border-color var(--transition-fast),
+    box-shadow var(--transition-fast),
     transform var(--transition-fast);
 }
 
-.action:active {
-  transform: translateY(1px);
-}
-
-/* Outlined, lighter, and the narrower of the two. */
+/* Cream and outlined, and the narrower of the two. */
 .pass {
+  /* No focus swap: this stands on the canvas and its ring is drawn out there, so it stays butter. */
   flex: 2;
-  background: transparent;
-  border-color: var(--color-border-strong);
+  background: var(--color-surface);
   color: var(--color-text);
-  font-weight: var(--weight-medium);
 }
 
 .pass:hover {
   background: var(--color-surface-muted);
 }
 
-/* Filled, heavier, lifted, and half again as wide: the primary action of the whole product. */
+.pass:active {
+  transform: translateY(1px);
+}
+
+/* Filled, lifted, and half again as wide: the primary action of the whole product. */
 .keep {
   flex: 3;
   background: var(--color-accent);
   color: var(--color-accent-contrast);
-  font-weight: var(--weight-semibold);
-  box-shadow: var(--shadow-card);
+  box-shadow: var(--shadow-press);
 }
 
 .keep:hover {
   background: var(--color-accent-hover);
 }
 
+.keep:active {
+  box-shadow: none;
+  transform: translateY(var(--space-1));
+}
+
 /* A decision that did not save, named with a way to retry it. Styled after the danger state
    notice, because it is the same kind of news, but compact: the card stays usable under it. */
 .unsaved {
+  --color-focus: var(--color-focus-surface);
   padding: var(--space-3) var(--space-4);
-  border: 1px solid var(--color-danger-border);
-  border-radius: var(--radius-sm);
+  border: var(--outline-width) solid var(--color-danger-border);
+  border-radius: var(--radius-md);
   background: var(--color-danger-soft);
+  color: var(--color-text);
 }
 
 .unsavedList {
@@ -120,11 +153,12 @@
 .retry {
   flex: none;
   padding: var(--space-1) var(--space-3);
-  border: 1px solid var(--color-border-strong);
+  border: var(--outline-width) solid var(--color-border-strong);
   border-radius: var(--radius-pill);
   background: transparent;
   color: var(--color-text);
   font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
 }
 
 .retry:hover:not(:disabled) {
@@ -132,8 +166,8 @@
 }
 
 .icon {
-  width: var(--space-4);
-  height: var(--space-4);
+  width: var(--space-5);
+  height: var(--space-5);
   flex: none;
 }
 
@@ -145,6 +179,7 @@
   border-radius: var(--radius-sm);
   font-family: var(--font-mono);
   font-size: var(--text-2xs);
+  font-weight: var(--weight-medium);
   line-height: var(--leading-tight);
 }
 

@@ -56,7 +56,7 @@ export function contentSecurityPolicy(
     "style-src 'self' 'unsafe-inline'",
     // `blob:` and `data:` are what `next/image` produces for placeholders.
     "img-src 'self' blob: data:",
-    // `next/font` self-hosts the Geist faces at build time, so nothing is fetched elsewhere.
+    // `next/font` self-hosts Bricolage Grotesque and DM Mono at build time, so nothing is fetched elsewhere.
     "font-src 'self'",
     "connect-src 'self'",
     "object-src 'none'",
