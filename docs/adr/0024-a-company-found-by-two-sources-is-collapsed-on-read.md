@@ -79,6 +79,13 @@ exactly once.
 The Diary needed nothing. It already named a company once, by selecting `distinct` names of the
 Kept companies attending an Event.
 
+**2026-11-05 amendment:** that held for naming a company once, and nothing else. The Diary's
+`keptAttendees` (`db/events.ts`) read any `keep` swipe, so a Pass recorded on a sibling after a
+Keep on another — the case this ADR's newest-decision rule exists for — still left the Event
+starred and the company named under it, after the Watchlist and the News page had both moved on.
+`keptAttendees` now embeds `isNewestDecisionForCompany` from `db/deck.ts`, so the Diary agrees
+with the other two readers of a Keep. See Ticket #273.
+
 Nothing about ingest changes. Two Sources still write two rows, `profiles` still holds both, and
 the known limitation in `scripts/ingest-ycombinator.ts` is now about the Catalogue rather than
 about the Deck.
