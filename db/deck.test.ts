@@ -443,6 +443,163 @@ describe("a company two Sources found", () => {
 });
 
 /**
+ * The fill rule from Ticket #271: a blank `website`, `location`, `founders` or `links` is
+ * dealt from a Sibling that states it, a row's own non-null value is never replaced, and
+ * `provenance` is dealt to match. See `db/deck.ts`'s `deckColumns`.
+ */
+describe("filling a dealt card's blanks from its Siblings", () => {
+  const WEBSITE = "https://sprocket.example.com";
+  const LOCATION = "Palo Alto, CA";
+  const FOUNDERS = [{ name: "Ada Lovelace" }];
+  const LINKS = { twitter: "https://twitter.com/sprocket" };
+
+  /**
+   * `sec-form-d` states only a location; `ycombinator` states a website, founders and links
+   * and no location. Between them every one of the four fillable fields has exactly one
+   * Sibling stating it. `ycombinator`, given last, is the newer and so the one the Deck deals.
+   */
+  const seedComplementary = () =>
+    seedSiblings(scratch.db, {
+      name: "Sprocket",
+      sources: [
+        { source: "sec-form-d", location: LOCATION },
+        {
+          source: "ycombinator",
+          website: WEBSITE,
+          founders: FOUNDERS,
+          links: LINKS,
+        },
+      ],
+    });
+
+  const dealtCard = async () => {
+    const page = await asUser(scratch.db, JACK, (tx) =>
+      readDeckPage(tx, { userId: JACK, limit: DEFAULT_PAGE_SIZE }),
+    );
+    const [card] = page.profiles;
+    return card!;
+  };
+
+  it("deals all four fields on the dealt card, from whichever Sibling states each", async () => {
+    await seedComplementary();
+
+    const card = await dealtCard();
+
+    expect(card).toMatchObject({
+      website: WEBSITE,
+      location: LOCATION,
+      founders: FOUNDERS,
+      links: LINKS,
+    });
+  });
+
+  it("deals all four fields whichever Sibling wins sibling_rank", async () => {
+    // `ycombinator` given first is now the older Sibling, so `sec-form-d` is the one dealt —
+    // the opposite winner from the test above, with the same complementary fields.
+    await seedSiblings(scratch.db, {
+      name: "Sprocket",
+      sources: [
+        {
+          source: "ycombinator",
+          website: WEBSITE,
+          founders: FOUNDERS,
+          links: LINKS,
+        },
+        { source: "sec-form-d", location: LOCATION },
+      ],
+    });
+
+    const card = await dealtCard();
+
+    expect(card).toMatchObject({
+      website: WEBSITE,
+      location: LOCATION,
+      founders: FOUNDERS,
+      links: LINKS,
+    });
+  });
+
+  it("deals the filled website's provenance as the Sibling that states it records", async () => {
+    await seedComplementary();
+
+    const card = await dealtCard();
+
+    expect(card.provenance.website).toBe("scraped");
+    expect(card.provenance.location).toBe("scraped");
+  });
+
+  it("shows the Watchlist the same four fields after a Keep on either Sibling", async () => {
+    for (const pick of [0, 1] as const) {
+      const [secFormD, ycombinator] = await seedSiblings(scratch.db, {
+        name: `Sprocket ${pick}`,
+        sources: [
+          { source: "sec-form-d", location: LOCATION },
+          {
+            source: "ycombinator",
+            website: WEBSITE,
+            founders: FOUNDERS,
+            links: LINKS,
+          },
+        ],
+      });
+      const keptId = pick === 0 ? secFormD : ycombinator;
+
+      await asUser(scratch.db, JACK, (tx) =>
+        recordSwipe(tx, { userId: JACK, profileId: keptId!, decision: "keep" }),
+      );
+
+      const kept = await asUser(scratch.db, JACK, (tx) =>
+        readKeptProfiles(tx, JACK),
+      );
+      const entry = kept.find((profile) => profile.id === keptId);
+
+      expect(entry).toMatchObject({
+        website: WEBSITE,
+        location: LOCATION,
+        founders: FOUNDERS,
+        links: LINKS,
+      });
+    }
+  });
+
+  it("keeps a dealt row's own location when a Sibling states a different one", async () => {
+    const [, newer] = await seedSiblings(scratch.db, {
+      name: "Sprocket",
+      sources: [
+        { source: "sec-form-d", location: "Oakland, CA" },
+        { source: "ycombinator", location: LOCATION },
+      ],
+    });
+
+    const card = await dealtCard();
+
+    expect(card.id).toBe(newer);
+    expect(card.location).toBe(LOCATION);
+  });
+
+  it("deals the newer Sibling's website when the dealt row states none and two others disagree", async () => {
+    const OLDER_WEBSITE = "https://older.example.com";
+    const NEWER_WEBSITE = "https://newer.example.com";
+
+    // Given oldest to newest: the last, stating no website, is the newest and so the one
+    // dealt; between the other two, the one given second is the newer.
+    const [, , dealt] = await seedSiblings(scratch.db, {
+      name: "Sprocket",
+      sources: [
+        { source: "sec-form-d", website: OLDER_WEBSITE },
+        { source: "ycombinator", website: NEWER_WEBSITE },
+        { source: "angelpad" },
+      ],
+    });
+
+    const card = await dealtCard();
+
+    expect(card.id).toBe(dealt);
+    expect(card.website).toBe(NEWER_WEBSITE);
+  });
+});
+
+/**
  * The policies from Ticket #2 are the backstop underneath the queries above, so these tests
  * go around `readDeckPage` entirely and ask Postgres directly, as the roles PostgREST and the
  * app itself connect as.
