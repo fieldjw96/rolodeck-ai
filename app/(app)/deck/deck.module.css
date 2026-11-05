@@ -131,6 +131,37 @@
   background: var(--color-surface-muted);
 }
 
+/* The way back from the decision just made. Deliberately quiet and centred under the two
+   actions: it is there for the Pass a thumb made by accident, not a third decision to weigh. */
+.undo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.undoAction {
+  padding: var(--space-1) var(--space-4);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.undoAction:hover:not(:disabled) {
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+}
+
+/* An Undo the server refused, which leaves the decision standing. */
+.undoError {
+  margin: 0;
+  color: var(--color-danger);
+  font-size: var(--text-sm);
+  text-align: center;
+}
+
 .icon {
   width: var(--space-4);
   height: var(--space-4);

@@ -7,6 +7,11 @@ import { expect, test, type SeededUser } from "./support/real-db-app";
  * Vitest's, does not know how to load. */
 const EMPTY_DECK_MESSAGE = "No Profiles left in the Deck.";
 
+/** `exact: true` on every Keep and Pass locator below, because Playwright matches an
+ * accessible name by substring: the Deck's Undo control is named "Undo Pass on <company>"
+ * (`undoLabel` in `app/(app)/deck/deck.tsx`), so a bare `name: "Pass"` matches it too once a
+ * decision has been made. These locators mean the action button, and exact says so. */
+
 /** Types a throwaway user's credentials into the real login form and submits it, so this
  * spec exercises the same Server Action a person signing in does — not a cookie shortcut. */
 async function login(page: Page, baseURL: string, user: SeededUser) {
@@ -31,10 +36,10 @@ test("Keep carries a Profile to the Watchlist and Pass leaves it out", async ({
 
   // The Deck deals newest first (`db/deck.ts`), so the second Profile seeded is dealt first.
   await expect(page.getByRole("heading", { name: newer })).toBeVisible();
-  await page.getByRole("button", { name: "Keep" }).click();
+  await page.getByRole("button", { name: "Keep", exact: true }).click();
 
   await expect(page.getByRole("heading", { name: older })).toBeVisible();
-  await page.getByRole("button", { name: "Pass" }).click();
+  await page.getByRole("button", { name: "Pass", exact: true }).click();
 
   await expect(page.getByText(EMPTY_DECK_MESSAGE)).toBeVisible();
 
@@ -54,7 +59,7 @@ test("exhausting the Deck shows the empty state from #8", async ({
 
   for (const name of [...seededUser.profileNames].reverse()) {
     await expect(page.getByRole("heading", { name })).toBeVisible();
-    await page.getByRole("button", { name: "Pass" }).click();
+    await page.getByRole("button", { name: "Pass", exact: true }).click();
   }
 
   await expect(page.getByText(EMPTY_DECK_MESSAGE)).toBeVisible();

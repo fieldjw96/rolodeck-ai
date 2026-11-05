@@ -59,10 +59,19 @@ where Siblings would otherwise deal it twice. See `docs/adr/0011` and `docs/adr/
 _Avoid_: feed, list, queue
 
 **Keep** / **Pass**:
-The two swipe actions on a Company Profile. Keep marks it worth a conversation; Pass
-dismisses it from the current Deck without deleting the Company Profile. Either answers for the
-whole company, Siblings included, and the newest of them is the one that counts.
+The two swipe actions on a Company Profile. Keep marks it worth a conversation; Pass dismisses
+it from that reader's Deck for good, without deleting the Company Profile — the card does not
+come back on the next visit, and nothing lists what was Passed. Either answers for the whole
+company, Siblings included, and the newest of them is the one that counts. Final unless the
+reader Undoes it straight away.
 _Avoid_: like/dislike, save/skip, accept/reject
+
+**Undo**:
+Taking back the decision just made, on the Deck and only there: the most recent Keep or Pass,
+and nothing older. It deletes that swipe rather than recording a third kind of decision, so the
+Company Profile is one the reader has not judged again and the Deck deals it next. The
+Watchlist has no Undo; its Pass is a decision like any other.
+_Avoid_: unswipe, revert, restore
 
 **Sector**:
 A Company Profile's industry, drawn from a closed list of twelve so a User Profile's stated
