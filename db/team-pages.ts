@@ -1,8 +1,26 @@
-import { and, asc, eq, isNotNull, isNull, lt, or, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  eq,
+  isNotNull,
+  isNull,
+  lt,
+  notExists,
+  or,
+  sql,
+} from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 
 import type { Database } from "./connection";
 import type { Founder } from "./profile-input";
 import { profiles } from "./schema";
+
+/**
+ * A Profile's Siblings: the rows sharing its `name_key` — one company more than one Source
+ * found, per docs/adr/0008. Read here only to check whether one of them already states
+ * `founders`; see `selectTeamPageCandidates` below. Nothing here merges a Sibling's row.
+ */
+const sibling = alias(profiles, "sibling");
 
 /**
  * The database half of the team-page enrichment: which Company Profiles it reads a site for,
@@ -29,7 +47,9 @@ export const TEAM_PAGE_RETRY_AFTER_DAYS = 30;
 /**
  * Company Profiles that state no founders and do have a website, never-read first and then
  * oldest attempt first, at most `limit`. A Profile read within `TEAM_PAGE_RETRY_AFTER_DAYS`
- * is not taken at all.
+ * is not taken at all, and neither is one whose Sibling already states `founders` — `db/deck.ts`
+ * would deal that Sibling's team from the row already in hand, so reading this company's site a
+ * second time would only duplicate what the Deck can already fill.
  */
 export async function selectTeamPageCandidates(
   db: Database,
@@ -53,6 +73,17 @@ export async function selectTeamPageCandidates(
         or(
           isNull(profiles.foundersSoughtAt),
           lt(profiles.foundersSoughtAt, retryBefore),
+        ),
+        notExists(
+          db
+            .select({ found: sql`1` })
+            .from(sibling)
+            .where(
+              and(
+                eq(sibling.nameKey, profiles.nameKey),
+                isNotNull(sibling.founders),
+              ),
+            ),
         ),
       ),
     )
