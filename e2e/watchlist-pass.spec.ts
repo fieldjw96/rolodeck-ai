@@ -22,7 +22,12 @@ async function login(page: Page, baseURL: string, user: SeededUser) {
  * right after is reading a Keep that has actually happened rather than racing one `deck.tsx`
  * fired with `keepalive` and never waits on (see its own `recordSwipe`). Started before the
  * click, same as that module's write, so a response fast enough to land inside the click
- * itself is still caught. */
+ * itself is still caught.
+ *
+ * `exact: true` for the reason `swipe-flow.spec.ts` gives: Playwright matches a name by
+ * substring, and the Deck's Undo control is named "Undo Keep on <company>" once a decision has
+ * been made. The Watchlist's own Pass buttons below are scoped to a dialog, which the Deck's
+ * Undo is never inside, so they need no such pinning. */
 async function keep(page: Page) {
   await Promise.all([
     page.waitForResponse(
@@ -30,7 +35,7 @@ async function keep(page: Page) {
         /\/api\/profiles\/[^/]+\/keep$/.test(response.url()) &&
         response.request().method() === "POST",
     ),
-    page.getByRole("button", { name: "Keep" }).click(),
+    page.getByRole("button", { name: "Keep", exact: true }).click(),
   ]);
 }
 

@@ -145,7 +145,10 @@ for (const [name, viewport] of [
     await expect(
       page.getByRole("heading", { name: PROFILE.name }),
     ).toBeVisible();
-    await expect(page.getByRole("button", { name: "Keep" })).toBeVisible();
+    // Exact, same as `swipe-flow.spec.ts`: a bare "Keep" also matches the Deck's Undo control.
+    await expect(
+      page.getByRole("button", { name: "Keep", exact: true }),
+    ).toBeVisible();
 
     await expectNoHorizontalScroll(page);
 
