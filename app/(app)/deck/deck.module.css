@@ -1,16 +1,22 @@
 /* One card, centred in the column, with the two decisions under it. Nothing else on the page:
    the interaction is a fast judgement, so the card and its two actions are all there is. */
 
+/* Full width, with the column made by padding rather than by `max-width`, so that `clip` cuts
+   a decided card off at the window's edge as it flies away rather than at the column's, and the
+   page never scrolls sideways while it goes. The column is the same `--measure` it always was. */
 .deck {
   display: flex;
   flex: 1;
   width: 100%;
-  max-width: var(--measure);
-  margin-inline: auto;
   flex-direction: column;
   justify-content: center;
   gap: var(--space-7);
-  padding: var(--space-6) var(--space-4) var(--space-8);
+  padding-block: var(--space-6) var(--space-8);
+  padding-inline: max(
+    var(--space-4),
+    calc((100% - var(--measure)) / 2 + var(--space-4))
+  );
+  overflow-x: clip;
 }
 
 /* Decoration only: the butter and sky cards fanned out behind the Deck's card. */
@@ -44,6 +50,59 @@
    still scrolls under a thumb that moves down the card rather than across it. */
 .swipe {
   touch-action: pan-y;
+  animation: deal-in 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Each newly dealt card rises off the stack behind it. Keyed by Profile, so this runs once per
+   card and not when a drag that fell short springs back. */
+@keyframes deal-in {
+  from {
+    transform: translateY(var(--space-4)) scale(0.96);
+  }
+}
+
+/* The card just decided, thrown off towards its decision over the one now dealt. Solid for
+   most of the throw, so the next card is never read through it, and fading only at the end.
+   It starts where a swipe let go of it: that offset arrives as an inline `translate`, which
+   composes with the `transform` animated here rather than being replaced by it. */
+.leaving {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 1;
+  pointer-events: none;
+  animation-duration: 300ms;
+  animation-timing-function: cubic-bezier(0.4, 0, 1, 1);
+  animation-fill-mode: forwards;
+}
+
+.leavingKeep {
+  animation-name: fly-keep;
+}
+
+.leavingPass {
+  animation-name: fly-pass;
+}
+
+@keyframes fly-keep {
+  70% {
+    opacity: 1;
+  }
+
+  to {
+    transform: translateX(110%) rotate(12deg);
+    opacity: 0;
+  }
+}
+
+@keyframes fly-pass {
+  70% {
+    opacity: 1;
+  }
+
+  to {
+    transform: translateX(-110%) rotate(-12deg);
+    opacity: 0;
+  }
 }
 
 /* Back to rest, for a drag that did not reach SWIPE_COMMIT_FRACTION. Only while the card is
@@ -61,6 +120,10 @@
 @media (prefers-reduced-motion: reduce) {
   .resting {
     transition: none;
+  }
+
+  .swipe {
+    animation: none;
   }
 }
 
@@ -105,16 +168,16 @@
   transform: translateY(1px);
 }
 
-/* Filled, lifted, and half again as wide: the primary action of the whole product. */
+/* Filled green, lifted, and half again as wide: the primary action of the whole product. */
 .keep {
   flex: 3;
-  background: var(--color-accent);
-  color: var(--color-accent-contrast);
+  background: var(--color-keep);
+  color: var(--color-keep-contrast);
   box-shadow: var(--shadow-press);
 }
 
 .keep:hover {
-  background: var(--color-accent-hover);
+  background: var(--color-keep-hover);
 }
 
 .keep:active {

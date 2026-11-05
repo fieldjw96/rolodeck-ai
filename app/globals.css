@@ -1,8 +1,8 @@
 /*
  * The design system, defined once.
  *
- * The direction: Rolodex. A full cobalt ground, cream index cards on it, one tomato accent for
- * the decision that matters, and butter and sky for the cards stacked behind. Tactile rather
+ * The direction: Rolodex. A full cobalt ground, cream index cards on it, one tomato accent, green
+ * for Keep, and butter and sky for the cards stacked behind. Tactile rather
  * than quiet: ink outlines, pills everywhere, chunky display type, hard drop shadows.
  *
  * Two grounds, two sets of ink. Anything drawn straight on the canvas (the header, page titles,
@@ -29,6 +29,10 @@
   --color-accent-ink: hsl(var(--accent-h) 80% 36%);
   --color-accent-soft: hsl(var(--accent-h) 100% 93%);
   --color-accent-border: hsl(var(--accent-h) 75% 68%);
+  /* Keep has a colour of its own, green for yes, so tomato stays the accent everywhere else. */
+  --color-keep: hsl(148 62% 46%);
+  --color-keep-hover: hsl(148 62% 40%);
+  --color-keep-contrast: hsl(148 45% 10%);
   --color-highlight: hsl(44 100% 68%);
   --color-highlight-alt: hsl(222 100% 87%);
   --color-danger: hsl(4 70% 38%);
@@ -103,6 +107,9 @@
     --color-accent-ink: hsl(var(--accent-h) 100% 74%);
     --color-accent-soft: hsl(var(--accent-h) 40% 24%);
     --color-accent-border: hsl(var(--accent-h) 50% 46%);
+    --color-keep: hsl(148 55% 52%);
+    --color-keep-hover: hsl(148 60% 60%);
+    --color-keep-contrast: hsl(148 45% 10%);
     --color-highlight: hsl(44 55% 30%);
     --color-highlight-alt: hsl(222 42% 34%);
     --color-danger: hsl(4 90% 76%);

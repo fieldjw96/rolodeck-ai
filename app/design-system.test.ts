@@ -73,6 +73,8 @@ const PAIRINGS: [foreground: string, background: string, minimum: number][] = [
   ["--color-danger", "--color-danger-soft", 4.5],
   ["--color-accent-contrast", "--color-accent", 4.5],
   ["--color-accent-contrast", "--color-accent-hover", 4.5],
+  ["--color-keep-contrast", "--color-keep", 4.5],
+  ["--color-keep-contrast", "--color-keep-hover", 4.5],
   ["--color-border-strong", "--color-surface", 3],
   ["--color-focus", "--color-canvas", 3],
   ["--color-focus-surface", "--color-surface", 3],
