@@ -261,8 +261,7 @@ export const swipes = pgTable(
      * A decision can only ever be recorded, or corrected, against the signed-in user, and
      * only about a Profile that user can see. A foreign key does not consult RLS, so without
      * the `exists` — which reads `profiles` through its own policy — an id belonging to
-     * somebody else would be accepted here. There is deliberately no delete policy: nothing
-     * in the app un-swipes a Profile.
+     * somebody else would be accepted here.
      */
     pgPolicy("swipes_insert_own", {
       for: "insert",
@@ -274,6 +273,24 @@ export const swipes = pgTable(
       to: authenticatedRole,
       using: sql`${authUid} = ${table.userId}`,
       withCheck: sql`${authUid} = ${table.userId} and exists (select 1 from ${profiles} where ${profiles.id} = ${table.profileId})`,
+    }),
+    /**
+     * There is a delete policy now, which there deliberately was not while nothing in the app
+     * un-swiped a Profile: the Deck's Undo takes back the decision the reader just made, and
+     * taking one back is deleting the row rather than recording a third kind of decision —
+     * one row per reader per Profile is what the primary key above is for, and a Profile with
+     * no row is exactly a Profile with no decision, which is the state Undo restores.
+     *
+     * `using` alone, with no `with check`: a delete has no new row to check, and a reader may
+     * only ever reach their own swipes. Another User's row is invisible to it rather than
+     * refused, so an undo aimed at somebody else's decision deletes nothing. See
+     * `undoSwipe` in `db/deck.ts`, which writes the same clause into its own `where` because
+     * per CLAUDE.md this policy is a backstop and never the only control.
+     */
+    pgPolicy("swipes_delete_own", {
+      for: "delete",
+      to: authenticatedRole,
+      using: sql`${authUid} = ${table.userId}`,
     }),
   ],
 );
