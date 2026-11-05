@@ -9,6 +9,7 @@ import {
   readDeckPage,
   readKeptProfiles,
   recordSwipe,
+  undoSwipe,
   type DeckCursor,
   type DeckPage,
   type DeckProfile,
@@ -295,6 +296,83 @@ describe("recording a swipe", () => {
   });
 });
 
+describe("undoing a swipe", () => {
+  it("deletes the decision and deals the Company Profile again", async () => {
+    const [only] = await seed(1);
+
+    await asUser(scratch.db, JACK, (tx) =>
+      recordSwipe(tx, { userId: JACK, profileId: only!, decision: "pass" }),
+    );
+
+    await expect(
+      asUser(scratch.db, JACK, (tx) =>
+        undoSwipe(tx, { userId: JACK, profileId: only! }),
+      ),
+    ).resolves.toBe(true);
+
+    const page = await asUser(scratch.db, JACK, (tx) =>
+      readDeckPage(tx, { userId: JACK, limit: DEFAULT_PAGE_SIZE }),
+    );
+
+    expect(names(page)).toEqual(["Startup 0"]);
+
+    // No decision at all, rather than a third kind of decision.
+    await scratch.reset();
+    await expect(scratch.db.select().from(swipes)).resolves.toEqual([]);
+  });
+
+  it("takes an undone Keep out of the Watchlist", async () => {
+    const [only] = await seed(1);
+
+    await asUser(scratch.db, JACK, (tx) =>
+      recordSwipe(tx, { userId: JACK, profileId: only!, decision: "keep" }),
+    );
+    await asUser(scratch.db, JACK, (tx) =>
+      undoSwipe(tx, { userId: JACK, profileId: only! }),
+    );
+
+    await expect(
+      asUser(scratch.db, JACK, (tx) => readKeptProfiles(tx, JACK)),
+    ).resolves.toEqual([]);
+  });
+
+  it("says there was nothing to undo when the reader never swiped it", async () => {
+    const [only] = await seed(1);
+
+    await expect(
+      asUser(scratch.db, JACK, (tx) =>
+        undoSwipe(tx, { userId: JACK, profileId: only! }),
+      ),
+    ).resolves.toBe(false);
+  });
+
+  it("says there was nothing to undo for a Company Profile that does not exist", async () => {
+    await expect(
+      asUser(scratch.db, JACK, (tx) =>
+        undoSwipe(tx, { userId: JACK, profileId: NO_SUCH_PROFILE }),
+      ),
+    ).resolves.toBe(false);
+  });
+
+  it("leaves another User's decision about the same Company Profile alone", async () => {
+    const [shared] = await seed(1);
+    await scratch.db
+      .insert(swipes)
+      .values({ userId: SOMEONE_ELSE, profileId: shared!, decision: "keep" });
+
+    await expect(
+      asUser(scratch.db, JACK, (tx) =>
+        undoSwipe(tx, { userId: JACK, profileId: shared! }),
+      ),
+    ).resolves.toBe(false);
+
+    await scratch.reset();
+    await expect(
+      scratch.db.select().from(swipes).where(eq(swipes.userId, SOMEONE_ELSE)),
+    ).resolves.toHaveLength(1);
+  });
+});
+
 describe("reading the Watchlist", () => {
   it("returns nothing when nothing has been Kept", async () => {
     await seed(2);
@@ -412,6 +490,24 @@ describe("a company two Sources found", () => {
     );
 
     expect(await dealtIds()).toEqual([]);
+  });
+
+  // Undo deletes the swipe on the sibling that was dealt, and nothing about the other one.
+  // That is all it has to do: the company was dealable only because neither sibling had a
+  // decision, so the decision just taken back was its only one.
+  it("deals the company again once the decision on the dealt sibling is undone", async () => {
+    const [, dealt] = await seedBoth();
+
+    await asUser(scratch.db, JACK, (tx) =>
+      recordSwipe(tx, { userId: JACK, profileId: dealt!, decision: "pass" }),
+    );
+    expect(await dealtIds()).toEqual([]);
+
+    await asUser(scratch.db, JACK, (tx) =>
+      undoSwipe(tx, { userId: JACK, profileId: dealt! }),
+    );
+
+    expect(await dealtIds()).toEqual([dealt]);
   });
 
   it("gives one Watchlist entry for a company Kept twice, the one Kept most recently", async () => {
@@ -653,6 +749,38 @@ describe("row level security under the Deck", () => {
         }),
       ),
     ).resolves.toMatch(/row-level security/i);
+  });
+
+  /**
+   * `swipes_delete_own` from this Ticket, read through `asUser()` rather than `scratch.as()`
+   * because that is the path the Deck's Undo takes, and asked with a `where` that names no
+   * User: what is under test is the policy on its own, not the clause `undoSwipe` writes over
+   * the top of it.
+   */
+  it("lets a User delete their own swipe", async () => {
+    await expect(
+      asUser(scratch.db, JACK, (tx) =>
+        tx
+          .delete(swipes)
+          .where(eq(swipes.profileId, theOnlyProfile))
+          .returning({ profileId: swipes.profileId }),
+      ),
+    ).resolves.toHaveLength(1);
+  });
+
+  it("deletes none of another User's swipes", async () => {
+    await expect(
+      asUser(scratch.db, SOMEONE_ELSE, (tx) =>
+        tx
+          .delete(swipes)
+          .where(eq(swipes.profileId, theOnlyProfile))
+          .returning({ profileId: swipes.profileId }),
+      ),
+    ).resolves.toEqual([]);
+
+    // Invisible to them rather than refused, so Jack's decision is still there.
+    await scratch.reset();
+    await expect(scratch.db.select().from(swipes)).resolves.toHaveLength(1);
   });
 
   it("refuses a swipe about a Company Profile that does not exist", async () => {
