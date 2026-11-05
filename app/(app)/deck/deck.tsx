@@ -578,6 +578,11 @@ export function Deck() {
 
               return others.length === list.length ? list : others;
             });
+            // An Undo quick enough to land mid-throw would otherwise show the card twice: back
+            // on top at rest, and its copy still flying off over it.
+            setLeaving((current) =>
+              current?.profile.id === target.profile.id ? null : current,
+            );
             commit(stateAfterUndoing(stateRef.current, target.profile));
           },
           (error: unknown) => {

@@ -838,6 +838,33 @@ describe("undoing the decision just made", () => {
     expect(screen.queryByRole("button", { name: /^Undo/ })).toBeNull();
   });
 
+  it("drops the flying copy of a card an Undo puts back before its throw has finished", async () => {
+    stubFetch({
+      "GET /api/profiles": { profiles: [acme, globex], next_cursor: null },
+      [`POST /api/profiles/${acme.id}/pass`]: {},
+      [`DELETE /api/profiles/${acme.id}/swipe`]: {},
+    });
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: false,
+      media: query,
+    }));
+
+    const { container } = render(<Deck />);
+
+    await screen.findByRole("heading", { name: "Acme" });
+    fireEvent.click(screen.getByRole("button", { name: "Pass" }));
+    await screen.findByRole("heading", { name: "Globex" });
+    expect(container.querySelector("[inert]")).not.toBeNull();
+
+    // No `animationend`: the Undo lands while the copy is still on its way off.
+    await act(async () => {
+      fireEvent.click(undoOf(acme, "pass"));
+    });
+
+    expect(screen.getByRole("heading", { name: "Acme" })).toBeInTheDocument();
+    expect(container.querySelector("[inert]")).toBeNull();
+  });
+
   it("deals the Profile again, and takes a second decision about it", async () => {
     const fetchMock = stubFetch({
       "GET /api/profiles": { profiles: [acme, globex], next_cursor: null },
