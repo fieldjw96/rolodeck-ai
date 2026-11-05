@@ -14,6 +14,7 @@ import { z } from "zod";
 import { citiesInArea } from "../lib/location/bay-area";
 import { issueField } from "../lib/zod/issues";
 import type { Database } from "./connection";
+import { isNewestDecisionForCompany } from "./deck";
 import { eventInputSchema, type EventInput } from "./event-input";
 import { sourceSchema } from "./ingest";
 import type { IngestRejection } from "./profile-input";
@@ -286,7 +287,9 @@ export const DIARY_PAST_LIMIT = 30;
  *
  * Every signed-in User reads the same Events: they are Catalogue, per docs/adr/0019. What
  * differs between two Users reading the same Diary is which of those Events is `important`,
- * since that is decided by their own Keeps.
+ * since that is decided by their own Keeps — and, where a company has more than one Company
+ * Profile, by their newest decision about it, siblings included, the same rule the Watchlist and
+ * the News page apply. See `keptAttendees` below and docs/adr/0024.
  *
  * "Their area" is `userProfiles.area` where the User stated one, and `DIARY_DEFAULT_AREA` where
  * they did not, so a User who has stated nothing gets a Bay Area Diary rather than a worldwide
@@ -328,9 +331,15 @@ export async function readDiary(
     includePast = false,
   }: { userId: string; today: string; includePast?: boolean },
 ): Promise<DiaryEvent[]> {
-  /** The reader's Kept Company Profiles that attend the Event on the current row. */
+  /**
+   * The reader's Kept Company Profiles that attend the Event on the current row. "Kept" here
+   * means the same thing it means on the Watchlist and the News page: a `keep` swipe, and it is
+   * the reader's newest decision about the company, siblings included. That second half is
+   * `isNewestDecisionForCompany` from `db/deck.ts`, reused rather than re-written, so a Pass
+   * recorded after this Event's attendee was Kept supersedes it here exactly as it does there.
+   */
   const keptAttendees = (selection: SQL) =>
-    sql`select ${selection} from ${eventAttendances} inner join ${profiles} on ${profiles.id} = ${eventAttendances.profileId} inner join ${swipes} on ${swipes.profileId} = ${profiles.id} where ${eventAttendances.eventId} = ${events.id} and ${swipes.userId} = ${userId} and ${swipes.decision} = 'keep'`;
+    sql`select ${selection} from ${eventAttendances} inner join ${profiles} on ${profiles.id} = ${eventAttendances.profileId} inner join ${swipes} on ${swipes.profileId} = ${profiles.id} where ${eventAttendances.eventId} = ${events.id} and ${swipes.userId} = ${userId} and ${swipes.decision} = 'keep' and ${isNewestDecisionForCompany(db, userId)}`;
 
   const userProfile = await readUserProfile(db, userId);
   const areaCities = citiesInArea(userProfile.area ?? DIARY_DEFAULT_AREA);

@@ -593,6 +593,102 @@ describe("reading the Diary", () => {
   });
 });
 
+/**
+ * The Diary should agree with the Watchlist and the News page about what the reader currently
+ * Keeps, per docs/adr/0024's newest-decision rule and Ticket #273. Two Sibling Profiles share a
+ * `name_key`, so a Keep on one and a later Pass on the other disagree about the company, and
+ * the newer swipe is the one that counts. An excluded-title Event is seeded alongside an
+ * ordinary one so the title-relevance exception is checked by the same swipes.
+ */
+describe("the Diary's newest decision about a company", () => {
+  const SPROCKET_SUMMIT: EventInput = {
+    externalId: "sprocket-summit-newest@example.com",
+    name: "Sprocket Summit",
+    startDate: "2026-09-20",
+    url: "https://example.com/sprocket-summit-newest",
+    attendees: ["Sprocket"],
+  };
+
+  const SPROCKET_EARNINGS: EventInput = {
+    externalId: "sprocket-earnings@example.com",
+    name: "Earnings: SPKT",
+    startDate: "2026-09-20",
+    url: "https://example.com/sprocket-earnings",
+    attendees: ["Sprocket"],
+  };
+
+  const seedEvents = () =>
+    persistEvents(scratch.db, {
+      source: "techmeme-events",
+      events: [SPROCKET_SUMMIT, SPROCKET_EARNINGS],
+    });
+
+  const swipe = (
+    profileId: string,
+    decision: "keep" | "pass",
+    decidedAt: Date,
+  ) =>
+    scratch.db
+      .insert(swipes)
+      .values({ userId: JACK, profileId, decision, decidedAt });
+
+  it("does not count a Keep that a later Pass on a sibling supersedes", async () => {
+    const siblingA = await company("Sprocket", { source: "show-hn" });
+    const siblingB = await company("Sprocket", { source: "sec-form-d" });
+    await seedEvents();
+
+    await swipe(siblingA, "keep", new Date("2026-09-01T00:00:00Z"));
+    await swipe(siblingB, "pass", new Date("2026-09-02T00:00:00Z"));
+
+    const read = await diary();
+
+    const summit = read.find((event) => event.name === SPROCKET_SUMMIT.name);
+    expect(summit?.important).toBe(false);
+    expect(summit?.keptCompanies).toEqual([]);
+    expect(
+      read.some((event) => event.name === SPROCKET_EARNINGS.name),
+    ).toBe(false);
+  });
+
+  it("counts a Keep that is newer than a Pass on a sibling", async () => {
+    const siblingA = await company("Sprocket", { source: "show-hn" });
+    const siblingB = await company("Sprocket", { source: "sec-form-d" });
+    await seedEvents();
+
+    await swipe(siblingA, "pass", new Date("2026-09-01T00:00:00Z"));
+    await swipe(siblingB, "keep", new Date("2026-09-02T00:00:00Z"));
+
+    const read = await diary();
+
+    const summit = read.find((event) => event.name === SPROCKET_SUMMIT.name);
+    expect(summit?.important).toBe(true);
+    expect(summit?.keptCompanies).toEqual(["Sprocket"]);
+    const earnings = read.find(
+      (event) => event.name === SPROCKET_EARNINGS.name,
+    );
+    expect(earnings?.important).toBe(true);
+    expect(earnings?.keptCompanies).toEqual(["Sprocket"]);
+  });
+
+  it("still counts a single Profile that was Kept and never Passed", async () => {
+    const onlyProfile = await company("Sprocket");
+    await seedEvents();
+
+    await swipe(onlyProfile, "keep", new Date("2026-09-01T00:00:00Z"));
+
+    const read = await diary();
+
+    const summit = read.find((event) => event.name === SPROCKET_SUMMIT.name);
+    expect(summit?.important).toBe(true);
+    expect(summit?.keptCompanies).toEqual(["Sprocket"]);
+    const earnings = read.find(
+      (event) => event.name === SPROCKET_EARNINGS.name,
+    );
+    expect(earnings?.important).toBe(true);
+    expect(earnings?.keptCompanies).toEqual(["Sprocket"]);
+  });
+});
+
 describe("the Diary's past group", () => {
   const daysBefore = (days: number): string => {
     const date = new Date(`${TODAY}T00:00:00Z`);
