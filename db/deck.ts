@@ -395,10 +395,13 @@ export async function readDeckPage(
    */
   const dealable = db
     .select({
-      // Nested, so the page below hands the whole card back out without naming its columns a
-      // second time. `name_key` is not among them and is not selected here either: the window
-      // partitions by it directly, and no caller may see it. See `deckColumns`.
-      profile: deckColumns(db),
+      // Only what ranking and paging need. The card itself, with its Sibling fill, is read
+      // below for the page alone: `deckColumns` runs eight correlated subqueries a row, and
+      // selected here they ran for every undecided Profile in the Catalogue before the page
+      // was cut, so dealing grew with the square of the Catalogue. `name_key` is not selected
+      // either: the window partitions by it directly, and no caller may see it.
+      id: profiles.id,
+      createdAt: profiles.createdAt,
       score: score.as("score"),
       siblingRank:
         sql<number>`row_number() over (partition by ${profiles.nameKey} order by ${score} desc, ${profiles.createdAt} desc, ${profiles.id} desc)`.as(
@@ -416,23 +419,28 @@ export async function readDeckPage(
 
   // One more row than asked for: whether it comes back is the whole of the "is there a next
   // page?" question, and it costs one row rather than a second count query.
-  const rows = await db
-    .select({ profile: dealable.profile, score: dealable.score })
+  const dealt = db
+    .select({ id: dealable.id, score: dealable.score })
     .from(dealable)
     .where(
       and(
         sql`${dealable.siblingRank} = 1`,
         cursor === undefined
           ? undefined
-          : sql`(${dealable.score}, ${dealable.profile.createdAt}, ${dealable.profile.id}) < (${cursor.score}::int, ${cursor.createdAt.toISOString()}::timestamptz, ${cursor.id}::uuid)`,
+          : sql`(${dealable.score}, ${dealable.createdAt}, ${dealable.id}) < (${cursor.score}::int, ${cursor.createdAt.toISOString()}::timestamptz, ${cursor.id}::uuid)`,
       ),
     )
-    .orderBy(
-      desc(dealable.score),
-      desc(dealable.profile.createdAt),
-      desc(dealable.profile.id),
-    )
-    .limit(limit + 1);
+    .orderBy(desc(dealable.score), desc(dealable.createdAt), desc(dealable.id))
+    .limit(limit + 1)
+    .as("dealt");
+
+  // The page's own rows, joined back to `profiles` so `deckColumns` fills them and only them.
+  // Ordered again, because a join does not keep the subquery's order.
+  const rows = await db
+    .select({ profile: deckColumns(db), score: dealt.score })
+    .from(dealt)
+    .innerJoin(profiles, eq(profiles.id, dealt.id))
+    .orderBy(desc(dealt.score), desc(profiles.createdAt), desc(profiles.id));
 
   const page = rows.slice(0, limit);
   const last = page.at(-1);
