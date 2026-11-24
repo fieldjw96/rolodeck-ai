@@ -15,6 +15,7 @@ const SECTOR_BY_RAW_TEXT: ReadonlyMap<string, Sector> = new Map([
   ["artificial intelligence", "ai-ml"],
   ["machine learning", "ai-ml"],
   ["neurotechnology", "ai-ml"],
+  ["frontier ai", "ai-ml"],
 
   // developer-tools
   ["developer tools", "developer-tools"],
@@ -25,6 +26,7 @@ const SECTOR_BY_RAW_TEXT: ReadonlyMap<string, Sector> = new Map([
   ["data infrastructure", "data-infrastructure"],
   ["fintech infrastructure", "data-infrastructure"],
   ["data & analytics", "data-infrastructure"],
+  ["infrastructure", "data-infrastructure"],
 
   // saas-enterprise
   ["saas", "saas-enterprise"],
@@ -33,6 +35,7 @@ const SECTOR_BY_RAW_TEXT: ReadonlyMap<string, Sector> = new Map([
   ["workflow automation", "saas-enterprise"],
   ["productivity", "saas-enterprise"],
   ["marketing", "saas-enterprise"],
+  ["enterprise", "saas-enterprise"],
 
   // fintech
   ["fintech", "fintech"],
@@ -41,6 +44,7 @@ const SECTOR_BY_RAW_TEXT: ReadonlyMap<string, Sector> = new Map([
   // health-bio
   ["health tech", "health-bio"],
   ["healthcare", "health-bio"],
+  ["healthcare & bio", "health-bio"],
 
   // security
   ["security & compliance", "security"],
@@ -62,6 +66,7 @@ const SECTOR_BY_RAW_TEXT: ReadonlyMap<string, Sector> = new Map([
   ["community", "consumer-marketplace"],
   ["e-commerce", "consumer-marketplace"],
   ["retailing", "consumer-marketplace"],
+  ["consumer", "consumer-marketplace"],
 
   // vertical-saas
   ["hr technology", "vertical-saas"],
@@ -73,6 +78,9 @@ const SECTOR_BY_RAW_TEXT: ReadonlyMap<string, Sector> = new Map([
 
   // other, stated explicitly rather than left to the fallback below
   ["nonprofit", "other"],
+
+  // deep tech and crypto are deliberately not mapped: none of the twelve Sectors fits them, so
+  // they fall through to other.
 ]);
 
 /**
