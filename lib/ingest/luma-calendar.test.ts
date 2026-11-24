@@ -7,7 +7,11 @@ import {
   readEventSourceFixture,
   type EventSourceFixture,
 } from "../testing/fixtures";
-import { LUMA_CALENDARS, parseLumaCalendar } from "./luma-calendar";
+import {
+  LUMA_CALENDARS,
+  parseLumaCalendar,
+  reduceLumaOrganizerName,
+} from "./luma-calendar";
 
 /**
  * Every fixture under `db/fixtures/luma-*.html` was captured with `curl` from the URL its
@@ -261,6 +265,62 @@ describe("parseLumaCalendar, against the calendars added for the Diary", () => {
       url: "https://luma.com/frontier-al6k",
       attendees: ["Frontier Tower SF"],
     });
+  });
+});
+
+describe("reduceLumaOrganizerName", () => {
+  it.each([
+    ["Niural AI's Event Calendar", "Niural AI"],
+    ["Heavybit Events", "Heavybit"],
+    ["PromptQL Events", "PromptQL"],
+    ["Data For AI Events", "Data For AI"],
+    ["StepFun Events", "StepFun"],
+  ])("reduces %s to %s", (name, expected) => {
+    expect(reduceLumaOrganizerName(name)).toBe(expected);
+  });
+
+  it("reduces a name with no listed suffix to null", () => {
+    expect(reduceLumaOrganizerName("Conviva")).toBeNull();
+  });
+
+  it("reduces the bare suffix, with nothing before it, to null", () => {
+    expect(reduceLumaOrganizerName("Events")).toBeNull();
+  });
+
+  it("is case-insensitive", () => {
+    expect(reduceLumaOrganizerName("heavybit events")).toBe("heavybit");
+  });
+
+  it("strips exactly one trailing suffix, not the longest prefix it could", () => {
+    expect(reduceLumaOrganizerName("Heavybit Events Events")).toBe(
+      "Heavybit Events",
+    );
+  });
+
+  it("reduces exactly the organizer names stated with a listed suffix across the two calendars named in the Ticket, and nothing else", () => {
+    const reduced = new Set<string>();
+
+    for (const source of ["luma-ai-events-sf", "luma-bond-ai-sf"]) {
+      const { events } = parseLumaCalendar(captureOf(source).text);
+
+      for (const event of events) {
+        for (const attendee of event.attendees) {
+          if (reduceLumaOrganizerName(attendee) !== null) {
+            reduced.add(attendee);
+          }
+        }
+      }
+    }
+
+    expect(reduced).toEqual(
+      new Set([
+        "Niural AI's Event Calendar",
+        "Heavybit Events",
+        "PromptQL Events",
+        "Data For AI Events",
+        "StepFun Events",
+      ]),
+    );
   });
 });
 

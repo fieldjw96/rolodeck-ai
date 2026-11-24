@@ -451,6 +451,34 @@ describe("attendance", () => {
 
     expect(report.attendances).toBe(2);
   });
+
+  it("matches a Luma attendee stated with a calendar-branding suffix to the company it names", async () => {
+    const heavybit = await company("Heavybit");
+
+    const report = await persistEvents(scratch.db, {
+      source: "luma",
+      events: [{ ...SUMMIT, attendees: ["Heavybit Events"] }],
+    });
+
+    expect(report.attendances).toBe(1);
+    const rows = await scratch.db.select().from(eventAttendances);
+    expect(rows.map((row) => row.profileId)).toEqual([heavybit]);
+  });
+
+  it("links only the Profile named for the stated form, not the one named for its reduction", async () => {
+    const acme = await company("Acme");
+    const acmeEvents = await company("Acme Events");
+
+    const report = await persistEvents(scratch.db, {
+      source: "luma",
+      events: [{ ...SUMMIT, attendees: ["Acme Events"] }],
+    });
+
+    expect(report.attendances).toBe(1);
+    const rows = await scratch.db.select().from(eventAttendances);
+    expect(rows.map((row) => row.profileId)).toEqual([acmeEvents]);
+    expect(rows.map((row) => row.profileId)).not.toContain(acme);
+  });
 });
 
 describe("reading the Diary", () => {
