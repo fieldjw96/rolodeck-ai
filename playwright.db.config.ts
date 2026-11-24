@@ -1,10 +1,12 @@
 import { defineConfig, devices } from "@playwright/test";
 
 /**
- * Ticket #13's suite, plus Ticket #191's, Ticket #230's and Ticket #231's: specs that assert
- * against a real Postgres, not the GoTrue-stub-only server `playwright.config.ts` builds. The
- * swipe-by-drag spec is here because it finishes on the Watchlist, which is a real read of a
- * real Keep rather than anything a `page.route` stub could answer. Kept as its own
+ * Ticket #13's suite, plus Ticket #191's, Ticket #230's, Ticket #231's and Ticket #339's:
+ * specs that assert against a real Postgres, not the GoTrue-stub-only server
+ * `playwright.config.ts` builds. The swipe-by-drag spec is here because it finishes on the
+ * Watchlist, which is a real read of a real Keep rather than anything a `page.route` stub
+ * could answer; `news-diary.spec.ts` is here for the same reason, reading News and the Diary
+ * through their own routes rather than a stub. Kept as its own
  * config, rather than a second project in that one, so `npm run test:e2e` — what the `perf`
  * job runs, with no Postgres available to it — never picks these specs up by accident. The
  * `e2e-db` CI job provisions the Postgres this needs the same way the `migrate` job does, then
@@ -17,6 +19,7 @@ export default defineConfig({
     "onboarding.spec.ts",
     "watchlist-pass.spec.ts",
     "deck-swipe.spec.ts",
+    "news-diary.spec.ts",
   ],
   fullyParallel: false,
   workers: 1,
