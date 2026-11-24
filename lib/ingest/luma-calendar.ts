@@ -226,6 +226,53 @@ function attendeesOf(event: z.infer<typeof lumaEventSchema>): string[] {
   return [...new Set(names)];
 }
 
+/**
+ * Luma calendar names that state a hosting company with a calendar-branding suffix rather than
+ * the bare name `attendeesOf` already reads verbatim — "Heavybit Events" and "Niural AI's Event
+ * Calendar" both name a company, not a company literally called that. Declared beside the rule
+ * it governs, in the same idiom as `DIARY_EXCLUDED_TITLE_PATTERNS` in `db/events.ts`: a suffix
+ * not on this list is judged against the rule and not by resemblance, so it is never stripped.
+ */
+export const LUMA_ORGANIZER_SUFFIXES: readonly string[] = [
+  " Events",
+  " Event Calendar",
+  "'s Event Calendar",
+  "’s Event Calendar",
+];
+
+/**
+ * The company a Luma calendar name states once its own branding suffix is removed. Strips
+ * exactly one trailing suffix from `LUMA_ORGANIZER_SUFFIXES`, case-insensitively, preferring the
+ * longest match that applies so "Niural AI's Event Calendar" loses the whole possessive suffix
+ * rather than just " Event Calendar". Returns null when no suffix applies, or when nothing but
+ * the suffix itself would remain.
+ */
+/**
+ * Whether a Source slug names a Luma calendar, for `persistEvents` to gate
+ * `reduceLumaOrganizerName` to Luma alone: the suffix convention it strips is Luma's own
+ * calendar branding, and a Source whose attendee strings happen to end the same way states no
+ * such thing. Every calendar in `LUMA_CALENDARS` is slugged `luma-<name>`; the bare `"luma"` a
+ * unit test stands in with is that same name with no calendar appended, so it is Luma too.
+ */
+export function isLumaSource(source: string): boolean {
+  return source === "luma" || source.startsWith("luma-");
+}
+
+export function reduceLumaOrganizerName(name: string): string | null {
+  const lower = name.toLowerCase();
+
+  const longestSuffix = LUMA_ORGANIZER_SUFFIXES.filter((suffix) =>
+    lower.endsWith(suffix.toLowerCase()),
+  ).sort((a, b) => b.length - a.length)[0];
+
+  if (longestSuffix === undefined) {
+    return null;
+  }
+
+  const reduced = name.slice(0, name.length - longestSuffix.length).trim();
+  return reduced.length > 0 ? reduced : null;
+}
+
 function rejectedBatch(
   field: string,
   reason: string,

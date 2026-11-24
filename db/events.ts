@@ -11,6 +11,10 @@ import {
 } from "drizzle-orm";
 import { z } from "zod";
 
+import {
+  isLumaSource,
+  reduceLumaOrganizerName,
+} from "../lib/ingest/luma-calendar";
 import { citiesInArea } from "../lib/location/bay-area";
 import { issueField } from "../lib/zod/issues";
 import type { Database } from "./connection";
@@ -59,7 +63,17 @@ export type EventIngestReport = {
  * states today, so a company a Source stops listing stops being linked. Each attendee name is
  * matched to the Catalogue's Company Profiles on `name_key`, through `nameKeyOf` — the
  * expression that column is generated from — so a name matches here exactly when it would
- * collide there. A name that matches nothing is not stored; nothing is invented to hold it.
+ * collide there. The stated name is tried first; only when it matches no Profile is the name
+ * Luma's own calendar-branding suffix would reduce it to tried instead, through
+ * `reduceLumaOrganizerName` — so a Profile named literally "Acme Events" is matched by that
+ * name and never loses out to a sibling reduction of some other attendee. A name, stated or
+ * reduced, that matches nothing is not stored; nothing is invented to hold it.
+ *
+ * That reduction is only ever tried for a batch whose Source is Luma (`isLumaSource`): the
+ * suffix it strips is Luma's own calendar branding, not a general convention, so a Techmeme or
+ * accelerator attendee string that happens to end the same way is judged on its stated form
+ * alone. Doing otherwise would infer an Attendance CONTEXT.md says is never inferred, for every
+ * Source the suffix convention was never stated by.
  *
  * Throws on a Source name that is wrong, for the reason `persistProfiles` gives.
  */
@@ -71,6 +85,7 @@ export async function persistEvents(
   }: { source: string; events: Iterable<EventInput> },
 ): Promise<EventIngestReport> {
   const sourceName = sourceSchema.parse(source);
+  const isLuma = isLumaSource(sourceName);
 
   const accepted: EventInput[] = [];
   const rejections: IngestRejection[] = [];
@@ -140,23 +155,42 @@ export async function persistEvents(
         continue;
       }
 
-      const attendeeKeys = sql.join(
-        event.attendees.map((name) => nameKeyOf(sql`${name}::text`)),
-        sql`, `,
-      );
+      const matchedProfileIds = new Set<string>();
 
-      const matched = await tx
-        .select({ id: profiles.id })
-        .from(profiles)
-        .where(sql`${profiles.nameKey} in (${attendeeKeys})`);
+      for (const attendee of new Set(event.attendees)) {
+        const stated = await tx
+          .select({ id: profiles.id })
+          .from(profiles)
+          .where(
+            sql`${profiles.nameKey} = ${nameKeyOf(sql`${attendee}::text`)}`,
+          );
 
-      if (matched.length === 0) {
+        const reduced = isLuma ? reduceLumaOrganizerName(attendee) : null;
+
+        const matches =
+          stated.length > 0 || reduced === null
+            ? stated
+            : await tx
+                .select({ id: profiles.id })
+                .from(profiles)
+                .where(
+                  sql`${profiles.nameKey} = ${nameKeyOf(sql`${reduced}::text`)}`,
+                );
+
+        for (const match of matches) {
+          matchedProfileIds.add(match.id);
+        }
+      }
+
+      if (matchedProfileIds.size === 0) {
         continue;
       }
 
       const linked = await tx
         .insert(eventAttendances)
-        .values(matched.map((profile) => ({ eventId, profileId: profile.id })))
+        .values(
+          [...matchedProfileIds].map((profileId) => ({ eventId, profileId })),
+        )
         .onConflictDoNothing()
         .returning({ profileId: eventAttendances.profileId });
 
