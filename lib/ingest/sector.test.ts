@@ -20,6 +20,11 @@ describe("sectorFromRawText", () => {
     ["Robotics", "hardware-robotics"],
     ["HR Technology", "vertical-saas"],
     ["Retailing", "consumer-marketplace"],
+    ["Enterprise", "saas-enterprise"],
+    ["Consumer", "consumer-marketplace"],
+    ["Healthcare & Bio", "health-bio"],
+    ["Infrastructure", "data-infrastructure"],
+    ["Frontier AI", "ai-ml"],
   ] as const)("maps %s onto %s", (raw, sector) => {
     expect(sectorFromRawText(raw)).toBe(sector);
   });
@@ -71,5 +76,25 @@ describe("sectorFromRawText", () => {
     sectorFromRawText("Fintech");
 
     expect(logSpy).not.toHaveBeenCalled();
+  });
+
+  it("maps Deep Tech to other deliberately", () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    expect(sectorFromRawText("Deep Tech")).toBe("other");
+
+    expect(logSpy).toHaveBeenCalledTimes(1);
+    const line = loggedLine(logSpy);
+    expect(line.raw).toBe("Deep Tech");
+  });
+
+  it("maps Crypto to other deliberately", () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    expect(sectorFromRawText("Crypto")).toBe("other");
+
+    expect(logSpy).toHaveBeenCalledTimes(1);
+    const line = loggedLine(logSpy);
+    expect(line.raw).toBe("Crypto");
   });
 });
