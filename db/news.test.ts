@@ -760,7 +760,10 @@ describe("readNews for a company two Sources found", () => {
 
     // Two Attributions of one article, differing only in the matcher's score.
     await persistNewsItems(scratch.db, {
-      candidates: [candidate(yc!, 1), candidate(showHn!, 1, { confidence: 0.8 })],
+      candidates: [
+        candidate(yc!, 1),
+        candidate(showHn!, 1, { confidence: 0.8 }),
+      ],
     });
 
     expect(await storedRows()).toHaveLength(2);

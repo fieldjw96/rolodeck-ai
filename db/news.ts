@@ -447,8 +447,11 @@ type NewsRow = NewsEntry & {
    * matches a requested sibling to its group. No part of a group, and like `urls` below it does
    * not travel: `readNews` hands these rows to `groupNewsByCompany`, which reads the three
    * `profile` fields and nothing else.
+   *
+   * Nullable because `name_key` is generated and Drizzle types it so; it is generated from
+   * `name`, which is `not null`, so no row actually carries a null here.
    */
-  readonly nameKey: string;
+  readonly nameKey: string | null;
 };
 
 /**
@@ -536,10 +539,7 @@ export async function readNews(
  * carrying the company it is grouped under. Shared so that `readNewsForProfile` answers with
  * exactly what `readNews` would group, rather than with a second query that could drift.
  */
-async function readNewsRows(
-  db: Database,
-  userId: string,
-): Promise<NewsRow[]> {
+async function readNewsRows(db: Database, userId: string): Promise<NewsRow[]> {
   /**
    * The Company Profile that names each company the reader currently Keeps, one row per
    * `name_key`. Built here rather than shared with `readKeptProfiles` because what the two
@@ -564,32 +564,34 @@ async function readNewsRows(
     )
     .as("current_keep");
 
-  return db
-    .select({
-      id: newsItems.id,
-      title: newsItems.title,
-      url: newsItems.url,
-      publishedAt: newsItems.publishedAt,
-      sourceName: newsItems.sourceName,
-      confidence: newsItems.confidence,
-      profileId: kept.id,
-      profileName: kept.name,
-      profileSector: kept.sector,
-      nameKey: kept.nameKey,
-    })
-    .from(newsItems)
-    .innerJoin(profiles, eq(profiles.id, newsItems.profileId))
-    // The reader's newest decision about the company is the whole of the Keep rule, and `kept`
-    // above applies it: joining an Attribution to that company by `name_key` is all this join
-    // does. So the sibling an article is attributed to need never have been swiped — News
-    // gathers for every Company Profile, and the sibling the Deck never dealt collects
-    // Attributions of its own, often the own-site announcements, which nobody could ever
-    // reach while a Keep on the article's own row was required as well. A newer Pass on any
-    // sibling still takes the whole company off the page, because it unseats the Keep in
-    // `kept`. See docs/adr/0024 and Ticket #341.
-    .innerJoin(kept, eq(kept.nameKey, profiles.nameKey))
-    .where(gte(newsItems.confidence, NEWS_DISPLAY_THRESHOLD))
-    .orderBy(desc(newsItems.publishedAt), desc(newsItems.id));
+  return (
+    db
+      .select({
+        id: newsItems.id,
+        title: newsItems.title,
+        url: newsItems.url,
+        publishedAt: newsItems.publishedAt,
+        sourceName: newsItems.sourceName,
+        confidence: newsItems.confidence,
+        profileId: kept.id,
+        profileName: kept.name,
+        profileSector: kept.sector,
+        nameKey: kept.nameKey,
+      })
+      .from(newsItems)
+      .innerJoin(profiles, eq(profiles.id, newsItems.profileId))
+      // The reader's newest decision about the company is the whole of the Keep rule, and `kept`
+      // above applies it: joining an Attribution to that company by `name_key` is all this join
+      // does. So the sibling an article is attributed to need never have been swiped — News
+      // gathers for every Company Profile, and the sibling the Deck never dealt collects
+      // Attributions of its own, often the own-site announcements, which nobody could ever
+      // reach while a Keep on the article's own row was required as well. A newer Pass on any
+      // sibling still takes the whole company off the page, because it unseats the Keep in
+      // `kept`. See docs/adr/0024 and Ticket #341.
+      .innerJoin(kept, eq(kept.nameKey, profiles.nameKey))
+      .where(gte(newsItems.confidence, NEWS_DISPLAY_THRESHOLD))
+      .orderBy(desc(newsItems.publishedAt), desc(newsItems.id))
+  );
 }
 
 /**
@@ -615,7 +617,10 @@ export async function readNewsForProfile(
     .where(eq(profiles.id, profileId))
     .limit(1);
 
-  if (requested === undefined) {
+  // No such Company Profile, or — a case the generated column cannot really produce, per
+  // `NewsRow` — no `name_key` to match on. Either way nothing is this company's News, and a
+  // null matching a null would hand back some other company's.
+  if (requested?.nameKey == null) {
     return [];
   }
 
