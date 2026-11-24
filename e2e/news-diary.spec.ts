@@ -24,8 +24,8 @@ async function login(page: Page, baseURL: string, user: SeededUser) {
  * so a page that only breaks once Postgres is real — rather than the mocked `/api/*` routes
  * `e2e/accessibility.spec.ts` stubs — could ship behind a green suite. Neither route is
  * stubbed here on purpose: `seededUser` has Profiles but has Kept none of them and nothing
- * ingested an Event, so both pages answer from Postgres into their own designed empty state,
- * which is a healthy page, not a failure to reach the network tab wasn't open for.
+ * ingested an Event, so both pages answer from Postgres into their own designed empty state —
+ * which is a healthy page, not a failure, same as an exhausted Deck in `scripts/smoke.ts`.
  */
 test("News and the Diary both reach a real answer from Postgres, not their loading or error state", async ({
   page,
