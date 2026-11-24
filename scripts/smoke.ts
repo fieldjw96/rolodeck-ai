@@ -1,6 +1,12 @@
 import { chromium, type Page } from "@playwright/test";
 
 import {
+  DIARY_LOAD_ERROR_MESSAGE,
+  DIARY_LOADING_MESSAGE,
+  NEWS_LOAD_ERROR_MESSAGE,
+  NEWS_LOADING_MESSAGE,
+} from "../lib/smoke/copy";
+import {
   parseSmokeOptions,
   summarise,
   redact,
@@ -169,6 +175,56 @@ async function main(): Promise<void> {
             "the Watchlist is still on its loading state after 2s",
           );
         }
+        return "rendered";
+      }),
+    );
+
+    results.push(
+      await check("News renders", async () => {
+        await page.goto(`${options.baseUrl}/news`, {
+          waitUntil: "networkidle",
+        });
+        await page.waitForTimeout(2_000);
+
+        // Same reasoning as "Watchlist renders" above: without this, the check passes while
+        // signed out, because the gate redirects to /login.
+        const path = new URL(page.url()).pathname;
+        if (path !== "/news") {
+          throw new Error(describeWrongPath(path, "/news"));
+        }
+
+        const body = await textOf(page);
+        if (body.includes(NEWS_LOAD_ERROR_MESSAGE)) {
+          throw new Error("News reported it could not load");
+        }
+        if (body.includes(NEWS_LOADING_MESSAGE)) {
+          throw new Error("News is still on its loading state after 2s");
+        }
+        // No Kept companies is a designed, healthy empty state, same as an exhausted Deck.
+        return "rendered";
+      }),
+    );
+
+    results.push(
+      await check("Diary renders", async () => {
+        await page.goto(`${options.baseUrl}/diary`, {
+          waitUntil: "networkidle",
+        });
+        await page.waitForTimeout(2_000);
+
+        const path = new URL(page.url()).pathname;
+        if (path !== "/diary") {
+          throw new Error(describeWrongPath(path, "/diary"));
+        }
+
+        const body = await textOf(page);
+        if (body.includes(DIARY_LOAD_ERROR_MESSAGE)) {
+          throw new Error("the Diary reported it could not load");
+        }
+        if (body.includes(DIARY_LOADING_MESSAGE)) {
+          throw new Error("the Diary is still on its loading state after 2s");
+        }
+        // No Events ingested is a designed, healthy empty state, same as an exhausted Deck.
         return "rendered";
       }),
     );
