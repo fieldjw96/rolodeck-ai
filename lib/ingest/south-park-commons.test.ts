@@ -36,6 +36,17 @@ describe("parseSouthParkCommonsCompanies, against the captured page", () => {
     }
   });
 
+  it("parses 202 Profiles, with exactly 33 having sector: other", () => {
+    const batch = parseSouthParkCommonsCompanies(fixture.html, fixture.capture);
+
+    expect(batch.profiles).toHaveLength(202);
+
+    const otherCount = batch.profiles.filter(
+      (p) => p.input.sector === "other",
+    ).length;
+    expect(otherCount).toBe(33);
+  });
+
   it("reads a company's stated bio and industry off the page", () => {
     const { profiles } = parseSouthParkCommonsCompanies(
       fixture.html,
