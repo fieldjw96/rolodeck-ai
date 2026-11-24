@@ -86,6 +86,16 @@ starred and the company named under it, after the Watchlist and the News page ha
 `keptAttendees` now embeds `isNewestDecisionForCompany` from `db/deck.ts`, so the Diary agrees
 with the other two readers of a Keep. See Ticket #273.
 
+**2026-11-24 amendment:** the News page's group was collapsed by this ADR's rule while the
+articles in it were not. `readNews` also required a `keep` swipe on the Attribution's own
+Company Profile, so an article attributed to the sibling the Deck never dealt was unreachable —
+that sibling can never be swiped, and it is as likely as its peer to be the row holding the
+website, so the own-site announcements were the ones lost. That join is gone, and the reader's
+newest decision about the company is now the only Keep rule the page applies, as it already was
+for the Watchlist, the Diary and News's own `kept` subquery. An Attribution to a sibling the
+reader Passed is shown where a newer Keep on another sibling stands, which is the case the
+removed join refused. See Ticket #341.
+
 Nothing about ingest changes. Two Sources still write two rows, `profiles` still holds both, and
 the known limitation in `scripts/ingest-ycombinator.ts` is now about the Catalogue rather than
 about the Deck.
