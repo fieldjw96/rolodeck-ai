@@ -479,6 +479,20 @@ describe("attendance", () => {
     expect(rows.map((row) => row.profileId)).toEqual([acmeEvents]);
     expect(rows.map((row) => row.profileId)).not.toContain(acme);
   });
+
+  it("does not reduce a calendar-branding suffix for a Source other than Luma", async () => {
+    await company("Heavybit");
+
+    const report = await persistEvents(scratch.db, {
+      source: "techmeme-events",
+      events: [{ ...SUMMIT, attendees: ["Heavybit Events"] }],
+    });
+
+    expect(report.attendances).toBe(0);
+    await expect(scratch.db.select().from(eventAttendances)).resolves.toEqual(
+      [],
+    );
+  });
 });
 
 describe("reading the Diary", () => {

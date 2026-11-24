@@ -247,6 +247,17 @@ export const LUMA_ORGANIZER_SUFFIXES: readonly string[] = [
  * rather than just " Event Calendar". Returns null when no suffix applies, or when nothing but
  * the suffix itself would remain.
  */
+/**
+ * Whether a Source slug names a Luma calendar, for `persistEvents` to gate
+ * `reduceLumaOrganizerName` to Luma alone: the suffix convention it strips is Luma's own
+ * calendar branding, and a Source whose attendee strings happen to end the same way states no
+ * such thing. Every calendar in `LUMA_CALENDARS` is slugged `luma-<name>`; the bare `"luma"` a
+ * unit test stands in with is that same name with no calendar appended, so it is Luma too.
+ */
+export function isLumaSource(source: string): boolean {
+  return source === "luma" || source.startsWith("luma-");
+}
+
 export function reduceLumaOrganizerName(name: string): string | null {
   const lower = name.toLowerCase();
 
