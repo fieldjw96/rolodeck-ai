@@ -672,6 +672,122 @@ describe("readNews for a company two Sources found", () => {
     expect(groups[0]?.profile.id).toEqual(showHn);
   });
 
+  /**
+   * The Keep that counts is the reader's newest decision about the company, and nothing else
+   * gates an Attribution. The sibling the Deck never dealt gathers News of its own — often the
+   * own-site announcements, since it is as likely as its peer to be the row holding the website
+   * — and it can never be swiped, so requiring a Keep on the article's own row made those
+   * articles unreachable. See docs/adr/0024 and Ticket #341.
+   */
+  it("shows an article attributed to a sibling that was never swiped", async () => {
+    const [swiped, neverSwiped] = await seedBoth();
+    await swipe(swiped!);
+
+    await persistNewsItems(scratch.db, {
+      candidates: [candidate(neverSwiped!, 1)],
+    });
+
+    const groups = await readNews(scratch.db, JACK);
+
+    expect(titles(groups)).toEqual([
+      { company: "Sprocket", titles: ["Headline 1"] },
+    ]);
+    // Once, and under the company named by the Keep that counts — the row that was swiped.
+    expect(groups).toHaveLength(1);
+    expect(groups[0]?.profile.id).toEqual(swiped);
+  });
+
+  it("shows nothing about the company when a Keep on one sibling is followed by a Pass on the other", async () => {
+    const [kept, passedLater] = await seedBoth();
+
+    await scratch.db.insert(swipes).values([
+      {
+        userId: JACK,
+        profileId: kept!,
+        decision: "keep",
+        decidedAt: new Date(FIRST_DECIDED),
+      },
+      {
+        userId: JACK,
+        profileId: passedLater!,
+        decision: "pass",
+        decidedAt: new Date(FIRST_DECIDED + A_MINUTE),
+      },
+    ]);
+
+    await persistNewsItems(scratch.db, {
+      candidates: [candidate(kept!, 1), candidate(passedLater!, 2)],
+    });
+
+    expect(await readNews(scratch.db, JACK)).toEqual([]);
+  });
+
+  it("shows an article attributed to a Passed sibling when a newer Keep on the other one stands", async () => {
+    const [passedFirst, keptLater] = await seedBoth();
+
+    await scratch.db.insert(swipes).values([
+      {
+        userId: JACK,
+        profileId: passedFirst!,
+        decision: "pass",
+        decidedAt: new Date(FIRST_DECIDED),
+      },
+      {
+        userId: JACK,
+        profileId: keptLater!,
+        decision: "keep",
+        decidedAt: new Date(FIRST_DECIDED + A_MINUTE),
+      },
+    ]);
+
+    // Attributed to the row this reader Passed, which the old rule refused and this one shows:
+    // their newest word on the company is the Keep.
+    await persistNewsItems(scratch.db, {
+      candidates: [candidate(passedFirst!, 1)],
+    });
+
+    const groups = await readNews(scratch.db, JACK);
+
+    expect(titles(groups)).toEqual([
+      { company: "Sprocket", titles: ["Headline 1"] },
+    ]);
+    expect(groups[0]?.profile.id).toEqual(keptLater);
+  });
+
+  it("shows one url attributed to both siblings once", async () => {
+    const [yc, showHn] = await seedBoth();
+    await swipe(yc!);
+
+    // Two Attributions of one article, differing only in the matcher's score.
+    await persistNewsItems(scratch.db, {
+      candidates: [candidate(yc!, 1), candidate(showHn!, 1, { confidence: 0.8 })],
+    });
+
+    expect(await storedRows()).toHaveLength(2);
+
+    const groups = await readNews(scratch.db, JACK);
+
+    expect(titles(groups)).toEqual([
+      { company: "Sprocket", titles: ["Headline 1"] },
+    ]);
+    expect(groups[0]?.items).toHaveLength(1);
+  });
+
+  it("shows none of a company's News to a second User who has not swiped it", async () => {
+    const [yc, showHn] = await seedBoth();
+    await swipe(yc!, "keep", JACK);
+
+    await persistNewsItems(scratch.db, {
+      candidates: [candidate(yc!, 1), candidate(showHn!, 2)],
+    });
+
+    // The Keep is JACK's, and an Attribution reaches a reader through their own Keep alone.
+    expect(await readNews(scratch.db, SOMEONE_ELSE)).toEqual([]);
+    expect(titles(await readNews(scratch.db, JACK))).toEqual([
+      { company: "Sprocket", titles: ["Headline 2", "Headline 1"] },
+    ]);
+  });
+
   it("empties the Watchlist and the News page together when a company Kept twice is Passed", async () => {
     const [keptFirst, keptSecond] = await seedBoth();
 
@@ -755,6 +871,46 @@ describe("readNewsForProfile", () => {
 
     expect(
       await readNewsForProfile(scratch.db, { userId: JACK, profileId: id! }),
+    ).toEqual([]);
+  });
+
+  it("returns the one company's group whichever sibling's id it is asked for", async () => {
+    const [yc, showHn] = await seedSiblings(scratch.db, {
+      name: "Sprocket",
+      sources: ["yc", "show-hn"],
+    });
+    // Only one sibling was swiped, and the other holds an article of its own.
+    await swipe(yc!);
+    await persistNewsItems(scratch.db, {
+      candidates: [candidate(yc!, 1), candidate(showHn!, 3)],
+    });
+
+    const forYc = await readNewsForProfile(scratch.db, {
+      userId: JACK,
+      profileId: yc!,
+    });
+    const forShowHn = await readNewsForProfile(scratch.db, {
+      userId: JACK,
+      profileId: showHn!,
+    });
+
+    expect(forYc.map((item) => item.title)).toEqual([
+      "Headline 3",
+      "Headline 1",
+    ]);
+    expect(forShowHn).toEqual(forYc);
+  });
+
+  it("returns nothing for a Profile id no Company Profile carries", async () => {
+    const [id] = await seedProfiles(scratch.db, { count: 1 });
+    await swipe(id!);
+    await persistNewsItems(scratch.db, { candidates: [candidate(id!, 1)] });
+
+    expect(
+      await readNewsForProfile(scratch.db, {
+        userId: JACK,
+        profileId: "33333333-3333-3333-3333-333333333333",
+      }),
     ).toEqual([]);
   });
 

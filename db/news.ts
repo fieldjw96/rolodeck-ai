@@ -442,6 +442,13 @@ type NewsRow = NewsEntry & {
   readonly profileId: string;
   readonly profileName: string;
   readonly profileSector: string;
+  /**
+   * The `name_key` of the company this row is grouped under, which is how `readNewsForProfile`
+   * matches a requested sibling to its group. No part of a group, and like `urls` below it does
+   * not travel: `readNews` hands these rows to `groupNewsByCompany`, which reads the three
+   * `profile` fields and nothing else.
+   */
+  readonly nameKey: string;
 };
 
 /**
@@ -502,15 +509,17 @@ export function groupNewsByCompany(rows: readonly NewsRow[]): NewsGroup[] {
  * is out of scope — so it disappears from the page rather than lingering until a cleanup.
  *
  * The articles are Catalogue and shared; the Keeps that decide which of them this reader sees
- * are not. So the reader is written into the join on `swipes.user_id` and nowhere else,
- * matching `readKeptProfiles`.
+ * are not. So the reader is written into the `kept` subquery below — its join on
+ * `swipes.user_id` and the newest-decision clause inside it — and nowhere else, which is the
+ * whole of what makes this one User's News, by the rule `readKeptProfiles` applies for the
+ * Watchlist.
  *
  * One group per company, not per Source: a company two Sources both found is two Company
  * Profiles sharing a `name_key` (docs/adr/0008), each with its own Attributions, and the page
  * names it once. The company is named by the Company Profile the Keep that counts was recorded
  * against — the same row the Watchlist shows, by the same rule, `isNewestDecisionForCompany` —
- * and each Attribution joins to it by `name_key`, so the group holds every Kept sibling's
- * articles under one heading.
+ * and each Attribution joins to it by `name_key`, so the group holds every sibling's articles
+ * under one heading, whichever sibling they were attributed to.
  *
  * Otherwise unchanged by docs/adr/0022, which is the point of it: gathering for the whole
  * Catalogue means a User who Keeps a company nobody else has Kept now finds News for it here.
@@ -519,6 +528,18 @@ export async function readNews(
   db: Database,
   userId: string,
 ): Promise<NewsGroup[]> {
+  return groupNewsByCompany(await readNewsRows(db, userId));
+}
+
+/**
+ * The rows behind both read paths: every Attribution this reader may see, newest first, each
+ * carrying the company it is grouped under. Shared so that `readNewsForProfile` answers with
+ * exactly what `readNews` would group, rather than with a second query that could drift.
+ */
+async function readNewsRows(
+  db: Database,
+  userId: string,
+): Promise<NewsRow[]> {
   /**
    * The Company Profile that names each company the reader currently Keeps, one row per
    * `name_key`. Built here rather than shared with `readKeptProfiles` because what the two
@@ -543,7 +564,7 @@ export async function readNews(
     )
     .as("current_keep");
 
-  const rows = await db
+  return db
     .select({
       id: newsItems.id,
       title: newsItems.title,
@@ -554,40 +575,53 @@ export async function readNews(
       profileId: kept.id,
       profileName: kept.name,
       profileSector: kept.sector,
+      nameKey: kept.nameKey,
     })
     .from(newsItems)
     .innerJoin(profiles, eq(profiles.id, newsItems.profileId))
-    // The article's own Company Profile has to be one this reader Keeps: an Attribution to a
-    // sibling they Passed is not theirs to read, even where a newer Keep on another sibling
-    // puts the company itself on the page.
-    .innerJoin(
-      swipes,
-      and(
-        eq(swipes.profileId, profiles.id),
-        eq(swipes.userId, userId),
-        eq(swipes.decision, "keep"),
-      ),
-    )
+    // The reader's newest decision about the company is the whole of the Keep rule, and `kept`
+    // above applies it: joining an Attribution to that company by `name_key` is all this join
+    // does. So the sibling an article is attributed to need never have been swiped — News
+    // gathers for every Company Profile, and the sibling the Deck never dealt collects
+    // Attributions of its own, often the own-site announcements, which nobody could ever
+    // reach while a Keep on the article's own row was required as well. A newer Pass on any
+    // sibling still takes the whole company off the page, because it unseats the Keep in
+    // `kept`. See docs/adr/0024 and Ticket #341.
     .innerJoin(kept, eq(kept.nameKey, profiles.nameKey))
     .where(gte(newsItems.confidence, NEWS_DISPLAY_THRESHOLD))
     .orderBy(desc(newsItems.publishedAt), desc(newsItems.id));
-
-  return groupNewsByCompany(rows);
 }
 
 /**
  * One Kept company's News for the Watchlist card's News tab: exactly the group `readNews`
- * would show for `profileId`, or nothing where that Profile is not among the reader's
- * currently Kept companies — Passed, never swiped, or superseded by a newer decision on a
- * sibling. See docs/adr/0024: `profileId` is always one of `readNews`'s own group ids where
- * the company is still Kept, since the Watchlist deals out the same row by the same rule,
- * `isNewestDecisionForCompany`.
+ * would show for `profileId`'s company, or nothing where that company is not among the
+ * reader's currently Kept ones — Passed, never swiped, or superseded by a newer decision on a
+ * sibling.
+ *
+ * Answered by company rather than by row, so every sibling's id gives the same group. The
+ * Watchlist passes the Company Profile the Keep that counts was recorded against, which is
+ * `readNews`'s own group id, so matching on the id alone would do for it today; matching on
+ * the requested Profile's `name_key` is what makes that an implementation detail of the
+ * Watchlist rather than a rule a second caller has to know. The News is the company's, not one
+ * Source's row's. See docs/adr/0024.
  */
 export async function readNewsForProfile(
   db: Database,
   { userId, profileId }: { userId: string; profileId: string },
 ): Promise<readonly NewsEntry[]> {
-  const groups = await readNews(db, userId);
+  const [requested] = await db
+    .select({ nameKey: profiles.nameKey })
+    .from(profiles)
+    .where(eq(profiles.id, profileId))
+    .limit(1);
 
-  return groups.find((group) => group.profile.id === profileId)?.items ?? [];
+  if (requested === undefined) {
+    return [];
+  }
+
+  const rows = (await readNewsRows(db, userId)).filter(
+    (row) => row.nameKey === requested.nameKey,
+  );
+
+  return groupNewsByCompany(rows)[0]?.items ?? [];
 }
